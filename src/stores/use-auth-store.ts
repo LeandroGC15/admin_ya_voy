@@ -33,20 +33,47 @@ const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
+          console.log('Initiating sign in with credentials...');
           const result = await signIn('credentials', {
             redirect: false,
             email,
             password,
+            callbackUrl: '/dashboard',
           });
 
-          if (result?.error) {
-            throw new Error(result.error);
+          console.log('SignIn result:', result);
+
+          if (!result) {
+            throw new Error('No response from authentication server');
           }
+
+          if (result.error) {
+            console.error('Authentication error:', result.error);
+            
+            // Mapear errores comunes a mensajes más amigables
+            let errorMessage = result.error;
+            if (result.error === 'CredentialsSignin') {
+              errorMessage = 'Correo o contraseña incorrectos';
+            } else if (result.error.includes('ECONNREFUSED')) {
+              errorMessage = 'No se pudo conectar con el servidor';
+            }
+            
+            throw new Error(errorMessage);
+          }
+          
+          // Si llegamos aquí, la autenticación fue exitosa
+          // La sesión se actualizará a través del SessionProvider
+          
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Error desconocido al iniciar sesión';
+          console.error('Login error:', errorMessage);
+          
           set({
-            error: error instanceof Error ? error.message : 'Login failed',
+            error: errorMessage,
             isAuthenticated: false,
+            user: null,
           });
+          
           throw error;
         } finally {
           set({ isLoading: false });

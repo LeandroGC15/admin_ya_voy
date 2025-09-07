@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -8,12 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormField } from "@/components/forms";
 import { loginSchema, type LoginFormData } from "@/features/auth/schemas/auth.schema";
-import { useAuth } from "@/features/auth/hooks/use-auth";
+import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import Link from "next/link";
 
 export function LoginForm() {
-  const { login, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const form = useForm<LoginFormData>({
@@ -27,11 +28,24 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.email, data.password);
+      const result = await signIn('credentials', {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+        callbackUrl: '/dashboard',
+      });
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
       toast.success("Inicio de sesión exitoso");
-      router.push("/dashboard");
+      
+      // Usar window.location para forzar una recarga completa y asegurar que la sesión se establezca
+      window.location.href = '/dashboard';
     } catch (error) {
-      toast.error("Error al iniciar sesión. Verifica tus credenciales.");
+      console.error('Login error:', error);
+      toast.error(error instanceof Error ? error.message : "Error al iniciar sesión. Verifica tus credenciales.");
     }
   };
 
