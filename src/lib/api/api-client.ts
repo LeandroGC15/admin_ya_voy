@@ -43,11 +43,6 @@ class ApiClient {
     // Request interceptor
     this.instance.interceptors.request.use(
       (config) => {
-        // You can add auth tokens here if needed
-        // const token = getTokenFromLocalStorage();
-        // if (token) {
-        //   config.headers.Authorization = `Bearer ${token}`;
-        // }
         return config;
       },
       (error) => {
