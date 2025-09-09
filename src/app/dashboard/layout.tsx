@@ -6,6 +6,8 @@ import { useState } from 'react';
 import UserCreationForm from '@/features/users/components/UserCreationForm';
 import UserSearchForm from '@/features/users/components/UserSearchForm';
 import UserDeleteForm from '@/features/users/components/UserDeleteForm';
+import DriverRegisterForm from '@/features/drivers/components/DriverRegisterForm';
+import DriverDeleteForm from '@/features/drivers/components/DriverDeleteForm'; // Nueva importación
 
 export default function DashboardLayout({
   children,
@@ -15,12 +17,19 @@ export default function DashboardLayout({
   const [showUserCreationForm, setShowUserCreationForm] = useState(false);
   const [showUserSearchForm, setShowUserSearchForm] = useState(false);
   const [showUserDeleteForm, setShowUserDeleteForm] = useState(false);
+  const [showDriverRegisterForm, setShowDriverRegisterForm] = useState(false);
+  const [showDriverDeleteForm, setShowDriverDeleteForm] = useState(false); // Nuevo estado
 
-  const handleAdminAction = (action: string) => {
-    // Cerrar todos los formularios antes de abrir uno nuevo
+  const closeAllForms = () => {
     setShowUserCreationForm(false);
     setShowUserSearchForm(false);
     setShowUserDeleteForm(false);
+    setShowDriverRegisterForm(false);
+    setShowDriverDeleteForm(false); // Cerrar este también
+  };
+
+  const handleAdminAction = (action: string) => {
+    closeAllForms(); // Cerrar todos los formularios antes de abrir uno nuevo
 
     if (action === 'create-user') {
       setShowUserCreationForm(true);
@@ -28,9 +37,13 @@ export default function DashboardLayout({
       setShowUserSearchForm(true);
     } else if (action === 'delete-user') {
       setShowUserDeleteForm(true);
-    } else {
-      console.log('Acción administrativa seleccionada:', action);
+    } else if (action === 'register-driver') {
+      setShowDriverRegisterForm(true);
+    } else if (action === 'delete-driver-by-id') { // Nueva acción
+      setShowDriverDeleteForm(true);
     }
+    // ... manejar otras acciones administrativas aquí
+    console.log('Acción administrativa seleccionada:', action);
   };
 
   const handleUserCreated = () => {
@@ -41,6 +54,16 @@ export default function DashboardLayout({
   const handleUserDeleted = () => {
     setShowUserDeleteForm(false);
     console.log('Usuario eliminado y formulario cerrado.');
+  };
+
+  const handleDriverRegistered = () => {
+    setShowDriverRegisterForm(false);
+    console.log('Conductor registrado y formulario cerrado.');
+  };
+
+  const handleDriverDeleted = () => { // Nuevo callback
+    setShowDriverDeleteForm(false);
+    console.log('Conductor eliminado y formulario cerrado.');
   };
 
   return (
@@ -67,6 +90,18 @@ export default function DashboardLayout({
         <UserDeleteForm 
           onClose={() => setShowUserDeleteForm(false)}
           onUserDeleted={handleUserDeleted}
+        />
+      )}
+      {showDriverRegisterForm && (
+        <DriverRegisterForm
+          onClose={() => setShowDriverRegisterForm(false)}
+          onDriverRegistered={handleDriverRegistered}
+        />
+      )}
+      {showDriverDeleteForm && ( // Renderizado condicional
+        <DriverDeleteForm
+          onClose={() => setShowDriverDeleteForm(false)}
+          onDriverDeleted={handleDriverDeleted}
         />
       )}
     </div>

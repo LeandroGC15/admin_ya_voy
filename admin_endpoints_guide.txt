@@ -1,0 +1,126 @@
+# Documento de Endpoints Administrativos (Backend: uber-clone-nest)
+
+Este documento detalla los endpoints administrativos del backend `uber-clone-nest` que un panel de administración (frontend `admin_ya_voy`) podría utilizar.
+
+## Endpoints Administrativos Pendientes
+
+### Módulo de Usuarios
+
+1.  **Actualizar Información de Usuario**
+    *   **Endpoint:** `PUT /api/user/:id`
+    *   **Descripción:** Permite a un administrador actualizar los detalles de un usuario existente.
+    *   **Cuerpo de Solicitud (Backend DTO `UpdateUserDto`):**
+        ```typescript
+        interface UpdateUserDto {
+          name?: string;
+          email?: string;
+          // Otros campos actualizables... (el backend solo tiene name y email)
+        }
+        ```
+    *   **Respuestas:**
+        *   `200 OK`: Usuario actualizado.
+        *   `400 Bad Request`: Datos inválidos.
+        *   `404 Not Found`: Usuario no encontrado.
+
+### Módulo de Conductores
+
+2.  **Obtener Lista de Conductores**
+    *   **Endpoint:** `GET /api/driver`
+    *   **Descripción:** Recupera una lista completa de todos los conductores registrados en el sistema.
+    *   **Respuestas:**
+        *   `200 OK`: Array de objetos de conductor.
+
+3.  **Registrar Nuevo Conductor**
+    *   **Endpoint:** `POST /api/driver/register`
+    *   **Descripción:** Permite a un administrador registrar un nuevo conductor.
+    *   **Cuerpo de Solicitud (Backend DTO `RegisterDriverDto`):**
+        ```typescript
+        interface RegisterDriverDto {
+          firstName: string;
+          lastName: string;
+          email: string;
+          phoneNumber: string; // Asumimos un campo de número de teléfono
+          carModel: string;
+          licensePlate: string;
+          carSeats: number;
+          // Otros campos, si el backend los requiere (ej. password si no usa Clerk)
+        }
+        ```
+    *   **Respuestas:**
+        *   `201 Created`: Conductor registrado exitosamente.
+        *   `400 Bad Request`: Datos inválidos.
+
+4.  **Actualizar Estado de Disponibilidad del Conductor**
+    *   **Endpoint:** `PUT /api/driver/:driverId/status`
+    *   **Descripción:** Permite a un administrador cambiar el estado de un conductor (e.g., `online`, `offline`, `busy`).
+    *   **Cuerpo de Solicitud (Backend DTO `UpdateDriverStatusDto`):**
+        ```typescript
+        interface UpdateDriverStatusDto {
+          status: 'online' | 'offline' | 'busy' | 'on_ride' | 'pending_verification' | 'suspended';
+        }
+        ```
+    *   **Respuestas:**
+        *   `200 OK`: Estado actualizado.
+        *   `400 Bad Request`: Estado inválido.
+        *   `404 Not Found`: Conductor no encontrado.
+
+5.  **Eliminar Conductor**
+    *   **Endpoint:** `DELETE /api/driver/:id`
+    *   **Descripción:** Elimina permanentemente un registro de conductor.
+    *   **Respuestas:**
+        *   `200 OK`: Conductor eliminado.
+        *   `404 Not Found`: Conductor no encontrado.
+
+### Módulo de Promociones
+
+6.  **Crear Nueva Promoción**
+    *   **Endpoint:** `POST /api/promo`
+    *   **Descripción:** Crea un nuevo código promocional.
+    *   **Cuerpo de Solicitud (Backend DTO `CreatePromotionDto`):**
+        ```typescript
+        interface CreatePromotionDto {
+          promoCode: string;
+          discountPercentage?: number; // % de descuento
+          discountAmount?: number;    // Cantidad fija de descuento
+          expiryDate?: string;        // Formato ISO 8601 string (e.g., 'YYYY-MM-DDTHH:mm:ssZ')
+          isActive?: boolean;         // true por defecto en el backend
+        }
+        ```
+    *   **Respuestas:**
+        *   `201 Created`: Promoción creada.
+        *   `400 Bad Request`: Datos inválidos.
+        *   `409 Conflict`: Código de promoción ya existe.
+
+7.  **Actualizar Promoción Existente**
+    *   **Endpoint:** `PUT /api/promo/:id`
+    *   **Descripción:** Modifica los detalles de una promoción.
+    *   **Cuerpo de Solicitud (Backend DTO `UpdatePromotionDto`):**
+        ```typescript
+        interface UpdatePromotionDto {
+          promoCode?: string;
+          discountPercentage?: number;
+          discountAmount?: number;
+          expiryDate?: string;
+          isActive?: boolean;
+        }
+        ```
+    *   **Respuestas:**
+        *   `200 OK`: Promoción actualizada.
+        *   `400 Bad Request`: Datos inválidos.
+        *   `404 Not Found`: Promoción no encontrada.
+
+8.  **Eliminar Promoción**
+    *   **Endpoint:** `DELETE /api/promo/:id`
+    *   **Descripción:** Elimina una promoción permanentemente.
+    *   **Respuestas:**
+        *   `200 OK`: Promoción eliminada.
+        *   `404 Not Found`: Promoción no encontrada.
+
+### Módulo de Seguridad
+
+9.  **Obtener Informes de Seguridad de Usuario**
+    *   **Endpoint:** `GET /api/safety/:userId/reports`
+    *   **Descripción:** Recupera todos los informes de seguridad asociados a un `Clerk ID` de usuario específico.
+    *   **Respuestas:**
+        *   `200 OK`: Array de informes de seguridad.
+        *   `404 Not Found`: Usuario no encontrado.
