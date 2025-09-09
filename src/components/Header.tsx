@@ -37,8 +37,10 @@ const Header = ({ onAdminAction }: HeaderProps) => {
             <option value="" disabled>Acciones Admin</option>
             <option value="create-user">Crear Usuario</option>
             <option value="search-user">Buscar Usuario por Email</option>
+            <option value="update-user">Actualizar Usuario</option>
             <option value="delete-user">Eliminar Usuario</option>
             <option value="register-driver">Registrar Conductor</option>
+            <option value="search-driver">Buscar Conductor</option>
             <option value="delete-driver-by-id">Eliminar Conductor</option>
           </select>
         </div>

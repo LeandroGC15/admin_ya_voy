@@ -14,7 +14,7 @@ Este documento detalla los endpoints administrativos del backend `uber-clone-nes
         interface UpdateUserDto {
           name?: string;
           email?: string;
-          // Otros campos actualizables... (el backend solo tiene name y email)
+          phone?: number
         }
         ```
     *   **Respuestas:**

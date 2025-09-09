@@ -8,6 +8,8 @@ import UserSearchForm from '@/features/users/components/UserSearchForm';
 import UserDeleteForm from '@/features/users/components/UserDeleteForm';
 import DriverRegisterForm from '@/features/drivers/components/DriverRegisterForm';
 import DriverDeleteForm from '@/features/drivers/components/DriverDeleteForm'; // Nueva importación
+import DriverSearchForm from '@/features/drivers/components/DriverSearchForm'; // Nueva importación
+import UserUpdateForm from '@/features/users/components/UserUpdateForm'; // Nueva importación
 
 export default function DashboardLayout({
   children,
@@ -19,6 +21,9 @@ export default function DashboardLayout({
   const [showUserDeleteForm, setShowUserDeleteForm] = useState(false);
   const [showDriverRegisterForm, setShowDriverRegisterForm] = useState(false);
   const [showDriverDeleteForm, setShowDriverDeleteForm] = useState(false); // Nuevo estado
+  const [showDriverSearchForm, setShowDriverSearchForm] = useState(false); // Nuevo estado
+  const [showUserUpdateForm, setShowUserUpdateForm] = useState(false); // Nuevo estado
+  // const [userToUpdate, setUserToUpdate] = useState<any>(null); // Eliminado
 
   const closeAllForms = () => {
     setShowUserCreationForm(false);
@@ -26,6 +31,9 @@ export default function DashboardLayout({
     setShowUserDeleteForm(false);
     setShowDriverRegisterForm(false);
     setShowDriverDeleteForm(false); // Cerrar este también
+    setShowDriverSearchForm(false); // Cerrar este también
+    setShowUserUpdateForm(false); // Cerrar este también
+    // setUserToUpdate(null); // Eliminado
   };
 
   const handleAdminAction = (action: string) => {
@@ -41,9 +49,19 @@ export default function DashboardLayout({
       setShowDriverRegisterForm(true);
     } else if (action === 'delete-driver-by-id') { // Nueva acción
       setShowDriverDeleteForm(true);
+    } else if (action === 'search-driver') { // Nueva acción
+      setShowDriverSearchForm(true);
+    } else if (action === 'update-user') { // Nueva acción para actualizar usuario
+      setShowUserUpdateForm(true); // Abre directamente el UserUpdateForm
     }
     // ... manejar otras acciones administrativas aquí
     console.log('Acción administrativa seleccionada:', action);
+  };
+
+  const handleUserSelectedForUpdate = (user: any) => {
+    closeAllForms();
+    // setUserToUpdate(user); // Eliminado
+    setShowUserUpdateForm(true); // Se abre el formulario de actualización con el usuario ya identificado
   };
 
   const handleUserCreated = () => {
@@ -54,6 +72,14 @@ export default function DashboardLayout({
   const handleUserDeleted = () => {
     setShowUserDeleteForm(false);
     console.log('Usuario eliminado y formulario cerrado.');
+  };
+
+  const handleUserUpdated = () => {
+    setShowUserUpdateForm(false);
+    // setUserToUpdate(null); // Eliminado
+    // Opcional: Recargar la lista de usuarios en UserSearchForm si está abierto
+    // Para esto, UserSearchForm necesitaría una prop para recargar o una forma de escuchar este evento.
+    console.log('Usuario actualizado y formulario cerrado.');
   };
 
   const handleDriverRegistered = () => {
@@ -84,12 +110,19 @@ export default function DashboardLayout({
       {showUserSearchForm && (
         <UserSearchForm 
           onClose={() => setShowUserSearchForm(false)}
+          onSelectUserForUpdate={handleUserSelectedForUpdate} // Pasar la nueva prop
         />
       )}
       {showUserDeleteForm && (
         <UserDeleteForm 
           onClose={() => setShowUserDeleteForm(false)}
           onUserDeleted={handleUserDeleted}
+        />
+      )}
+      {showUserUpdateForm && (
+        <UserUpdateForm
+          onClose={() => handleUserUpdated()}
+          onUserUpdated={handleUserUpdated}
         />
       )}
       {showDriverRegisterForm && (
@@ -102,6 +135,11 @@ export default function DashboardLayout({
         <DriverDeleteForm
           onClose={() => setShowDriverDeleteForm(false)}
           onDriverDeleted={handleDriverDeleted}
+        />
+      )}
+      {showDriverSearchForm && (
+        <DriverSearchForm
+          onClose={() => setShowDriverSearchForm(false)}
         />
       )}
     </div>
