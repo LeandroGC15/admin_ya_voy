@@ -118,7 +118,7 @@ export function LoginForm() {
       let field: keyof LoginFormData | null = null;
       
       // Handle different error response formats
-      const statusCode = error.response.data.statusCode || error?.statusCode || error?.response?.status;
+      const statusCode = error.response?.data?.statusCode || error?.statusCode || error?.response?.status;
       const message = error?.response?.data?.message || error?.message || errorMessage;
       
       if (statusCode) {

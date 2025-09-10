@@ -44,6 +44,7 @@ export default function RecentSales() {
       setError(null);
       try {
         let rides: RideData[] = [];
+        const token = localStorage.getItem('accessToken');
 
         if (viewType === 'users') {
           const usersResponse = await api.get<{ data: { id: number; name: string; email: string }[] }>(`/admin/users?limit=100`);
@@ -52,8 +53,8 @@ export default function RecentSales() {
 
           const userRidesPromises = users.map(async (user) => {
             try {
-              const userRidesResponse = await api.get<{ data: UserRide[] }>(`/api/ride/${user.id}`);
-              const userRides = userRidesResponse.data;
+              const userRidesResponse = await api.get<UserRide[]>(`/api/ride/${user.id}`);
+              const userRides = userRidesResponse;
               console.log(`Rides para usuario ${user.id}:`, userRides);
               return userRides.map((ride) => ({
                 id: ride.rideId,

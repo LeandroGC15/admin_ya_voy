@@ -75,6 +75,10 @@ class ApiClient {
     // Request interceptor
     this.instance.interceptors.request.use(
       (config) => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
         return config;
       },
       (error) => {
@@ -87,9 +91,15 @@ class ApiClient {
       (response: AxiosResponse) => {
         // If the response has a data property, return it directly
         if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-          return response.data.data;
+          return response.data.data; // This is T
         }
-        return response.data || response;
+        // If we reach here, the response format is unexpected for a successful call.
+        // Treat this as an error as the expected ApiResponse<T> wrapper is missing.
+        throw new ApiError(
+          response.data?.message || 'Unexpected successful response format',
+          response.status || 500,
+          response.data || response
+        );
       },
       (error: AxiosError) => {
         return Promise.reject(ApiError.fromServerError(error));
@@ -97,44 +107,44 @@ class ApiClient {
     );
   }
 
-  public async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.instance.get<ApiResponse<T>>(url, config);
-    return response.data
+  public async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.instance.get<any>(url, config);
+    return response as T
   }
 
   public async post<T>(
     url: string,
     data?: unknown,
     config?: AxiosRequestConfig
-  ): Promise<ApiResponse<T>> {
-    const response = await this.instance.post<ApiResponse<T>>(url, data, config);
-    return response.data;
+  ): Promise<T> {
+    const response = await this.instance.post<any>(url, data, config);
+    return response as T;
   }
 
   public async put<T>(
     url: string, 
     data?: unknown, 
     config?: AxiosRequestConfig
-  ): Promise<ApiResponse<T>> {
-    const response = await this.instance.put<ApiResponse<T>>(url, data, config);
-    return response.data;
+  ): Promise<T> {
+    const response = await this.instance.put<any>(url, data, config);
+    return response as T;
   }
 
   public async delete<T>(
     url: string, 
     config?: AxiosRequestConfig
-  ): Promise<ApiResponse<T>> {
-    const response = await this.instance.delete<ApiResponse<T>>(url, config);
-    return response.data;
+  ): Promise<T> {
+    const response = await this.instance.delete<any>(url, config);
+    return response as T;
   }
 
   public async patch<T>(
     url: string,
     data?: unknown,
     config?: AxiosRequestConfig
-  ): Promise<ApiResponse<T>> {
-    const response = await this.instance.patch<ApiResponse<T>>(url, data, config);
-    return response.data;
+  ): Promise<T> {
+    const response = await this.instance.patch<any>(url, data, config);
+    return response as T;
   }
 }
 
