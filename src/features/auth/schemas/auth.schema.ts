@@ -9,12 +9,11 @@ export const loginSchema = z.object({
     .toLowerCase(),
   password: z
     .string()
-    .min(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
-    .regex(/[A-Z]/, { message: 'La contraseña debe contener al menos una letra mayúscula' })
-    .regex(/[a-z]/, { message: 'La contraseña debe contener al menos una letra minúscula' })
-    .regex(/[0-9]/, { message: 'La contraseña debe contener al menos un número' })
-    .regex(/[^a-zA-Z0-9]/, { message: 'La contraseña debe contener al menos un carácter especial' }),
-  rememberMe: z.boolean().optional(),
+    .min(8, { message: 'La contraseña debe tener al menos 8 caracteres' }),
+  rememberMe: z.union([
+    z.boolean(),
+    z.string().transform(val => val === 'true' || val === '1' || val === 'on')
+  ]).optional(),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;

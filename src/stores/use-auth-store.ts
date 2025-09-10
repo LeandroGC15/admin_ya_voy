@@ -66,7 +66,6 @@ const useAuthStore = create<AuthState>()(
           
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Error desconocido al iniciar sesión';
-          console.error('Login error:', errorMessage);
           
           set({
             error: errorMessage,

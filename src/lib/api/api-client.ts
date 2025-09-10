@@ -1,20 +1,43 @@
+import { ApiResponse } from '@/interfaces/ApiResponse';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getSession } from 'next-auth/react';
 
 export class ApiError extends Error {
   status: number;
-  data: unknown;
-  code?: string;
+  timestamp?: string;
+  path?: string;
+  data: Record<string, unknown>;
 
-  constructor(message: string, status: number, data: unknown = {}) {
+  constructor(message: string, status: number, data: ServerErrorResponse | unknown = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
-    this.data = data;
     
-    if (data && typeof data === 'object' && 'code' in data && typeof data.code === 'string') {
-      this.code = data.code;
+    // Handle structured server error response
+    if (data && typeof data === 'object') {
+      const errorData = data as ServerErrorResponse;
+      this.timestamp = errorData.timestamp;
+      this.path = errorData.path;
+      this.data = { ...errorData };
+    } else {
+      this.data = { originalData: data };
     }
+  }
+
+  static fromServerError(error: any): ApiError {
+    if (error.response?.data) {
+      const { statusCode, message, ...rest } = error.response.data;
+      return new ApiError(message || 'An error occurred', statusCode || error.response.status, rest);
+    }
+    
+    if (error instanceof ApiError) {
+      return error;
+    }
+    
+    return new ApiError(
+      error.message || 'An unknown error occurred',
+      error.status || 0,
+      error.data || {}
+    );
   }
 }
 
@@ -43,12 +66,7 @@ class ApiClient {
   private initializeInterceptors() {
     // Request interceptor
     this.instance.interceptors.request.use(
-      async (config) => {
-        const session = await getSession();
-        console.log('Session en interceptor:', session);
-        if (session?.accessToken) {
-          config.headers.Authorization = `Bearer ${session.accessToken}`;
-        }
+      (config) => {
         return config;
       },
       (error) => {
@@ -59,55 +77,46 @@ class ApiClient {
     // Response interceptor
     this.instance.interceptors.response.use(
       (response: AxiosResponse) => {
-        return response;
+        // If the response has a data property, return it directly
+        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+          return response.data.data;
+        }
+        return response.data || response;
       },
       (error: AxiosError) => {
-        if (error.response) {
-          // Handle different status codes
-          const errorData = error.response.data as Record<string, unknown>;
-          const errorMessage = 
-            errorData?.message && typeof errorData.message === 'string'
-              ? errorData.message 
-              : 'An error occurred';
-              
-          return Promise.reject(
-            new ApiError(
-              errorMessage,
-              error.response.status,
-              error.response.data
-            )
-          );
-        }
-        return Promise.reject(error);
+        return Promise.reject(ApiError.fromServerError(error));
       }
     );
   }
 
-  public async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.instance.get<T>(url, config);
-    return response.data;
+  public async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+    const response = await this.instance.get<ApiResponse<T>>(url, config);
+    return response.data
   }
 
   public async post<T>(
     url: string,
     data?: unknown,
     config?: AxiosRequestConfig
-  ): Promise<T> {
-    const response = await this.instance.post<T>(url, data, config);
+  ): Promise<ApiResponse<T>> {
+    const response = await this.instance.post<ApiResponse<T>>(url, data, config);
     return response.data;
   }
 
   public async put<T>(
-    url: string,
-    data?: unknown,
+    url: string, 
+    data?: unknown, 
     config?: AxiosRequestConfig
-  ): Promise<T> {
-    const response = await this.instance.put<T>(url, data, config);
+  ): Promise<ApiResponse<T>> {
+    const response = await this.instance.put<ApiResponse<T>>(url, data, config);
     return response.data;
   }
 
-  public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.instance.delete<T>(url, config);
+  public async delete<T>(
+    url: string, 
+    config?: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> {
+    const response = await this.instance.delete<ApiResponse<T>>(url, config);
     return response.data;
   }
 
@@ -115,8 +124,8 @@ class ApiClient {
     url: string,
     data?: unknown,
     config?: AxiosRequestConfig
-  ): Promise<T> {
-    const response = await this.instance.patch<T>(url, data, config);
+  ): Promise<ApiResponse<T>> {
+    const response = await this.instance.patch<ApiResponse<T>>(url, data, config);
     return response.data;
   }
 }

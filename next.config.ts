@@ -4,7 +4,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Apply these headers to all routes in your application
         source: '/:path*',
         headers: [
           {
@@ -27,14 +26,19 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // If you're using API routes and need to handle CORS there as well
+  // Configuración para manejar correctamente las rutas de API
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || '/api'}/:path*`,
-      },
-    ];
+    // Si tienes una API externa, usa esta configuración
+    if (process.env.NEXT_PUBLIC_EXTERNAL_API_URL) {
+      return [
+        {
+          source: '/api/:path*',
+          destination: `${process.env.NEXT_PUBLIC_EXTERNAL_API_URL}/:path*`,
+        },
+      ];
+    }
+    // Para API interna, no necesitamos reescritura
+    return [];
   },
 };
 

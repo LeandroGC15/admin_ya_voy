@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { loginSchema, type LoginFormData } from "@/features/auth/schemas/auth.schema";
-import { loginAdmin } from "@/features/auth/services/authService";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { signIn } from "next-auth/react";
+import { loginAdmin } from "../services/auth.service";
+import { ApiError } from "@/lib/api/api-client";
 
 // Simple form components to match shadcn/ui pattern
 const Form = ({ children, onSubmit, className }: { 
@@ -65,13 +67,16 @@ const FormMessage = ({ children, className = "" }: { children?: React.ReactNode;
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const router = useRouter();
 
   const { 
     register, 
     handleSubmit, 
     formState: { errors },
-    control
+    control,
+    setError,
+    clearErrors
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema) as any, // Type assertion to fix the resolver type
     defaultValues: {
@@ -83,24 +88,70 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      // Clear previous errors
+      setFormError(null);
+      clearErrors();
       setIsLoading(true);
       
-      const response = await loginAdmin({
+      // Attempt to log in
+      const authResponse = await loginAdmin({
         email: data.email,
         password: data.password,
-        rememberMe: data.rememberMe
       });
 
-      if (response?.token) {
-        localStorage.setItem('authToken', response.token);
-        toast.success("¡Bienvenido!");
-        router.push('/dashboard');
+      // Save auth data to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('auth', JSON.stringify({
+          accessToken: authResponse.accessToken,
+          refreshToken: authResponse.refreshToken,
+          admin: authResponse.admin,
+          expiresIn: authResponse.expiresIn,
+          timestamp: new Date().getTime()
+        }));
       }
+
+      // If login is successful, redirect to dashboard
+      router.push('/dashboard');
+      
     } catch (error: any) {
-      console.error('Login error:', error);
-      const errorMessage = error.response?.data?.message || 
-                         error.message || 
-                         "Error al iniciar sesión. Verifica tus credenciales.";
+      let errorMessage = 'Error al iniciar sesión';
+      let field: keyof LoginFormData | null = null;
+      
+      // Handle different error response formats
+      const statusCode = error.response.data.statusCode || error?.statusCode || error?.response?.status;
+      const message = error?.response?.data?.message || error?.message || errorMessage;
+      
+      if (statusCode) {
+        // Handle API errors with status codes
+        errorMessage = message;
+        
+        // Map status codes to user-friendly messages
+        if (statusCode === 401) {
+          errorMessage = 'Credenciales inválidas. Por favor, verifica tu correo y contraseña.';
+          field = 'password';
+        } else if (statusCode === 403) {
+          errorMessage = 'No tienes permiso para acceder a esta cuenta.';
+        } else if (statusCode === 429) {
+          errorMessage = 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde.';
+        }
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        // Handle other Error objects
+        errorMessage = String(error.message);
+      } else {
+        errorMessage = 'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.';
+      }
+      
+      // Set form error
+      setFormError(errorMessage);
+      
+      // Set field-specific errors if applicable
+      if (field) {
+        setError(field, {
+          type: 'manual',
+          message: errorMessage
+        });
+      }
+      
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -108,11 +159,25 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow-lg dark:bg-gray-800">
+    <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-8 shadow-lg dark:bg-gray-800">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bienvenido de vuelta</h1>
         <p className="text-muted-foreground">Ingresa tus credenciales para continuar</p>
       </div>
+      
+      {/* Form Error Message */}
+      {formError && (
+        <div className="rounded-md bg-red-50 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <XCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">{formError}</h3>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <FormItem>

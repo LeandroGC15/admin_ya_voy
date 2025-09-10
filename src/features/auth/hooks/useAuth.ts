@@ -37,7 +37,7 @@ export const useAuth = () => {
       console.error('Login error in handleLogin:', err);
       
       // Mapear errores comunes a mensajes más amigables
-      let errorMessage = 'Error al iniciar sesión. Por favor, inténtalo de nuevo.';
+      let errorMessage = 'Error al iniciar Login errorsesión. Por favor, inténtalo de nuevo.';
       
       if (err.message.includes('Network Error')) {
         errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión a Internet.';

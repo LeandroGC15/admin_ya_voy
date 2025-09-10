@@ -2,12 +2,12 @@ import type { NextAuthOptions, User, Session, DefaultSession } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { loginSchema } from "@/features/auth/schemas/auth.schema"
 import { z } from "zod"
+import { loginAdmin } from "@/features/auth/services/auth.service"
+import { AuthResponseData } from "@/features/auth/interfaces/authResponse";
 
 // Extender los tipos de NextAuth para incluir las propiedades personalizadas
 declare module "next-auth" {
-  /**
-   * Extiende la interfaz de sesión por defecto
-   */
+  
   interface Session {
     user: {
       // Mantener las propiedades del usuario por defecto
@@ -55,7 +55,7 @@ declare module "next-auth/jwt" {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://72.60.119.19:3001';
+
 
 // Extend the User type to include the role
 interface ExtendedUser extends User {
@@ -64,17 +64,6 @@ interface ExtendedUser extends User {
   refreshToken?: string;
 }
 
-// Extend the Session type to include the role
-interface ExtendedSession extends Session {
-  user: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-    role?: string;
-    accessToken?: string;
-  };
-  accessToken?: string;
-}
 
 export const authOptions: NextAuthOptions = {
   // Configuración de la sesión
@@ -86,7 +75,6 @@ export const authOptions: NextAuthOptions = {
   // Configuración de páginas personalizadas
   pages: {
     signIn: "/login",
-    error: "/login",
   },
   
   // Configuración de depuración
@@ -200,108 +188,46 @@ export const authOptions: NextAuthOptions = {
       },
       // Configuración específica para el proveedor de credenciales
       async authorize(credentials) {
-        console.log('=== AUTHORIZE FUNCTION STARTED ===');
-        
         try {
-          // 1. Verificar credenciales
-          if (!credentials) {
-            console.error('❌ No credentials provided');
-            throw new Error('No se proporcionaron credenciales');
-          }
-          
-          // 2. Validar formato de credenciales
-          console.log('🔍 Validating credentials format...');
           const { email, password } = loginSchema.parse(credentials);
-          console.log('✅ Credentials format is valid');
-          
-          // 3. Preparar la petición al backend
-          console.log('📡 Preparing request to backend...');
-          const requestBody = { 
-            email: email.trim(), 
-            password: password.trim() 
-          };
-          
-          const requestUrl = `${API_URL}/admin/auth/login`;
-          
-          // Mostrar información de depuración
-          console.log('📤 Sending request to:', requestUrl);
-          console.log('📝 Request body:', JSON.stringify(requestBody, null, 2));
-          
-          // Verificar si la URL de la API está definida
-          if (!API_URL) {
-            console.error('❌ API_URL is not defined');
-            throw new Error('Error de configuración del servidor');
-          }
-          
-          // 4. Realizar la petición al backend
-          const response = await fetch(requestUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(requestBody)
-          });
-          
-          console.log(`📥 Response status: ${response.status} ${response.statusText}`);
-          
-          // 5. Procesar la respuesta
-          let responseData;
           try {
-            responseData = await response.json();
-            console.log('📦 Response data:', JSON.stringify(responseData, null, 2));
-          } catch (jsonError) {
-            console.error('❌ Error parsing JSON response:', jsonError);
-            const textResponse = await response.text();
-            console.error('📝 Raw response:', textResponse);
-            throw new Error('Formato de respuesta inválido del servidor');
+            const authResponse = await loginAdmin({ email, password });
+            console.log(`RESPUESTA authResponse ${authResponse}`)
+            const user = {
+              id: authResponse.admin.id.toString(),
+              email: authResponse.admin.email,
+              name: authResponse.admin.name,
+              role: authResponse.admin.adminRole,
+              accessToken: authResponse.accessToken,
+              refreshToken: authResponse.refreshToken || '',
+              permissions: authResponse.admin.adminPermissions || []
+            };
+            return user;
+          } catch (apiError: any) {
+            
+            // Manejar errores específicos de la API
+            if (apiError.response) {
+              const { status, data } = apiError.response;
+              
+              // Mapear códigos de estado HTTP a mensajes de error específicos
+              if (status === 401) {
+                throw new Error('Credenciales inválidas');
+              } else if (status === 403) {
+                throw new Error('No tienes permiso para acceder a esta cuenta');
+              } else if (status === 404) {
+                throw new Error('Usuario no encontrado');
+              } else if (status >= 500) {
+                throw new Error('Error del servidor. Por favor, inténtalo de nuevo más tarde');
+              } else if (data?.message) {
+                // Usar el mensaje de error del servidor si está disponible
+                throw new Error(data.message);
+              }
+            }
+            
+            // Si no podemos determinar el tipo de error, lanzar un error genérico
+            throw new Error('Error al conectar con el servidor de autenticación');
           }
-          
-          if (!response.ok) {
-            console.error('❌ API error response:', responseData);
-            throw new Error(responseData.message || `Error en la autenticación (${response.status})`);
-          }
-          
-          // 6. Verificar la estructura de la respuesta
-          const responseDataToUse = responseData.data || responseData;
-          
-          if (!responseDataToUse) {
-            console.error('❌ Empty response from server');
-            throw new Error('El servidor no devolvió datos');
-          }
-          
-          if (!responseDataToUse.accessToken || !responseDataToUse.admin) {
-            console.error('❌ Invalid response format. Expected accessToken and admin data');
-            console.error('Response received:', JSON.stringify(responseDataToUse, null, 2));
-            throw new Error('Formato de respuesta inválido: faltan datos requeridos');
-          }
-        
-          // 7. Crear el objeto de usuario
-          const user = {
-            id: responseDataToUse.admin.id?.toString() || '',
-            email: responseDataToUse.admin.email || email,
-            name: responseDataToUse.admin.name || 'Admin User',
-            role: responseDataToUse.admin.adminRole || 'admin',
-            accessToken: responseDataToUse.accessToken,
-            refreshToken: responseDataToUse.refreshToken,
-            permissions: responseDataToUse.admin.adminPermissions || []
-          };
-          
-          if (!user.id) {
-            throw new Error('ID de usuario no proporcionado');
-          }
-          
-          console.log('✅ User authenticated successfully:', {
-            id: user.id,
-            email: user.email,
-            role: user.role
-          });
-          
-          return user;
-        } catch (error) {
-          console.error('❌ Outer authentication error:', error);
-          
+        } catch (error: any) {
           // Si es un error de validación de zod
           if (error instanceof z.ZodError) {
             console.error('Validation errors:', error.errors);
@@ -310,7 +236,9 @@ export const authOptions: NextAuthOptions = {
           
           // Si ya es un error con mensaje, lo propagamos
           if (error instanceof Error) {
-            throw error;
+            // Asegurarse de que el mensaje de error sea seguro para mostrar al usuario
+            const safeMessage = error.message || 'Error desconocido al iniciar sesión';
+            throw new Error(safeMessage);
           }
           
           // Cualquier otro error
