@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { getSession } from 'next-auth/react';
 
 export class ApiError extends Error {
   status: number;
@@ -42,7 +43,12 @@ class ApiClient {
   private initializeInterceptors() {
     // Request interceptor
     this.instance.interceptors.request.use(
-      (config) => {
+      async (config) => {
+        const session = await getSession();
+        console.log('Session en interceptor:', session);
+        if (session?.accessToken) {
+          config.headers.Authorization = `Bearer ${session.accessToken}`;
+        }
         return config;
       },
       (error) => {

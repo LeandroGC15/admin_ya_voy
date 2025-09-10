@@ -1,7 +1,9 @@
+'use client';
 import StatCard from '@/components/StatCard';
 import OverviewChart from '@/components/OverviewChart';
 import RecentSales from '@/components/RecentSales';
 import { DollarSign, Users, CreditCard, Activity } from 'lucide-react';
+import TotalUsersCard from './components/TotalUsersCard';
 
 export default function DashboardPage() {
   return (
@@ -21,13 +23,7 @@ export default function DashboardPage() {
           change="+20.1% from last month"
           changeType="increase"
         />
-        <StatCard 
-          title="Subscriptions"
-          value="+2350"
-          icon={Users}
-          change="+180.1% from last month"
-          changeType="increase"
-        />
+        <TotalUsersCard />
         <StatCard 
           title="Sales"
           value="+12,234"
