@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api/api-client';
 import { Button } from './ui/button';
 
@@ -37,25 +37,24 @@ export default function RecentSales() {
   const [recentRides, setRecentRides] = useState<RideData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [limit] = useState(100); // Fixed limit for fetching latest items
 
+  // Effect for initial load and viewType changes
   useEffect(() => {
     const fetchRecentRides = async () => {
       setLoading(true);
       setError(null);
+
       try {
         let rides: RideData[] = [];
-        const token = localStorage.getItem('accessToken');
 
         if (viewType === 'users') {
-          const usersResponse = await api.get<{ data: { id: number; name: string; email: string }[] }>(`/admin/users?limit=100`);
-          console.log('usersResponse:', usersResponse.data);
+          const usersResponse = await api.get<{ data: { id: number; name: string; email: string }[] }>(`/admin/users?limit=${limit}`);
           const users = usersResponse.data;
 
           const userRidesPromises = users.map(async (user) => {
             try {
-              const userRidesResponse = await api.get<UserRide[]>(`/api/ride/${user.id}`);
-              const userRides = userRidesResponse;
-              console.log(`Rides para usuario ${user.id}:`, userRides);
+              const userRides = await api.get<UserRide[]>(`/api/ride/${user.id}`);
               return userRides.map((ride) => ({
                 id: ride.rideId,
                 name: user.name,
@@ -69,17 +68,15 @@ export default function RecentSales() {
             }
           });
           const allUserRides = (await Promise.all(userRidesPromises)).flat();
-          rides = allUserRides.sort((a, b) => b.id - a.id).slice(0, 5);
+          rides = allUserRides.sort((a, b) => b.id - a.id).slice(0, limit); // Take the latest 'limit' rides
 
         } else if (viewType === 'drivers') {
-          const driversResponse = await api.get<{ data: { id: number; firstName: string; lastName: string }[] }>(`/admin/drivers?limit=100`);
-          console.log('driversResponse:', driversResponse.data);
+          const driversResponse = await api.get<{ data: { id: number; firstName: string; lastName: string }[] }>(`/admin/drivers?limit=${limit}`);
           const drivers = driversResponse.data;
 
           const driverRidesPromises = drivers.map(async (driver) => {
             try {
-              const driverRides = await api.get<DriverRide[]>(`/api/driver/${driver.id}/rides?status=completed&limit=5`);
-              console.log(`Rides para driver ${driver.id}:`, driverRides);
+              const driverRides = await api.get<DriverRide[]>(`/api/driver/${driver.id}/rides?status=completed&limit=5`); // This limit should also be reviewed if it's not intended for pagination
               return driverRides.map((ride) => ({
                 id: ride.rideId,
                 name: `${ride.driver.firstName} ${ride.driver.lastName}`,
@@ -93,10 +90,9 @@ export default function RecentSales() {
             }
           });
           const allDriverRides = (await Promise.all(driverRidesPromises)).flat();
-          rides = allDriverRides.sort((a, b) => b.id - a.id).slice(0, 5);
+          rides = allDriverRides.sort((a, b) => b.id - a.id).slice(0, limit); // Take the latest 'limit' rides
         }
 
-        console.log('Carreras recientes final: ', rides);
         setRecentRides(rides);
       } catch (err) {
         console.error('Failed to fetch recent rides:', err);
@@ -112,7 +108,7 @@ export default function RecentSales() {
     const intervalId = setInterval(fetchRecentRides, 30000); // Poll every 30 seconds
 
     return () => clearInterval(intervalId);
-  }, [viewType]);
+  }, [viewType, limit]); // Re-run effect when viewType or limit changes
 
   return (
     <div className="space-y-8">
