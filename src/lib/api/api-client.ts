@@ -1,6 +1,14 @@
 import { ApiResponse } from '@/interfaces/ApiResponse';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
+interface ServerErrorResponse {
+  statusCode: number;
+  message: string;
+  timestamp?: string;
+  path?: string;
+  [key: string]: unknown;
+}
+
 export class ApiError extends Error {
   status: number;
   timestamp?: string;
