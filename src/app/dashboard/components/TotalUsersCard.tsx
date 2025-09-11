@@ -88,6 +88,7 @@ export default function TotalUsersCard() {
       icon={Users}
       change="+180.1% from last month"
       changeType="increase"
+      backgroundImage="/fondo.png" // Asignar la imagen de fondo a TotalUsersCard
     />
   );
 }

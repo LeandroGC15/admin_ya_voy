@@ -5,10 +5,12 @@ import { QueryProvider } from "@/providers/query-provider";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-options";
 import { SessionProvider } from "@/providers/session-provider";
+import { ThemeProvider } from "../providers/theme-provider";
+import { cn } from "@/lib/utils";
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
@@ -16,22 +18,24 @@ export const metadata: Metadata = {
   description: "Admin dashboard for managing your application",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const session = await getServerSession(authOptions);
-
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans`}>
-        <QueryProvider>
-          <SessionProvider session={session}>
-            {children}
+      <body
+        className={cn(
+          inter.variable,
+          "min-h-screen bg-background font-sans antialiased"
+        )}
+      >
+        <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+          <SessionProvider>
+            <QueryProvider>{children}</QueryProvider>
           </SessionProvider>
-        </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
 }
+      // "min-h-screen bg-background font-sans antialiased bg-[url('/fondosencillo.png')] bg-cover bg-center bg-no-repeat"

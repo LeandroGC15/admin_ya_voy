@@ -6,17 +6,21 @@ interface StatCardProps {
   icon: React.ComponentType<LucideProps>;
   change?: string;
   changeType?: 'increase' | 'decrease';
+  backgroundImage?: string; // Nueva propiedad para la imagen de fondo
 }
 
-export default function StatCard({ title, value, icon: Icon, change, changeType }: StatCardProps) {
+export default function StatCard({ title, value, icon: Icon, change, changeType, backgroundImage }: StatCardProps) {
+  const backgroundStyle = backgroundImage ? { backgroundImage: `url(${backgroundImage})` } : {};
+  const backgroundClasses = backgroundImage ? "bg-cover bg-center bg-no-repeat" : "";
+
   return (
-    <div className="rounded-lg border bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <div className={`rounded-lg border border-border bg-card p-6 shadow-sm ${backgroundClasses}`} style={backgroundStyle}>
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-        <Icon className="h-5 w-5 text-gray-400" />
+        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <Icon className="h-5 w-5 text-muted-foreground" />
       </div>
       <div className="mt-4">
-        <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{value}</h3>
+        <h3 className="text-3xl font-bold text-foreground">{value}</h3>
         {change && (
           <p className={`mt-1 text-sm font-medium ${changeType === 'increase' ? 'text-green-500' : 'text-red-500'}`}>
             {change}

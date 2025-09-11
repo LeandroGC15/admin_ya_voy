@@ -77,6 +77,11 @@ export default function RecentSales() {
           const driverRidesPromises = drivers.map(async (driver) => {
             try {
               const driverRides = await api.get<DriverRide[]>(`/api/driver/${driver.id}/rides?status=completed&limit=5`); // This limit should also be reviewed if it's not intended for pagination
+              // Ensure driverRides is an array before mapping
+              if (!Array.isArray(driverRides)) {
+                console.warn(`API for driver ${driver.id} did not return an array for rides:`, driverRides);
+                return [];
+              }
               return driverRides.map((ride) => ({
                 id: ride.rideId,
                 name: `${ride.driver.firstName} ${ride.driver.lastName}`,
@@ -137,12 +142,12 @@ export default function RecentSales() {
       <div className="space-y-8">
         {recentRides.map((ride) => (
           <div key={ride.id} className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0"></div>
+            <div className="h-10 w-10 rounded-full bg-muted flex-shrink-0"></div>
             <div className="ml-4 space-y-1">
-              <p className="text-sm font-medium leading-none text-gray-900 dark:text-white">{ride.name}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{ride.email}</p>
+              <p className="text-sm font-medium leading-none text-foreground">{ride.name}</p>
+              <p className="text-sm text-muted-foreground">{ride.email}</p>
             </div>
-            <div className="ml-auto font-medium text-gray-900 dark:text-white">{ride.amount}</div>
+            <div className="ml-auto font-medium text-foreground">{ride.amount}</div>
           </div>
         ))}
       </div>

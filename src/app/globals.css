@@ -1,13 +1,77 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #4B5563; /* Cambiado a gris */
+
+    --card: #ffffff;
+    --card-foreground: #171717;
+
+    --popover: #ffffff;
+    --popover-foreground: #171717;
+
+    --primary: #F59E0B; /* Cambiado a amarillo */
+    --primary-foreground: #ffffff;
+
+    --secondary: #e0e0e0;
+    --secondary-foreground: #171717;
+
+    --muted: #e0e0e0;
+    --muted-foreground: #666666;
+
+    --accent: #e0e0e0;
+    --accent-foreground: #171717;
+
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --border: #d4d4d4;
+    --input: #d4d4d4;
+    --ring: #F59E0B; /* Cambiado a amarillo */
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: #171717;
+    --foreground: #ffffff;
+
+    --card: #171717;
+    --card-foreground: #ffffff;
+
+    --popover: #171717;
+    --popover-foreground: #ffffff;
+
+    --primary: #ffffff;
+    --primary-foreground: #171717;
+
+    --secondary: #333333;
+    --secondary-foreground: #ffffff;
+
+    --muted: #333333;
+    --muted-foreground: #aaaaaa;
+
+    --accent: #333333;
+    --accent-foreground: #ffffff;
+
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+
+    --border: #444444;
+    --input: #444444;
+    --ring: #cccccc;
+  }
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.dark select option {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
 }
 
 @tailwind base;
