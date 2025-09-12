@@ -12,9 +12,8 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { Loader2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { signIn } from "next-auth/react";
 import { loginAdmin } from "../services/auth.service";
-import { ApiError } from "@/lib/api/api-client";
+import { signIn, getSession } from "next-auth/react";
 
 // Simple form components to match shadcn/ui pattern
 const Form = ({ children, onSubmit, className }: { 
@@ -93,69 +92,106 @@ export function LoginForm() {
       clearErrors();
       setIsLoading(true);
       
-      // Attempt to log in
-      const authResponse = await loginAdmin({
+      // First try direct API login
+      try {
+        const response = await loginAdmin({
+          email: data.email,
+          password: data.password
+        });
+
+        if (response && response.accessToken) {
+          // Save auth data to localStorage in the exact format requested
+          if (typeof window !== 'undefined') {
+            const authData = {
+              accessToken: response.accessToken,
+              refreshToken: response.refreshToken,
+              admin: response.admin,
+              expiresIn: response.expiresIn,
+              timestamp: new Date().getTime()
+            };
+            localStorage.setItem('auth', JSON.stringify(authData));
+            console.log('Auth data saved to localStorage:', authData);
+          }
+          
+          // Also authenticate with NextAuth
+          const result = await signIn("credentials", {
+            email: data.email,
+            password: data.password,
+            redirect: false,
+            callbackUrl: '/dashboard'
+          });
+          
+          const redirectUrl = result?.url || '/dashboard';
+          window.location.href = redirectUrl;
+          return;
+        }
+      } catch (apiError) {
+        console.warn('Direct API login failed, falling back to NextAuth:', apiError);
+      }
+      
+      // Fallback to NextAuth if direct API login fails
+      const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
+        redirect: false,
+        callbackUrl: '/dashboard'
       });
 
-      // Save auth data to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('auth', JSON.stringify({
-          accessToken: authResponse.accessToken,
-          refreshToken: authResponse.refreshToken,
-          admin: authResponse.admin,
-          expiresIn: authResponse.expiresIn,
-          timestamp: new Date().getTime()
-        }));
-      }
-
-      // If login is successful, redirect to dashboard
-      router.push('/dashboard');
-      
-    } catch (error: any) {
-      let errorMessage = 'Error al iniciar sesión';
-      let field: keyof LoginFormData | null = null;
-      
-      // Handle different error response formats
-      const statusCode = error.response?.data?.statusCode || error?.statusCode || error?.response?.status;
-      const message = error?.response?.data?.message || error?.message || errorMessage;
-      
-      if (statusCode) {
-        // Handle API errors with status codes
-        errorMessage = message;
+      if (result && !result.error) {
+        const redirectUrl = result.url || '/dashboard';
+        console.log('NextAuth login successful, redirecting to:', redirectUrl);
         
-        // Map status codes to user-friendly messages
-        if (statusCode === 401) {
-          errorMessage = 'Credenciales inválidas. Por favor, verifica tu correo y contraseña.';
-          field = 'password';
-        } else if (statusCode === 403) {
-          errorMessage = 'No tienes permiso para acceder a esta cuenta.';
-        } else if (statusCode === 429) {
-          errorMessage = 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde.';
+        // Get the session data
+        const session = await getSession();
+        console.log('Session data:', session);
+        
+        if (session?.user) {
+          const userData = session.user as any;
+          
+          // Prepare auth data for localStorage
+          const authData = {
+            accessToken: userData.accessToken || '',
+            refreshToken: userData.refreshToken || '',
+            admin: userData.role || '',
+            expiresIn: 3600,
+            timestamp: new Date().getTime()
+          };
+          
+          // Save to localStorage in the exact format requested
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('auth', JSON.stringify({
+              accessToken: userData.accessToken,
+              refreshToken: userData.refreshToken,
+              admin: userData.role,
+              expiresIn: 3600,
+              timestamp: new Date().getTime()
+            }));
+          }
+          console.log('Auth data saved to localStorage from NextAuth');
+          
+          // Redirect to dashboard
+          window.location.href = redirectUrl;
+          return;
         }
-      } else if (error && typeof error === 'object' && 'message' in error) {
-        // Handle other Error objects
-        errorMessage = String(error.message);
+        
+        // If we get here, redirect anyway
+        window.location.href = redirectUrl;
+        return;
       } else {
-        errorMessage = 'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.';
+        // Handle login error
+        const errorMessage = result?.error || 'Error al iniciar sesión';
+        setFormError(errorMessage);
+        toast.error(errorMessage);
       }
-      
-      // Set form error
+    } catch (error) {
+      console.error('Error during login:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado';
       setFormError(errorMessage);
-      
-      // Set field-specific errors if applicable
-      if (field) {
-        setError(field, {
-          type: 'manual',
-          message: errorMessage
-        });
-      }
-      
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
+
   };
 
   return (

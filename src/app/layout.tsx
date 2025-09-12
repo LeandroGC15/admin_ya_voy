@@ -18,9 +18,10 @@ export const metadata: Metadata = {
   description: "Admin dashboard for managing your application",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await getServerSession(authOptions);
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -30,7 +31,7 @@ export default function RootLayout({
         )}
       >
         <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-          <SessionProvider>
+          <SessionProvider session={session}>
             <QueryProvider>{children}</QueryProvider>
           </SessionProvider>
         </ThemeProvider>

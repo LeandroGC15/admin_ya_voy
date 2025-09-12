@@ -23,29 +23,9 @@ export const loginAdmin = async (credentials: LoginCredentials): Promise<AuthRes
         'Accept': 'application/json'
       }
     });
-
-    const responseData = response
-    
-    // Ensure the response has the expected structure
-    if (!responseData?.accessToken || !responseData?.admin) {
-      throw new ApiError(
-        'Invalid response format',
-        500,
-        responseData
-      );
-    }
-    
-    localStorage.setItem('accessToken', responseData.accessToken);
-    
-    return {
-      accessToken: responseData.accessToken,
-      refreshToken: responseData.refreshToken || '',
-      admin: responseData.admin,
-      expiresIn: responseData.expiresIn || 3600
-    };
-    
+    return response;
   } catch (error: any) {
-    // The error is already processed by the ApiError.fromServerError
+    console.log(`ERROR 1 error ${error}`)
     throw error;
   }
 };

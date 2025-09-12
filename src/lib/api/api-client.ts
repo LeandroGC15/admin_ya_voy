@@ -75,9 +75,17 @@ class ApiClient {
     // Request interceptor
     this.instance.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+        // Get auth data from localStorage
+        const authData = localStorage.getItem('auth');
+        if (authData) {
+          try {
+            const { accessToken } = JSON.parse(authData);
+            if (accessToken) {
+              config.headers.Authorization = `Bearer ${accessToken}`;
+            }
+          } catch (error) {
+            console.error('Error parsing auth data:', error);
+          }
         }
         return config;
       },
