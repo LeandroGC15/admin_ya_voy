@@ -22,6 +22,9 @@ const Sidebar = () => {
         <Link href="/dashboard/settings" className="block rounded-md px-4 py-2.5 text-gray-200 hover:bg-[#5C7E9F] hover:text-white">
           Settings
         </Link>
+        <Link href="/dashboard/metrics" className="block rounded-md px-4 py-2.5 text-gray-200 hover:bg-[#5C7E9F] hover:text-white">
+          Metrics
+        </Link>
       </nav>
     </aside>
   );
