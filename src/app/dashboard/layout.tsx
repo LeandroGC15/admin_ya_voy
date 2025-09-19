@@ -140,6 +140,11 @@ export default function DashboardLayout({
       {showDriverSearchForm && (
         <DriverSearchForm
           onClose={() => setShowDriverSearchForm(false)}
+          onSearchResults={(results) => {
+            // Handle search results here
+            console.log('Search results:', results);
+            // Removed setShowDriverSearchForm(false) to keep the modal open
+          }}
         />
       )}
     </div>

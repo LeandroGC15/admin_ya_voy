@@ -23,8 +23,12 @@ const MetricsPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.get<MetricsResponse>('/admin/dashboard/metrics');
-        setMetricsData(data);
+        const response = await api.get<MetricsResponse>('/admin/dashboard/metrics');
+        if (response.data) {
+          setMetricsData(response.data);
+        } else {
+          throw new Error('No data received from server');
+        }
       } catch (err) {
         console.error("Error fetching metrics:", err);
         setError('Error al cargar las métricas. Por favor, inténtelo de nuevo más tarde.');

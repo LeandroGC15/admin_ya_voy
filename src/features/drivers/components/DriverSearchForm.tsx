@@ -1,332 +1,531 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+import { driverSearchSchema, type DriverSearchValues } from '../schemas/driver-search.schema';
+import { searchDrivers, type SearchDriversData } from '../services/drivers.service';
+import type { ApiResponse } from '@/interfaces/ApiResponse';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Loader2, X, Search } from 'lucide-react';
+import { toast } from 'sonner';
+import { type DriverData } from '../interfaces/drivers';
+
+interface SearchResults {
+  drivers: DriverData[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
 
 interface DriverSearchFormProps {
-  onClose: () => void; 
+  onClose: () => void;
+  onSearchResults: (results: SearchResults) => void;
 }
 
-interface DriverData {
-  id: number;
-  firstName: string;
-  lastName: string;
-  profileImageUrl?: string;
-  carModel?: string;
-  licensePlate?: string;
-  carSeats?: number;
-  status?: string; // 'online', 'offline', 'busy', 'unavailable'
-  verificationStatus?: string; // 'pending', 'approved', 'rejected', 'under_review'
-  canDoDeliveries?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  vehicleType?: {
-    id: number;
-    name: string;
-    displayName: string;
-  };
-  documents?: Array<{
-    id: number;
-    documentType: string;
-    verificationStatus: string;
-    uploadedAt: string;
-  }>;
-  _count?: {
-    rides?: number;
-    deliveryOrders?: number;
-  };
-}
+const statusOptions = [
+  { value: 'online', label: 'En línea' },
+  { value: 'offline', label: 'Desconectado' },
+  { value: 'busy', label: 'Ocupado' },
+  { value: 'unavailable', label: 'No disponible' },
+];
 
-interface DriverListWithPagination {
-  data: DriverData[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-  filters: {
-    applied: string[];
-    searchTerm: string;
-  };
-}
+const verificationOptions = [
+  { value: 'pending', label: 'Pendiente' },
+  { value: 'approved', label: 'Aprobado' },
+  { value: 'rejected', label: 'Rechazado' },
+  { value: 'under_review', label: 'En revisión' },
+];
 
-interface ApiResponseData {
-  data: DriverListWithPagination;
-}
+export default function DriverSearchForm({ onClose, onSearchResults }: DriverSearchFormProps) {
+  const form = useForm<DriverSearchValues>({
+    resolver: zodResolver(driverSearchSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      carModel: '',
+      licensePlate: '',
+      status: undefined,
+      verificationStatus: undefined,
+      canDoDeliveries: undefined,
+      carSeats: undefined,
+      vehicleTypeId: undefined,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      createdFrom: '',
+      createdTo: '',
+      updatedFrom: '',
+      updatedTo: '',
+      search: '',
+      page: 1,
+      limit: 10,
+    },
+  });
 
-const DriverSearchForm: React.FC<DriverSearchFormProps> = ({ onClose }) => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [carModel, setCarModel] = useState('');
-  const [licensePlate, setLicensePlate] = useState('');
-  const [status, setStatus] = useState<string>(''); // 'online', 'offline', 'busy', 'unavailable'
-  const [verificationStatus, setVerificationStatus] = useState<string>(''); // 'pending', 'approved', 'rejected', 'under_review'
-  const [canDoDeliveries, setCanDoDeliveries] = useState<boolean | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [drivers, setDrivers] = useState<DriverData[] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const limit = 5;
-  const [searchPerformed, setSearchPerformed] = useState(false);
+  const [searchTrigger, setSearchTrigger] = useState(0); // Para forzar re-fetch
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent, page: number = 1) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  // Query key que incluye el trigger para forzar refetch
+  const queryKey = ['drivers', { ...form.watch(), page: currentPage }, searchTrigger];
 
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      if (!API_URL) {
-        throw new Error('La URL de la API no está configurada en las variables de entorno.');
-      }
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey,
+    queryFn: async (): Promise<ApiResponse<SearchDriversData>> => {
+      console.log('Ejecutando query con página:', currentPage);
+      const values = form.getValues();
+      const searchParams = {
+        ...values,
+        page: currentPage,
+        limit: values.limit || 10,
+      };
 
-      const params = new URLSearchParams();
-      if (firstName) params.append('firstName', firstName);
-      if (lastName) params.append('lastName', lastName);
-      if (carModel) params.append('carModel', carModel);
-      if (licensePlate) params.append('licensePlate', licensePlate);
-      if (status) params.append('status', status);
-      if (verificationStatus) params.append('verificationStatus', verificationStatus);
-      if (canDoDeliveries !== undefined) params.append('canDoDeliveries', canDoDeliveries.toString());
-      params.append('page', page.toString());
-      params.append('limit', limit.toString());
+      // Limpiar parámetros undefined/null pero mantener strings vacíos
+      const cleanedParams = Object.fromEntries(
+        Object.entries(searchParams).filter(([_, v]) => v !== undefined && v !== null)
+      );
 
-      let url = `${API_URL}api/driver`; // CAMBIO DE ENDPOINT
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
+      console.log('Parámetros de búsqueda:', cleanedParams);
+      const response = await searchDrivers(cleanedParams);
+      console.log('Respuesta del servicio:', response);
+      return response;
+    },
+    enabled: hasSearched, // Solo ejecuta si se ha realizado una búsqueda
+    staleTime: 0, // Siempre refresca
+    gcTime: 0, // No cachea (antes era cacheTime)
+  });
 
-      const response = await axios.get<ApiResponseData>(url);
+  // Cargar datos iniciales al montar el componente
+  useEffect(() => {
+    const loadInitialData = () => {
+      console.log('Cargando datos iniciales...');
+      setHasSearched(true);
+      setSearchTrigger(prev => prev + 1);
+    };
+    
+    loadInitialData();
+  }, []);
+
+  // Manejar cambios en los datos de la query
+  useEffect(() => {
+    console.log('Data cambió:', data);
+    if (data) {
+      // La respuesta real tiene la estructura: {data: Array, pagination: {...}}
+      const results = {
+        drivers: data.data || [], // Los drivers están directamente en data.data
+        total: data.pagination?.total || 0,
+        page: data.pagination?.page || currentPage,
+        totalPages: data.pagination?.totalPages || 1,
+      };
       
-      if (response.status === 200 && response.data && response.data.data && response.data.data.data) {
-        console.log('Datos de conductores recibidos (solo array de data):', response.data.data.data);
-        setDrivers(response.data.data.data);
-        setCurrentPage(response.data.data.pagination.page);
-        setTotalPages(response.data.data.pagination.totalPages);
-
-        if (response.data.data.data.length > 0) {
-          setSearchPerformed(true);
-        } else {
-          setSearchPerformed(false);
-          setError('No se encontraron conductores con los criterios de búsqueda.');
-        }
-      } else {
-        setSearchPerformed(false);
-        setError(`Error inesperado: ${response.statusText || 'Respuesta vacía o inválida'}`);
-      }
-    } catch (err) {
-      setSearchPerformed(false);
-      if (axios.isAxiosError(err) && err.response) {
-        setError(`Error al buscar conductores: ${err.response.data.message || err.message}`);
-      } else {
-        setError(`Error al buscar conductores: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      console.error('Error searching drivers:', err);
-    } finally {
-      setLoading(false);
+      console.log('Enviando resultados al padre:', results);
+      onSearchResults(results);
     }
+  }, [data, onSearchResults, currentPage]);
+
+  // Manejar errores
+  useEffect(() => {
+    if (error) {
+      console.error('Error en la query:', error);
+      toast.error('Error al buscar conductores');
+    }
+  }, [error]);
+
+  const onSubmit = async (formData: DriverSearchValues) => {
+    try {
+      console.log('Formulario enviado con datos:', formData);
+      
+      // Resetear a página 1 para nueva búsqueda
+      setCurrentPage(1);
+      form.setValue('page', 1);
+      
+      // Marcar que se ha realizado una búsqueda y forzar refetch
+      setHasSearched(true);
+      setSearchTrigger(prev => prev + 1);
+      
+      console.log('Búsqueda iniciada...');
+    } catch (error) {
+      console.error('Error al enviar búsqueda:', error);
+      toast.error('Error al realizar la búsqueda');
+    }
+  };
+
+  const handleReset = () => {
+    console.log('Reseteando formulario...');
+    
+    form.reset({
+      firstName: '',
+      lastName: '',
+      carModel: '',
+      licensePlate: '',
+      status: undefined,
+      verificationStatus: undefined,
+      canDoDeliveries: undefined,
+      carSeats: undefined,
+      vehicleTypeId: undefined,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      createdFrom: '',
+      createdTo: '',
+      updatedFrom: '',
+      updatedTo: '',
+      search: '',
+      page: 1,
+      limit: 10,
+    });
+    
+    setCurrentPage(1);
+    setSearchTrigger(prev => prev + 1);
   };
 
   const handlePageChange = (newPage: number) => {
+    const totalPages = data && data.pagination ? data.pagination.totalPages : 1;
+    
     if (newPage > 0 && newPage <= totalPages) {
+      console.log('Cambiando a página:', newPage);
       setCurrentPage(newPage);
-      handleSubmit(new Event('submit') as unknown as React.FormEvent, newPage);
+      form.setValue('page', newPage);
+      setSearchTrigger(prev => prev + 1);
     }
   };
 
-  const handleClose = () => {
-    setSearchPerformed(false);
-    setDrivers(null);
-    setError(null);
-    setFirstName('');
-    setLastName('');
-    setCarModel('');
-    setLicensePlate('');
-    setStatus('');
-    setVerificationStatus('');
-    setCanDoDeliveries(undefined);
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    form.reset();
     onClose();
   };
 
-  const mainContainerClasses = `h-screen flex p-4 bg-gray-100 dark:bg-gray-900 ${searchPerformed ? 'flex-row items-center justify-center max-w-screen-xl mx-auto' : 'items-center justify-center'}`;
+  // Debug: mostrar estado actual
+  console.log('Estado actual:', {
+    isLoading,
+    hasSearched,
+    currentPage,
+    dataExists: !!data,
+    driversCount: data?.data?.length || 0,
+    searchTrigger
+  });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"> 
-      <div className={`flex p-4 bg-gray-100 dark:bg-gray-900 rounded-lg shadow-xl ${searchPerformed ? 'flex-row items-center justify-center max-w-screen-xl mx-auto' : 'items-center justify-center w-full max-w-md'}`}> 
-        {searchPerformed && (
-          <div className="flex-1 mr-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-h-[calc(100vh-32px)] overflow-y-auto"> 
-            {drivers && drivers.length > 0 ? (
-              <div>
-                <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Conductores Encontrados ({drivers.length})</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> 
-                  {drivers.map((driver) => (
-                    <div key={driver.id} className="rounded-md bg-gray-100 p-3 shadow-sm dark:bg-gray-700 text-sm"> 
-                      <p><strong>ID:</strong> {driver.id}</p>
-                      <p><strong>Nombre:</strong> {driver.firstName} {driver.lastName}</p>
-                      <p><strong>Modelo Auto:</strong> {driver.carModel}</p>
-                      <p><strong>Placa:</strong> {driver.licensePlate}</p>
-                      {driver.status && <p><strong>Estado:</strong> {driver.status}</p>}
-                      {driver.verificationStatus && <p><strong>Verificación:</strong> {driver.verificationStatus}</p>}
-                      {driver.canDoDeliveries !== undefined && <p><strong>Entrega:</strong> {driver.canDoDeliveries ? 'Sí' : 'No'}</p>}
-                    </div>
-                  ))}
-                </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 bg-opacity-50">
+      <div className="w-full max-w-6xl bg-white rounded-lg shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b">
+          <h2 className="text-2xl font-semibold text-gray-900">Buscar Conductores</h2>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
 
-                {totalPages > 1 && (
-                  <div className="flex justify-center mt-6 space-x-4">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1 || loading}
-                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-                    >
-                      Anterior
-                    </button>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2">Página {currentPage} de {totalPages}</span>
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages || loading}
-                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                    >
-                      Siguiente
-                    </button>
-                  </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Buscar por nombre" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
-            ) : (
-              <p className="text-gray-700 dark:text-gray-300">No hay conductores para mostrar. Realiza una búsqueda.</p>
-            )}
-            {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+              />
+
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Apellido</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Buscar por apellido" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="licensePlate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Placa del vehículo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ej: ABC-123" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="carModel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Modelo del vehículo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ej: Toyota Corolla" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="search"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Búsqueda general</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Buscar por nombre, apellido o placa..." 
+                        {...field} 
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado</FormLabel>
+                    <Select 
+                      onValueChange={(value: string) => field.onChange(value === 'all' ? undefined : value)} 
+                      value={field.value || 'all'}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        {statusOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="verificationStatus"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado de verificación</FormLabel>
+                    <Select 
+                      onValueChange={(value: string) => field.onChange(value === 'all' ? undefined : value)} 
+                      value={field.value || 'all'}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar estado de verificación" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        {verificationOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-4 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleReset}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Limpiar
+              </Button>
+              <Button type="submit" disabled={isLoading} className="min-w-[120px]">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Buscando...
+                  </>
+                ) : (
+                  <>
+                    <Search className="mr-2 h-4 w-4" />
+                    Buscar
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
+
+        {/* Sección de resultados */}
+        {isLoading && hasSearched && (
+          <div className="mt-8 flex justify-center items-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <span className="ml-2 text-gray-600">Cargando resultados...</span>
           </div>
         )}
 
-        <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800"> 
-          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Buscar Conductores</h2>
-          <form onSubmit={(e) => handleSubmit(e, 1)}> 
+        {!isLoading && hasSearched && data && (
+          <div className="mt-8">
             <div className="mb-4">
-              <label htmlFor="firstName" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Nombre del Conductor
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
+              <h3 className="text-lg font-medium text-gray-900">Resultados de búsqueda</h3>
+              <p className="text-sm text-gray-500">
+                {data.pagination && data.pagination.total > 0 
+                  ? `Se encontraron ${data.pagination.total} conductor(es)`
+                  : 'No se encontraron resultados'
+                }
+              </p>
             </div>
 
-            <div className="mb-4">
-              <label htmlFor="lastName" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Apellido del Conductor
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-              />
-            </div>
+            {data.data && data.data.length > 0 ? (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          ID
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Nombre
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Modelo del Auto
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Placa
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Estado
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {data.data.map((driver: DriverData) => (
+                        <tr key={driver.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {driver.id}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {driver.firstName} {driver.lastName}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{driver.carModel || '-'}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{driver.licensePlate || '-'}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              driver.status === 'online' ? 'bg-green-100 text-green-800' :
+                              driver.status === 'offline' ? 'bg-gray-100 text-gray-800' :
+                              driver.status === 'busy' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {driver.status === 'online' ? 'En línea' :
+                               driver.status === 'offline' ? 'Desconectado' :
+                               driver.status === 'busy' ? 'Ocupado' : 'No disponible'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Paginación */}
+                {data.pagination && data.pagination.totalPages > 1 && (
+                  <div className="mt-4 flex justify-between items-center">
+                    <p className="text-sm text-gray-500">
+                      Página {currentPage} de {data.pagination.totalPages} 
+                      ({data.pagination.total} resultados en total)
+                    </p>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1 || isLoading}
+                      >
+                        Anterior
+                      </Button>
+                      <span className="flex items-center px-4 text-sm text-gray-500">
+                        {currentPage} / {data.pagination.totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage >= data.pagination.totalPages || isLoading}
+                      >
+                        Siguiente
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-500">
+                  <Search className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                  <p className="text-lg">No se encontraron conductores</p>
+                  <p className="text-sm">Intenta modificar los criterios de búsqueda</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-            <div className="mb-4">
-              <label htmlFor="carModel" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Modelo de Auto
-              </label>
-              <input
-                type="text"
-                id="carModel"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                value={carModel}
-                onChange={(e) => setCarModel(e.target.value)}
-              />
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="licensePlate" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Placa del Vehículo
-              </label>
-              <input
-                type="text"
-                id="licensePlate"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                value={licensePlate}
-                onChange={(e) => setLicensePlate(e.target.value)}
-              />
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="status" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Estado del Conductor
-              </label>
-              <select
-                id="status"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
+        {!isLoading && hasSearched && error && (
+          <div className="mt-8 text-center py-8">
+            <div className="text-red-500">
+              <X className="mx-auto h-12 w-12 mb-4" />
+              <p className="text-lg">Error al cargar los datos</p>
+              <p className="text-sm">Por favor, intenta nuevamente</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => setSearchTrigger(prev => prev + 1)}
               >
-                <option value="">Todos</option>
-                <option value="online">Online</option>
-                <option value="offline">Offline</option>
-                <option value="busy">Ocupado</option>
-                <option value="unavailable">No Disponible</option>
-              </select>
+                Reintentar
+              </Button>
             </div>
-
-            <div className="mb-4">
-              <label htmlFor="verificationStatus" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Estado de Verificación
-              </label>
-              <select
-                id="verificationStatus"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                value={verificationStatus}
-                onChange={(e) => setVerificationStatus(e.target.value)}
-              >
-                <option value="">Todos</option>
-                <option value="pending">Pendiente</option>
-                <option value="approved">Aprobado</option>
-                <option value="rejected">Rechazado</option>
-                <option value="under_review">En Revisión</option>
-              </select>
-            </div>
-
-            <div className="mb-4 flex items-center">
-              <input
-                type="checkbox"
-                id="canDoDeliveries"
-                checked={canDoDeliveries || false}
-                onChange={(e) => setCanDoDeliveries(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800"
-              />
-              <label htmlFor="canDoDeliveries" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Puede Hacer Entregas
-              </label>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-                disabled={loading}
-              >
-                Cerrar
-              </button>
-              <button
-                type="submit"
-                className="rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                disabled={loading}
-              >
-                {loading ? 'Buscando...' : 'Buscar'}
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default DriverSearchForm;
+}

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deleteDriver } from '../services/drivers.service';
 
 interface DriverDeleteFormProps {
   onClose: () => void;
@@ -10,55 +11,50 @@ interface DriverDeleteFormProps {
 
 const DriverDeleteForm: React.FC<DriverDeleteFormProps> = ({ onClose, onDriverDeleted }) => {
   const [driverId, setDriverId] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const deleteDriverMutation = useMutation({
+    mutationFn: deleteDriver,
+    onSuccess: (data, variables) => {
+      setSuccess(`Conductor con ID ${variables} eliminado exitosamente.`);
+      setDriverId('');
+      onDriverDeleted();
+      // Invalidate and refetch drivers list
+      queryClient.invalidateQueries({ queryKey: ['drivers'] });
+    },
+    onError: (error: any) => {
+      if (error.response) {
+        if (error.response.status === 404) {
+          setError('Conductor no encontrado con ese ID.');
+        } else {
+          setError(`Error al eliminar el conductor: ${error.response.data?.message || error.message}`);
+        }
+      } else {
+        setError(`Error al eliminar el conductor: ${error.message}`);
+      }
+      console.error('Error deleting driver:', error);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
     setSuccess(null);
 
     if (!driverId) {
       setError('Por favor, ingrese el ID del conductor.');
-      setLoading(false);
       return;
     }
 
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      if (!API_URL) {
-        throw new Error('La URL de la API no está configurada en las variables de entorno.');
-      }
-
-      const response = await axios.delete(`${API_URL}api/driver/${driverId}`);
-
-      if (response.status === 200) {
-        setSuccess(`Conductor con ID ${driverId} eliminado exitosamente.`);
-        setDriverId('');
-        onDriverDeleted();
-      } else {
-        setError(`Error inesperado: ${response.statusText}`);
-      }
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
-        if (err.response.status === 404) {
-          setError('Conductor no encontrado con ese ID.');
-        } else {
-          setError(`Error al eliminar el conductor: ${err.response.data.message || err.message}`);
-        }
-      } else {
-        setError(`Error al eliminar el conductor: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      console.error('Error deleting driver:', err);
-    } finally {
-      setLoading(false);
-    }
+    deleteDriverMutation.mutate(driverId);
   };
 
+  const isLoading = deleteDriverMutation.isPending;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 bg-opacity-50">
       <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
         <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Eliminar Conductor</h2>
         <form onSubmit={handleSubmit}>
@@ -82,16 +78,16 @@ const DriverDeleteForm: React.FC<DriverDeleteFormProps> = ({ onClose, onDriverDe
               type="button"
               onClick={onClose}
               className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-              disabled={loading}
+              disabled={isLoading}
             >
               Cancelar
             </button>
             <button
               type="submit"
               className="rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:bg-red-500 dark:hover:bg-red-600"
-              disabled={loading}
+              disabled={isLoading}
             >
-              {loading ? 'Eliminando...' : 'Eliminar Conductor'}
+              {isLoading ? 'Eliminando...' : 'Eliminar Conductor'}
             </button>
           </div>
         </form>

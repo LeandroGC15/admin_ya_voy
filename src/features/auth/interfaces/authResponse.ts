@@ -1,11 +1,11 @@
 export interface AdminUser {
-    id: number;
-    name: string;
+    id: number | string;
+    name?: string;
     email: string;
-    userType: string;
-    adminRole: string;
-    adminPermissions: string[];
-    lastAdminLogin: string;
+    userType?: string;
+    adminRole?: string;
+    adminPermissions?: string[];
+    lastAdminLogin?: string;
   }
   
   export interface AuthResponseData {

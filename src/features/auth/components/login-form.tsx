@@ -92,97 +92,54 @@ export function LoginForm() {
       clearErrors();
       setIsLoading(true);
       
-      // First try direct API login
-      try {
-        const response = await loginAdmin({
-          email: data.email,
-          password: data.password
-        });
-
-        if (response && response.accessToken) {
-          // Save auth data to localStorage in the exact format requested
-          if (typeof window !== 'undefined') {
-            const authData = {
-              accessToken: response.accessToken,
-              refreshToken: response.refreshToken,
-              admin: response.admin,
-              expiresIn: response.expiresIn,
-              timestamp: new Date().getTime()
-            };
-            localStorage.setItem('auth', JSON.stringify(authData));
-            console.log('Auth data saved to localStorage:', authData);
-          }
-          
-          // Also authenticate with NextAuth
-          const result = await signIn("credentials", {
-            email: data.email,
-            password: data.password,
-            redirect: false,
-            callbackUrl: '/dashboard'
-          });
-          
-          const redirectUrl = result?.url || '/dashboard';
-          window.location.href = redirectUrl;
-          return;
-        }
-      } catch (apiError) {
-        console.warn('Direct API login failed, falling back to NextAuth:', apiError);
-      }
+      console.log('Attempting login with:', { email: data.email });
       
-      // Fallback to NextAuth if direct API login fails
-      const result = await signIn("credentials", {
+      const response = await loginAdmin({
         email: data.email,
-        password: data.password,
-        redirect: false,
-        callbackUrl: '/dashboard'
+        password: data.password
       });
 
-      if (result && !result.error) {
-        const redirectUrl = result.url || '/dashboard';
-        console.log('NextAuth login successful, redirecting to:', redirectUrl);
-        
-        // Get the session data
-        const session = await getSession();
-        console.log('Session data:', session);
-        
-        if (session?.user) {
-          const userData = session.user as any;
-          
-          // Prepare auth data for localStorage
-          const authData = {
-            accessToken: userData.accessToken || '',
-            refreshToken: userData.refreshToken || '',
-            admin: userData.role || '',
-            expiresIn: 3600,
-            timestamp: new Date().getTime()
-          };
-          
-          // Save to localStorage in the exact format requested
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('auth', JSON.stringify({
-              accessToken: userData.accessToken,
-              refreshToken: userData.refreshToken,
-              admin: userData.role,
-              expiresIn: 3600,
-              timestamp: new Date().getTime()
-            }));
-          }
-          console.log('Auth data saved to localStorage from NextAuth');
-          
-          // Redirect to dashboard
-          window.location.href = redirectUrl;
-          return;
-        }
-        
-        // If we get here, redirect anyway
-        window.location.href = redirectUrl;
-        return;
-      } else {
-        // Handle login error
-        const errorMessage = result?.error || 'Error al iniciar sesión';
-        setFormError(errorMessage);
-        toast.error(errorMessage);
+      console.log('Login response in component:', response);
+
+      if (!response) {
+        throw new Error('No response from server');
       }
+
+      // Check if response has the expected structure
+      if (response.accessToken) {
+        console.log('Login successful, saving auth data...');
+        const authData = {
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken || '',
+          admin: response.admin || null,
+          expiresIn: response.expiresIn || 3600,
+          timestamp: new Date().getTime()
+        };
+        
+        console.log('Auth data to save:', authData);
+        
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('auth', JSON.stringify(authData));
+            console.log('Auth data saved to localStorage');
+            
+            // Force a hard redirect to ensure state is properly reset
+            window.location.href = '/dashboard';
+            return;
+          } catch (storageError) {
+            console.error('Error saving to localStorage:', storageError);
+            throw new Error('Error saving authentication data');
+          }
+        } else {
+          console.warn('Window is not available, cannot save to localStorage');
+          throw new Error('Browser environment required');
+        }
+      } else {
+        console.warn('No access token in response:', response);
+        throw new Error('Invalid response from server');
+      }
+      
+    
     } catch (error) {
       console.error('Error during login:', error);
       const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado';

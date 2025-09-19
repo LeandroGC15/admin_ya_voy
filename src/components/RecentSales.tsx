@@ -32,6 +32,23 @@ interface DriverRide {
   status: string;
 }
 
+interface UserResponse {
+  id: number;
+  name: string;
+  email: string;
+}
+
+interface DriverResponse {
+  id: number;
+  firstName: string;
+  lastName: string;
+}
+
+interface ApiResponse<T> {
+  data: T;
+  // Add other common response fields if they exist
+}
+
 export default function RecentSales() {
   const [viewType, setViewType] = useState<'users' | 'drivers'>('users');
   const [recentRides, setRecentRides] = useState<RideData[]>([]);
@@ -49,45 +66,48 @@ export default function RecentSales() {
         let rides: RideData[] = [];
 
         if (viewType === 'users') {
-          const usersResponse = await api.get<{ data: { id: number; name: string; email: string }[] }>(`/admin/users?limit=${limit}`);
-          const users = usersResponse.data;
+          const usersResponse = await api.get<UserResponse[]>(`admin/users?limit=${limit}`);
+          const users = usersResponse.data || [];
 
-          const userRidesPromises = users.map(async (user) => {
+          const userRidesPromises = users.map(async (user: UserResponse) => {
             try {
-              const userRides = await api.get<UserRide[]>(`/api/ride/${user.id}`);
-              return userRides.map((ride) => ({
+              const userRidesResponse = await api.get<UserRide[]>(`/api/ride/${user.id}`);
+              const userRides = userRidesResponse.data || [];
+              
+              return userRides.map((ride: UserRide) => ({
                 id: ride.rideId,
                 name: user.name,
                 email: user.email,
                 amount: `+$${parseFloat(ride.farePrice).toFixed(2) || '0.00'}`,
-                type: 'user',
-              }) as RideData);
+                type: 'user' as const,
+              }));
             } catch (userRideError) {
               console.error(`Error fetching rides for user ${user.id}:`, userRideError);
               return [];
             }
           });
+          
           const allUserRides = (await Promise.all(userRidesPromises)).flat();
-          rides = allUserRides.sort((a, b) => b.id - a.id).slice(0, limit); // Take the latest 'limit' rides
+          rides = allUserRides.sort((a: RideData, b: RideData) => b.id - a.id).slice(0, limit);
 
         } else if (viewType === 'drivers') {
-          const driversResponse = await api.get<{ data: { id: number; firstName: string; lastName: string }[] }>(`/admin/drivers?limit=${limit}`);
-          const drivers = driversResponse.data;
+          const driversResponse = await api.get<DriverResponse[]>(`/admin/drivers?limit=${limit}`);
+          const drivers = driversResponse.data || [];
 
-          const driverRidesPromises = drivers.map(async (driver) => {
+          const driverRidesPromises = drivers.map(async (driver: DriverResponse) => {
             try {
-              const driverRides = await api.get<DriverRide[]>(`/api/driver/${driver.id}/rides?status=completed&limit=5`); // This limit should also be reviewed if it's not intended for pagination
-              // Ensure driverRides is an array before mapping
+              const driverRidesResponse = await api.get<DriverRide[]>(`/api/driver/${driver.id}/rides?status=completed&limit=5`);
+              const driverRides = driverRidesResponse.data || [];
               if (!Array.isArray(driverRides)) {
                 console.warn(`API for driver ${driver.id} did not return an array for rides:`, driverRides);
                 return [];
               }
-              return driverRides.map((ride) => ({
+              return driverRides.map((ride: DriverRide) => ({
                 id: ride.rideId,
-                name: `${ride.driver.firstName} ${ride.driver.lastName}`,
+                name: ride.driver ? `${ride.driver.firstName} ${ride.driver.lastName}` : 'Unknown Driver',
                 email: ride.user?.email || 'N/A',
                 amount: `+$${ride.farePrice ? ride.farePrice.toFixed(2) : '0.00'}`,
-                type: 'driver',
+                type: 'driver' as const,
               }) as RideData);
             } catch (driverRideError) {
               console.error(`Error fetching rides for driver ${driver.id}:`, driverRideError);
@@ -95,7 +115,7 @@ export default function RecentSales() {
             }
           });
           const allDriverRides = (await Promise.all(driverRidesPromises)).flat();
-          rides = allDriverRides.sort((a, b) => b.id - a.id).slice(0, limit); // Take the latest 'limit' rides
+          rides = allDriverRides.sort((a: RideData, b: RideData) => b.id - a.id).slice(0, limit); // Take the latest 'limit' rides
         }
 
         setRecentRides(rides);
