@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api/api-client';
 import { Button } from './ui/button';
+import { useSession } from 'next-auth/react';
 
 interface RideData {
   id: number;
@@ -44,84 +47,81 @@ interface DriverResponse {
   lastName: string;
 }
 
-interface ApiResponse<T> {
-  data: T;
-  // Add other common response fields if they exist
-}
-
 export default function RecentSales() {
+  const { data: session } = useSession();
   const [viewType, setViewType] = useState<'users' | 'drivers'>('users');
   const [recentRides, setRecentRides] = useState<RideData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [limit] = useState(100); // Fixed limit for fetching latest items
+  const [limit] = useState(100);
 
-  // Effect for initial load and viewType changes
   useEffect(() => {
+    if (!session?.accessToken) {
+      setError('No tienes sesión activa');
+      setLoading(false);
+      return;
+    }
+
     const fetchRecentRides = async () => {
       setLoading(true);
       setError(null);
 
       try {
         let rides: RideData[] = [];
+        const headers = { Authorization: `Bearer ${session.accessToken}` };
 
         if (viewType === 'users') {
-          const usersResponse = await api.get<UserResponse[]>(`admin/users?limit=${limit}`);
+          const usersResponse = await api.get<UserResponse[]>(`admin/users?limit=${limit}`, { headers });
           const users = usersResponse.data || [];
 
-          const userRidesPromises = users.map(async (user: UserResponse) => {
+          const userRidesPromises = users.map(async (user) => {
             try {
-              const userRidesResponse = await api.get<UserRide[]>(`/api/ride/${user.id}`);
-              const userRides = userRidesResponse.data || [];
-              
-              return userRides.map((ride: UserRide) => ({
+              const userRidesResponse = await api.get<UserRide[]>(`/api/ride/${user.id}`, { headers });
+              return (userRidesResponse.data || []).map(ride => ({
                 id: ride.rideId,
                 name: user.name,
                 email: user.email,
-                amount: `+$${parseFloat(ride.farePrice).toFixed(2) || '0.00'}`,
+                amount: `+$${parseFloat(ride.farePrice).toFixed(2)}`,
                 type: 'user' as const,
               }));
-            } catch (userRideError) {
-              console.error(`Error fetching rides for user ${user.id}:`, userRideError);
+            } catch (err) {
+              console.error(`Error fetching rides for user ${user.id}:`, err);
               return [];
             }
           });
-          
-          const allUserRides = (await Promise.all(userRidesPromises)).flat();
-          rides = allUserRides.sort((a: RideData, b: RideData) => b.id - a.id).slice(0, limit);
+
+          rides = (await Promise.all(userRidesPromises)).flat()
+            .sort((a, b) => b.id - a.id)
+            .slice(0, limit);
 
         } else if (viewType === 'drivers') {
-          const driversResponse = await api.get<DriverResponse[]>(`/admin/drivers?limit=${limit}`);
+          const driversResponse = await api.get<DriverResponse[]>(`/admin/drivers?limit=${limit}`, { headers });
           const drivers = driversResponse.data || [];
 
-          const driverRidesPromises = drivers.map(async (driver: DriverResponse) => {
+          const driverRidesPromises = drivers.map(async (driver) => {
             try {
-              const driverRidesResponse = await api.get<DriverRide[]>(`/api/driver/${driver.id}/rides?status=completed&limit=5`);
-              const driverRides = driverRidesResponse.data || [];
-              if (!Array.isArray(driverRides)) {
-                console.warn(`API for driver ${driver.id} did not return an array for rides:`, driverRides);
-                return [];
-              }
-              return driverRides.map((ride: DriverRide) => ({
+              const driverRidesResponse = await api.get<DriverRide[]>(`/api/driver/${driver.id}/rides?status=completed&limit=5`, { headers });
+              return (driverRidesResponse.data || []).map(ride => ({
                 id: ride.rideId,
                 name: ride.driver ? `${ride.driver.firstName} ${ride.driver.lastName}` : 'Unknown Driver',
                 email: ride.user?.email || 'N/A',
-                amount: `+$${ride.farePrice ? ride.farePrice.toFixed(2) : '0.00'}`,
+                amount: `+$${ride.farePrice?.toFixed(2) ?? '0.00'}`,
                 type: 'driver' as const,
-              }) as RideData);
-            } catch (driverRideError) {
-              console.error(`Error fetching rides for driver ${driver.id}:`, driverRideError);
+              }));
+            } catch (err) {
+              console.error(`Error fetching rides for driver ${driver.id}:`, err);
               return [];
             }
           });
-          const allDriverRides = (await Promise.all(driverRidesPromises)).flat();
-          rides = allDriverRides.sort((a: RideData, b: RideData) => b.id - a.id).slice(0, limit); // Take the latest 'limit' rides
+
+          rides = (await Promise.all(driverRidesPromises)).flat()
+            .sort((a, b) => b.id - a.id)
+            .slice(0, limit);
         }
 
         setRecentRides(rides);
       } catch (err) {
         console.error('Failed to fetch recent rides:', err);
-        console.error('Error completo al cargar carreras recientes:', JSON.stringify(err));
         setError('Error al cargar las carreras recientes.');
       } finally {
         setLoading(false);
@@ -129,35 +129,29 @@ export default function RecentSales() {
     };
 
     fetchRecentRides();
-
-    const intervalId = setInterval(fetchRecentRides, 30000); // Poll every 30 seconds
-
+    const intervalId = setInterval(fetchRecentRides, 30000);
     return () => clearInterval(intervalId);
-  }, [viewType, limit]); // Re-run effect when viewType or limit changes
+
+  }, [session, viewType, limit]);
+
+  if (!session) {
+    return <p className="text-red-500">Debes iniciar sesión para ver las carreras.</p>;
+  }
 
   return (
     <div className="space-y-8">
       <div className="flex justify-center space-x-4 mb-4">
-        <Button
-          onClick={() => setViewType('users')}
-          variant={viewType === 'users' ? 'default' : 'outline'}
-        >
+        <Button onClick={() => setViewType('users')} variant={viewType === 'users' ? 'default' : 'outline'}>
           Carreras de Usuarios
         </Button>
-        <Button
-          onClick={() => setViewType('drivers')}
-          variant={viewType === 'drivers' ? 'default' : 'outline'}
-        >
+        <Button onClick={() => setViewType('drivers')} variant={viewType === 'drivers' ? 'default' : 'outline'}>
           Carreras de Taxistas/Repartidores
         </Button>
       </div>
 
       {loading && <p>Cargando carreras...</p>}
       {error && <p className="text-red-500">{error}</p>}
-
-      {!loading && !error && recentRides.length === 0 && (
-        <p>No se encontraron carreras recientes.</p>
-      )}
+      {!loading && !error && recentRides.length === 0 && <p>No se encontraron carreras recientes.</p>}
 
       <div className="space-y-8">
         {recentRides.map((ride) => (

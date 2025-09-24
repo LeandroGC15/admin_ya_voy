@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth-options";
+import {authOptions} from "@/lib/auth-options";
 import { SessionProvider } from "@/providers/session-provider";
 import { ThemeProvider } from "../providers/theme-provider";
 import { cn } from "@/lib/utils";

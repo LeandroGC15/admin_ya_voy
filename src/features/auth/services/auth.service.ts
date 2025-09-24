@@ -7,12 +7,6 @@ export interface LoginCredentials {
   password: string;
 }
 
-/**
- * Logs in an admin user and returns the authentication response data.
- * 
- * @param credentials The admin's login credentials.
- * @returns A promise that resolves with the authentication response data.
- */
 export const loginAdmin = async (credentials: LoginCredentials): Promise<AuthResponseData> => {
   try {
     console.log('Sending login request with:', credentials);
@@ -30,12 +24,17 @@ export const loginAdmin = async (credentials: LoginCredentials): Promise<AuthRes
       throw new Error('No response received from server');
     }
     
-    // Ensure we're returning the expected AuthResponseData structure
-    const responseData = response as unknown as AuthResponseData;
-    console.log('Processed login response:', responseData);
+    const responseData = response.data;
+    
+    if (!responseData || !responseData.accessToken) {
+      throw new Error('Invalid response data');
+    }
+    
+    // Store token in localStorage or cookies as needed
+    localStorage.setItem('auth', JSON.stringify(responseData));
     
     return responseData;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login error in service:', error);
     throw error;
   }

@@ -1,254 +1,147 @@
-import type { NextAuthOptions, User, Session, DefaultSession } from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { loginSchema } from "@/features/auth/schemas/auth.schema"
-import { z } from "zod"
-import { loginAdmin } from "@/features/auth/services/auth.service"
+import { AuthOptions, User as NextAuthUser } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { Admin, RefreshTokenRequest, RefreshTokenResponse } from "../features/auth/types/next-auth";
+import { JWT as NextAuthJWT } from "next-auth/jwt";
+import { User } from "next-auth";
+import axios from "axios";
 
-// Extender los tipos de NextAuth para incluir las propiedades personalizadas
-declare module "next-auth" {
-  
-  interface Session {
-    user: {
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-      id: string;
-      role?: string;
-      accessToken?: string;
+interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  admin: Admin;
+  expiresIn: number; // en segundos
+}
+
+// JWT personalizado
+export interface JWT extends NextAuthUser {
+  id: string; // obligatorio
+  accessToken: string;
+  refreshToken: string;
+  admin?: Admin;
+  expiresIn: number;
+  accessTokenExpiry?: number;
+  error?: string;
+}
+async function refreshAccessToken(token: JWT): Promise<JWT> {
+  try {
+    console.log("[Refresh] Intentando refresh token para:", token.admin?.email);
+
+    const body: RefreshTokenRequest = {
+      email: token.admin!.email!,
+      refreshToken: token.refreshToken,
     };
-    accessToken?: string;
-  }
 
-  /**
-   * Extiende la interfaz de usuario por defecto
-   */
-  interface User {
-    id: string;
-    email?: string | null;
-    name?: string | null;
-    role?: string;
-    accessToken?: string;
-    refreshToken?: string;
-    permissions?: string[];
-    [key: string]: any; // Allow additional properties
+    const { data } = await axios.post<RefreshTokenResponse>(
+      `${process.env.NEXT_PUBLIC_API_URL}admin/auth/refresh-token`,
+      body,
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    return {
+      ...token,
+      accessToken: data.data.accessToken,
+      refreshToken: data.data.refreshToken,
+      admin: data.data.admin,
+      expiresIn: data.data.expiresIn,
+      accessTokenExpiry: Date.now() + data.data.expiresIn * 1000,
+      id: token.id,
+    };
+  } catch (error: any) {
+    // Manejo silencioso de errores de conexión
+    if (axios.isAxiosError(error) && error.code === "ECONNREFUSED") {
+      console.warn("[Refresh] Backend no disponible, token no refrescado");
+    } else {
+      console.error("[Refresh] Error al refrescar token:", error.message);
+    }
+
+    return {
+      ...token,
+      error: "RefreshAccessTokenError",
+      id: token.id,
+    };
   }
 }
 
-/**
- * Extender la interfaz JWT para incluir nuestras propiedades personalizadas
- */
-declare module "next-auth/jwt" {
-  interface JWT {
-    // Propiedades estándar
-    name?: string | null;
-    email?: string | null;
-    sub?: string;
-    // Nuestras propiedades personalizadas
-    id: string;
-    role?: string;
-    accessToken?: string;
-    refreshToken?: string;
-  }
-}
-
-
-export const authOptions: NextAuthOptions = {
-  // Configuración de la sesión
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 días
-  },
-  
-  // Configuración de páginas personalizadas
-  pages: {
-    signIn: "/login",
-  },
-  
-  // Configuración de depuración
-  debug: process.env.NODE_ENV === "development",
-  secret: process.env.NEXTAUTH_SECRET || 'your-secret-key',
-  
-  // Configuración de cookies
-  cookies: process.env.NODE_ENV === 'development' ? {
-    sessionToken: {
-      name: `__Secure-next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: false,
-      },
-    },
-  } : {
-    sessionToken: {
-      name: `__Secure-next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: true,
-        domain: process.env.NODE_ENV === 'production' ? '.tudominio.com' : undefined,
-      },
-    },
-  },
-  useSecureCookies: process.env.NODE_ENV === 'production',
-  
-  // Configuración de la estrategia JWT
-  jwt: {
-    secret: process.env.NEXTAUTH_SECRET || 'your-secret-key',
-    maxAge: 30 * 24 * 60 * 60, // 30 días
-  },
-  
-  // Configuración de eventos
-  events: {
-    async signIn(message) {
-      console.log('User signed in:', message.user?.email);
-    },
-    async signOut() {
-      console.log('User signed out and store cleared');
-    }
-  },
-  
-  // Callbacks para personalizar el comportamiento de autenticación
-  callbacks: {
-    async jwt({ token, user, trigger }) {
-      // Initial sign in
-      if (user) {
-        // Asegurarse de que el ID siempre esté presente
-        if (!user.id) {
-          throw new Error('User ID is required');
-        }
-      
-        const extendedUser = user as User & { authData?: any };
-        return {
-          ...token,
-          id: extendedUser.id,
-          name: extendedUser.name,
-          email: extendedUser.email,
-          role: extendedUser.role,
-          accessToken: extendedUser.accessToken,
-          refreshToken: extendedUser.refreshToken,
-          permissions: extendedUser.permissions || [],
-          ...(extendedUser.authData ? { authData: extendedUser.authData } : {}) // Include authData if it exists
-        };
-      }
-      
-      // For subsequent requests, return the existing token
-      return token;
-    },
-    
-    async session({ session, token }) {
-      console.log('Session callback - Token:', token);
-      
-      // Ensure we have a valid token
-      if (!token) {
-        console.warn('No token provided to session callback');
-        return session;
-      }
-
-      // Ensure we have a valid user object in the session
-      if (!session.user) {
-        console.warn('No user object in session');
-        return session;
-      }
-
-      // Ensure we have required token data
-      if (!token.id) {
-        console.warn('No user ID found in token');
-        return session;
-      }
-
-      // Create a new user object with all the necessary data
-      const userData = {
-        ...session.user,
-        id: token.id as string,
-        ...(token.name && { name: token.name as string }),
-        ...(token.email && { email: token.email as string }),
-        ...(token.role && { role: token.role as string }),
-        ...(token.accessToken && { accessToken: token.accessToken as string }),
-        ...(token.refreshToken && { refreshToken: token.refreshToken as string }),
-        ...(token.permissions && { permissions: token.permissions as string[] })
-      };
-
-      // Only add authData if it exists and is an object
-      if (token.authData && typeof token.authData === 'object') {
-        (userData as any).authData = token.authData;
-      }
-
-      console.log('Session callback - User data:', userData);
-
-      return {
-        ...session,
-        user: userData,
-        ...(token.accessToken && { accessToken: token.accessToken as string }),
-        expires: session.expires
-      };
-    }
-  },
-  
-  // Proveedores de autenticación
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "credentials",
+      name: "Admin",
       credentials: {
-        email: { 
-          label: "Email", 
-          type: "email",
-          placeholder: "correo@ejemplo.com"
-        },
-        password: { 
-          label: "Contraseña", 
-          type: "password",
-          placeholder: "••••••••"
-        },
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
       },
-      // Configuración específica para el proveedor de credenciales
-      async authorize(credentials, req): Promise<User | null> {
-        try {
-          if (!credentials) {
-            console.error('No credentials provided');
-            return null;
-          }
-          
-          // Validate credentials with Zod
-          const validatedCredentials = loginSchema.parse(credentials);
-          
-          // Try to authenticate with the API
-          const response = await loginAdmin({
-            email: validatedCredentials.email,
-            password: validatedCredentials.password
-          });
+      async authorize(credentials) {
+        if (!credentials) return null;
 
-          // If authentication is successful, return the user
-          if (response && response.accessToken && response.admin) {
-            const userData: User = {
-              id: response.admin.id.toString(),
-              email: response.admin.email,
-              name: response.admin.name || response.admin.email.split('@')[0],
-              role: response.admin.adminRole,
-              accessToken: response.accessToken,
-              refreshToken: response.refreshToken,
-              permissions: response.admin.adminPermissions || [],
-              authData: response // Include all response data
+        console.log("[Login] Intentando login con:", credentials.email);
+
+        try {
+          const { data } = await axios.post<{ data: LoginResponse }>(
+            `${process.env.NEXT_PUBLIC_API_URL}admin/auth/login`,
+            { email: credentials.email, password: credentials.password },
+            { headers: { "Content-Type": "application/json" } }
+          );
+
+          console.log("[Login] Respuesta login:", data);
+
+          if (data.data) {
+            const user = data.data;
+            return {
+              id: user.admin.id.toString(),
+              name: user.admin.name,
+              email: user.admin.email,
+              accessToken: user.accessToken,
+              refreshToken: user.refreshToken,
+              admin: user.admin,
+              expiresIn: user.expiresIn,
+              accessTokenExpiry: Date.now() + user.expiresIn * 1000, // 1 hora
             };
-            
-            console.log('User authenticated successfully:', userData);
-            return userData;
           }
-          
-          console.error('Authentication failed - invalid response format');
+
+          console.warn("[Login] Credenciales inválidas");
           return null;
-        } catch (error: any) {
-          if (error instanceof z.ZodError) {
-            console.error('Validation errors:', error.errors);
-            return Promise.reject(new Error('Formato de correo o contraseña inválido'));
-          }
-          
-          // Return error message
-          const safeMessage = error?.message || 'Error desconocido al iniciar sesión';
-          return Promise.reject(new Error(safeMessage));
+        } catch (error) {
+          console.error("[Login] Error en login:", error);
+          return null;
         }
       },
     }),
   ],
-}
+  session: {
+    strategy: "jwt",
+    maxAge: 3600, // 1 hora
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      console.log("[JWT Callback] Token inicial:", token, "User:", user);
+
+      if (user) return { ...token, ...user } as JWT;
+
+      if ((token as JWT).accessTokenExpiry && Date.now() < (token as JWT).accessTokenExpiry!) {
+        console.log("[JWT Callback] Token aún válido");
+        return token as JWT;
+      }
+
+      console.log("[JWT Callback] Token expiró, refrescando...");
+      return await refreshAccessToken(token as JWT);
+    },
+    async session({ session, token }) {
+      console.log("[Session Callback] Token recibido:", token);
+      session.accessToken = (token as JWT).accessToken;
+      session.refreshToken = (token as JWT).refreshToken;
+      session.admin = (token as JWT).admin;
+      session.expiresIn = (token as JWT).expiresIn;
+
+      if ((token as JWT).error) {
+        console.warn("[Session Callback] Error en token:", (token as JWT).error);
+        if (typeof window !== "undefined") alert("Error en sesión: " + (token as JWT).error);
+      }
+
+      return session;
+    },
+  },
+  pages: {
+    signIn: "/login",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+};

@@ -12,14 +12,13 @@ export default function DashboardPage() {
   // Determinar los colores basados en el tema actual
   const axisColor = theme === 'dark' ? '#ffffff' : '#4B5563'; // Cambiado a gris para el modo claro
   const barColor = theme === 'dark' ? '#ffffff' : '#F59E0B'; // Cambiado a amarillo para el modo claro
-
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-tight text-foreground">
         Dashboard
       </h1>
       <p className="mt-2 text-lg text-muted-foreground">
-        Welcome back, Admin! Here's a summary of your store.
+        Welcome back, Admin! Here&apos;s a summary of your store.
       </p>
 
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

@@ -1,5 +1,10 @@
 import { ApiResponse } from '@/interfaces/ApiResponse';
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+} from 'axios';
 
 // Types
 export interface ServerErrorResponse {
@@ -16,12 +21,15 @@ export class ApiError extends Error {
   path?: string;
   data: Record<string, unknown>;
 
-  constructor(message: string, status: number, data: ServerErrorResponse | unknown = {}) {
+  constructor(
+    message: string,
+    status: number,
+    data: ServerErrorResponse | unknown = {}
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
-    
-    // Handle structured server error response
+
     if (data && typeof data === 'object') {
       const errorData = data as ServerErrorResponse;
       this.timestamp = errorData.timestamp;
@@ -34,22 +42,23 @@ export class ApiError extends Error {
 
   static fromServerError(error: AxiosError): ApiError {
     if (error.response?.data) {
-      const { statusCode, message, ...rest } = error.response.data as ServerErrorResponse;
+      const { statusCode, message, ...rest } =
+        error.response.data as ServerErrorResponse;
       return new ApiError(
-        message || 'An error occurred', 
-        statusCode || error.response.status || 500, 
+        message || 'An error occurred',
+        statusCode || error.response.status || 500,
         rest
       );
     }
-    
+
     if (error instanceof ApiError) {
       return error;
     }
-    
+
     return new ApiError(
       error.message || 'An unknown error occurred',
-      (error as any).status || 0,
-      (error as any).data || {}
+      (error as unknown).status || 0,
+      (error as unknown).data || {}
     );
   }
 }
@@ -57,6 +66,11 @@ export class ApiError extends Error {
 class ApiClient {
   private instance: AxiosInstance;
   private static _instance: ApiClient;
+  private isRefreshing = false;
+  private failedQueue: {
+    resolve: (value?: unknown) => void;
+    reject: (error?: unknown) => void;
+  }[] = [];
 
   private constructor() {
     this.instance = axios.create({
@@ -64,6 +78,7 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      withCredentials: true, // importante si usas cookies httpOnly
     });
 
     this.initializeInterceptors();
@@ -76,37 +91,48 @@ class ApiClient {
     return ApiClient._instance;
   }
 
+  private processQueue(error: unknown, token: string | null = null) {
+    this.failedQueue.forEach((prom) => {
+      if (error) {
+        prom.reject(error);
+      } else {
+        prom.resolve(token);
+      }
+    });
+
+    this.failedQueue = [];
+  }
+
   private initializeInterceptors() {
     // Request interceptor
     this.instance.interceptors.request.use(
       (config) => {
-        // Get auth data from localStorage
-        const authData = localStorage.getItem('auth');
-        if (authData) {
-          try {
-            const { accessToken } = JSON.parse(authData);
-            if (accessToken) {
-              config.headers.Authorization = `Bearer ${accessToken}`;
+        if (typeof window !== 'undefined') {
+          const authData = localStorage.getItem('auth');
+          if (authData) {
+            try {
+              const { accessToken } = JSON.parse(authData);
+              if (accessToken) {
+                config.headers.Authorization = `Bearer ${accessToken}`;
+              }
+            } catch (error) {
+              console.error('Error parsing auth data:', error);
             }
-          } catch (error) {
-            console.error('Error parsing auth data:', error);
           }
         }
         return config;
       },
-      (error) => {
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(error)
     );
 
+    // Response interceptor
     this.instance.interceptors.response.use(
       (response: AxiosResponse<ApiResponse<unknown>>) => {
         const { data } = response;
         if (data && typeof data === 'object' && 'data' in data) {
-          // Create a new response object with the unwrapped data
           return {
             ...response,
-            data: data.data
+            data: data.data,
           };
         }
         throw new ApiError(
@@ -115,16 +141,79 @@ class ApiClient {
           data || response
         );
       },
-      (error: AxiosError) => {
+      async (error: AxiosError) => {
+        const originalRequest = error.config as AxiosRequestConfig & {
+          _retry?: boolean;
+        };
+
+        // Manejo de token expirado (ejemplo 401)
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          typeof window !== 'undefined'
+        ) {
+          if (this.isRefreshing) {
+            return new Promise((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject });
+            })
+              .then((token) => {
+                if (originalRequest.headers && token) {
+                  originalRequest.headers.Authorization = `Bearer ${token}`;
+                }
+                return this.instance(originalRequest);
+              })
+              .catch((err) => Promise.reject(err));
+          }
+
+          originalRequest._retry = true;
+          this.isRefreshing = true;
+
+          try {
+            const authData = localStorage.getItem('auth');
+            const { refreshToken } = authData ? JSON.parse(authData) : {};
+
+            if (!refreshToken) throw new Error('No refresh token found');
+
+            // 🔄 Llamar al endpoint de refresh del backend
+            const { data } = await this.instance.post<{
+              accessToken: string;
+            }>('/admin/auth/refresh', { refreshToken });
+
+            const newAccessToken = data?.accessToken;
+
+            if (newAccessToken) {
+              const parsed = authData ? JSON.parse(authData) : {};
+              localStorage.setItem(
+                'auth',
+                JSON.stringify({ ...parsed, accessToken: newAccessToken })
+              );
+
+              this.processQueue(null, newAccessToken);
+
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+              }
+              return this.instance(originalRequest);
+            }
+          } catch (err) {
+            this.processQueue(err, null);
+            localStorage.removeItem('auth');
+            window.location.href = '/login';
+            return Promise.reject(err);
+          } finally {
+            this.isRefreshing = false;
+          }
+        }
+
         return Promise.reject(ApiError.fromServerError(error));
       }
     );
   }
 
+  // Métodos HTTP
   public async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     const response = await this.instance.get<ApiResponse<T>>(url, config);
-    console.log(response.data)
-    return response.data
+    return response.data;
   }
 
   public async post<T>(
@@ -133,24 +222,21 @@ class ApiClient {
     config?: AxiosRequestConfig
   ): Promise<ApiResponse<T>> {
     const response = await this.instance.post<ApiResponse<T>>(url, data, config);
-    return response.data
+    return response.data;
   }
 
   public async put<T>(
-    url: string, 
-    data?: unknown, 
+    url: string,
+    data?: unknown,
     config?: AxiosRequestConfig
   ): Promise<ApiResponse<T>> {
     const response = await this.instance.put<ApiResponse<T>>(url, data, config);
-    return response.data as ApiResponse<T>;
+    return response.data;
   }
 
-  public async delete<T>(
-    url: string, 
-    config?: AxiosRequestConfig
-  ): Promise<ApiResponse<T>> {
+  public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     const response = await this.instance.delete<ApiResponse<T>>(url, config);
-    return response.data as ApiResponse<T>;
+    return response.data;
   }
 
   public async patch<T>(
@@ -159,7 +245,7 @@ class ApiClient {
     config?: AxiosRequestConfig
   ): Promise<ApiResponse<T>> {
     const response = await this.instance.patch<ApiResponse<T>>(url, data, config);
-    return response.data as ApiResponse<T>;
+    return response.data;
   }
 }
 
