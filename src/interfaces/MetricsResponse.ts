@@ -1,4 +1,4 @@
-export interface MetricsResponse {
+export interface MetricsData {
   totalUsers: number;
   activeUsers: number;
   newUsersToday: number;
