@@ -8,7 +8,7 @@ import axios from "axios";
 interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  admin: Admin;
+  user: Admin;
   expiresIn: number; // en segundos
 }
 
@@ -87,12 +87,12 @@ export const authOptions: AuthOptions = {
           if (data.data) {
             const user = data.data;
             return {
-              id: user.admin.id.toString(),
-              name: user.admin.name,
-              email: user.admin.email,
+              id: user.user.id.toString(),
+              name: user.user.name,
+              email: user.user.email,
               accessToken: user.accessToken,
               refreshToken: user.refreshToken,
-              admin: user.admin,
+              admin: user.user,
               expiresIn: user.expiresIn,
               accessTokenExpiry: Date.now() + user.expiresIn * 1000, // 1 hora
             };
