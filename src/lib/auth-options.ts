@@ -1,57 +1,84 @@
 import { AuthOptions, User as NextAuthUser } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { Admin, RefreshTokenRequest, RefreshTokenResponse } from "../features/auth/types/next-auth";
-import { JWT as NextAuthJWT } from "next-auth/jwt";
-import { User } from "next-auth";
+import {
+  Admin,
+  RefreshTokenRequest,
+  RefreshTokenResponse,
+} from "../features/auth/types/next-auth";
 import axios from "axios";
 
-interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: Admin;
-  expiresIn: number; // en segundos
+interface ApiResponse<T> {
+  data: T;
+  message: string;
+  statusCode: number;
 }
 
-// JWT personalizado
-export interface JWT extends NextAuthUser {
-  id: string; // obligatorio
+interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: Admin;
+  expires_in: number; // timestamp unix
+}
+
+// 🔹 Usuario mapeado para NextAuth
+export interface MappedUser extends NextAuthUser {
+  id: string;
   accessToken: string;
   refreshToken: string;
-  admin?: Admin;
-  expiresIn: number;
-  accessTokenExpiry?: number;
+  admin: Admin;
+  role: string;
+  permissions: string[];
+  expiresIn: number; // timestamp unix
+  accessTokenExpiry: number; // ms
+}
+
+// 🔹 JWT personalizado
+export interface JWT extends MappedUser {
   error?: string;
 }
+
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
     console.log("[Refresh] Intentando refresh token para:", token.admin?.email);
 
     const body: RefreshTokenRequest = {
-      email: token.admin!.email!,
-      refreshToken: token.refreshToken,
+      refresh_token: token.refreshToken,
     };
 
-    const { data } = await axios.post<RefreshTokenResponse>(
-      `${process.env.NEXT_PUBLIC_API_URL}admin/auth/refresh-token`,
+    const { data: payload } = await axios.post<
+      ApiResponse<RefreshTokenResponse>
+    >(
+      `${process.env.NEXT_PUBLIC_API_URL}admin/auth/refresh`,
       body,
       { headers: { "Content-Type": "application/json" } }
     );
 
-    return {
+    const refreshedData = payload.data;
+
+    const refreshed: JWT = {
       ...token,
-      accessToken: data.data.accessToken,
-      refreshToken: data.data.refreshToken,
-      admin: data.data.admin,
-      expiresIn: data.data.expiresIn,
-      accessTokenExpiry: Date.now() + data.data.expiresIn * 1000,
+      accessToken: refreshedData.access_token,
+      refreshToken: refreshedData.refresh_token,
+      admin: refreshedData.user,
+      role: refreshedData.user.role,
+      permissions: refreshedData.user.permissions,
+      expiresIn: refreshedData.expires_in,
+      accessTokenExpiry: refreshedData.expires_in * 1000,
       id: token.id,
     };
-  } catch (error: any) {
-    // Manejo silencioso de errores de conexión
+
+    console.log(
+      "[Refresh] Token refrescado:",
+      JSON.stringify(refreshed, null, 2)
+    );
+    return refreshed;
+  } catch (error) {
     if (axios.isAxiosError(error) && error.code === "ECONNREFUSED") {
       console.warn("[Refresh] Backend no disponible, token no refrescado");
-    } else {
+    } else if (axios.isAxiosError(error)) {
       console.error("[Refresh] Error al refrescar token:", error.message);
+    } else {
+      console.error("[Refresh] Error desconocido:", error);
     }
 
     return {
@@ -70,38 +97,50 @@ export const authOptions: AuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<MappedUser | null> {
         if (!credentials) return null;
 
         console.log("[Login] Intentando login con:", credentials.email);
 
         try {
-          const { data } = await axios.post<{ data: LoginResponse }>(
+          const { data: payload } = await axios.post<
+            ApiResponse<LoginResponse>
+          >(
             `${process.env.NEXT_PUBLIC_API_URL}admin/auth/login`,
             { email: credentials.email, password: credentials.password },
             { headers: { "Content-Type": "application/json" } }
           );
 
-          console.log("[Login] Respuesta login:", data);
+          console.log("[Login] Respuesta login:", payload);
 
-          if (data.data) {
-            const user = data.data;
-            return {
-              id: user.user.id.toString(),
-              name: user.user.name,
-              email: user.user.email,
-              accessToken: user.accessToken,
-              refreshToken: user.refreshToken,
-              admin: user.user,
-              expiresIn: user.expiresIn,
-              accessTokenExpiry: Date.now() + user.expiresIn * 1000, // 1 hora
+          const loginData = payload.data;
+
+          if (loginData) {
+            const mappedUser: MappedUser = {
+              id: loginData.user.id.toString(),
+              name: loginData.user.name,
+              email: loginData.user.email,
+              accessToken: loginData.access_token,
+              refreshToken: loginData.refresh_token,
+              admin: loginData.user,
+              role: loginData.user.role,
+              permissions: loginData.user.permissions,
+              expiresIn: loginData.expires_in,
+              accessTokenExpiry: loginData.expires_in * 1000,
             };
+
+
+            return mappedUser;
           }
 
           console.warn("[Login] Credenciales inválidas");
           return null;
         } catch (error) {
-          console.error("[Login] Error en login:", error);
+          if (axios.isAxiosError(error)) {
+            console.error("[Login] Error en login:", error.message);
+          } else {
+            console.error("[Login] Error desconocido:", error);
+          }
           return null;
         }
       },
@@ -109,32 +148,62 @@ export const authOptions: AuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 3600, // 1 hora
+    maxAge: 3600,
   },
   callbacks: {
-    async jwt({ token, user }) {
-      console.log("[JWT Callback] Token inicial:", token, "User:", user);
+    async jwt({ token, user }): Promise<JWT> {
 
-      if (user) return { ...token, ...user } as JWT;
+      // 🔹 Primer login → propagar campos
+      if (user) {
+        const merged: JWT = {
+          ...token,
+          id: (user as MappedUser).id,
+          name: user.name,
+          email: user.email,
+          accessToken: (user as MappedUser).accessToken,
+          refreshToken: (user as MappedUser).refreshToken,
+          admin: (user as MappedUser).admin,
+          role: (user as MappedUser).role,
+          permissions: (user as MappedUser).permissions,
+          expiresIn: (user as MappedUser).expiresIn,
+          accessTokenExpiry: (user as MappedUser).accessTokenExpiry,
+        };
 
-      if ((token as JWT).accessTokenExpiry && Date.now() < (token as JWT).accessTokenExpiry!) {
-        console.log("[JWT Callback] Token aún válido");
-        return token as JWT;
+        return merged;
       }
 
-      console.log("[JWT Callback] Token expiró, refrescando...");
-      return await refreshAccessToken(token as JWT);
-    },
-    async session({ session, token }) {
-      console.log("[Session Callback] Token recibido:", token);
-      session.accessToken = (token as JWT).accessToken;
-      session.refreshToken = (token as JWT).refreshToken;
-      session.admin = (token as JWT).admin;
-      session.expiresIn = (token as JWT).expiresIn;
+      // 🔹 Token aún válido
+      if (token.accessTokenExpiry && Date.now() < token.accessTokenExpiry) {
+        return token as unknown as JWT;
+      }
 
-      if ((token as JWT).error) {
-        console.warn("[Session Callback] Error en token:", (token as JWT).error);
-        if (typeof window !== "undefined") alert("Error en sesión: " + (token as JWT).error);
+      // 🔹 Token expirado → refrescar
+      const refreshed = await refreshAccessToken(token as unknown as JWT);
+      return refreshed;
+    },
+
+    async session({ session, token }) {
+
+      const jwtToken = token as unknown as JWT;
+
+      session.user = {
+        id: jwtToken.id,
+        name: jwtToken.name,
+        email: jwtToken.email,
+        role: jwtToken.role,
+        permissions: jwtToken.permissions,
+      };
+
+      session.accessToken = jwtToken.accessToken;
+      session.refreshToken = jwtToken.refreshToken;
+      session.admin = jwtToken.admin;
+      session.expiresIn = jwtToken.expiresIn;
+
+
+      if (jwtToken.error) {
+
+        if (typeof window !== "undefined")
+          alert("Error en sesión: " + jwtToken.error);
       }
 
       return session;

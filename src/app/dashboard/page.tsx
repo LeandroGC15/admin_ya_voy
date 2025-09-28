@@ -5,11 +5,11 @@ import RecentSales from '@/components/RecentSales';
 import { DollarSign, Users, CreditCard, Activity } from 'lucide-react';
 import TotalUsersCard from './components/TotalUsersCard';
 import { useTheme } from '@/providers/theme-provider';
+import { useSession } from 'next-auth/react';
 
 export default function DashboardPage() {
   const { theme } = useTheme();
 
-  // Determinar los colores basados en el tema actual
   const axisColor = theme === 'dark' ? '#ffffff' : '#4B5563'; // Cambiado a gris para el modo claro
   const barColor = theme === 'dark' ? '#ffffff' : '#F59E0B'; // Cambiado a amarillo para el modo claro
   return (

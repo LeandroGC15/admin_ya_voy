@@ -40,11 +40,19 @@ const UsersPage: React.FC = () => {
   });
 
   // React Query hooks
-  const { data: usersResponse, isLoading } = useUsers({
+  const { data: usersResponse, isLoading, error } = useUsers({
     ...searchParams,
     page: currentPage,
     limit: 10,
   });
+
+  // Handle main data loading error
+  React.useEffect(() => {
+    if (error) {
+      console.error('Error loading users:', error);
+      alert(`Error al cargar usuarios: ${error.message || 'Error desconocido'}`);
+    }
+  }, [error]);
 
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
@@ -63,6 +71,10 @@ const UsersPage: React.FC = () => {
         setShowCreateModal(false);
         createForm.reset();
         invalidateQueries(userKeys.lists());
+      },
+      onError: (error: any) => {
+        console.error('Error creating user:', error);
+        alert(`Error al crear usuario: ${error.message || 'Error desconocido'}`);
       },
     });
   };
@@ -92,6 +104,10 @@ const UsersPage: React.FC = () => {
             setSelectedUser(null);
             invalidateQueries(userKeys.lists());
           },
+          onError: (error: any) => {
+            console.error('Error updating user:', error);
+            alert(`Error al actualizar usuario: ${error.message || 'Error desconocido'}`);
+          },
         }
       );
     }
@@ -102,6 +118,10 @@ const UsersPage: React.FC = () => {
       deleteUserMutation.mutate(user.id, {
         onSuccess: () => {
           invalidateQueries(userKeys.lists());
+        },
+        onError: (error: any) => {
+          console.error('Error deleting user:', error);
+          alert(`Error al eliminar usuario: ${error.message || 'Error desconocido'}`);
         },
       });
     }
