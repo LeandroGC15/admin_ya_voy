@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth/next";
 import {authOptions} from "@/lib/auth-options";
 import { SessionProvider } from "@/providers/session-provider";
 import { ThemeProvider } from "../providers/theme-provider";
+import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({
@@ -32,7 +33,10 @@ export default async function RootLayout({
       >
         <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
           <SessionProvider session={session}>
-            <QueryProvider>{children}</QueryProvider>
+            <QueryProvider>
+              {children}
+              <Toaster />
+            </QueryProvider>
           </SessionProvider>
         </ThemeProvider>
       </body>

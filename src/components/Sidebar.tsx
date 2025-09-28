@@ -10,6 +10,12 @@ const Sidebar = () => {
         <Link href="/dashboard" className="block rounded-md px-4 py-2.5 text-gray-200 hover:bg-[#5C7E9F] hover:text-white">
           Dashboard
         </Link>
+        <Link href="/dashboard/users" className="block rounded-md px-4 py-2.5 text-gray-200 hover:bg-[#5C7E9F] hover:text-white">
+          Usuarios
+        </Link>
+        <Link href="/dashboard/drivers" className="block rounded-md px-4 py-2.5 text-gray-200 hover:bg-[#5C7E9F] hover:text-white">
+          Conductores
+        </Link>
         <Link href="/dashboard/orders" className="block rounded-md px-4 py-2.5 text-gray-200 hover:bg-[#5C7E9F] hover:text-white">
           Orders
         </Link>

@@ -5,6 +5,7 @@ import axios, {
   AxiosResponse,
   AxiosError,
 } from 'axios';
+import { getSession } from 'next-auth/react';
 
 // Types
 export interface ServerErrorResponse {

@@ -39,8 +39,7 @@ declare module "next-auth/jwt" {
 }
 
 export interface RefreshTokenRequest {
-  email: string;
-  refreshToken: string;
+  refresh_token: string;
 }
 
 export interface RefreshTokenResponse {
