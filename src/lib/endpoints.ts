@@ -14,6 +14,7 @@ export const ENDPOINTS = {
   dashboard: {
     base: 'admin/dashboard',
     metrics: 'admin/dashboard/metrics',
+    recentRides: 'admin/dashboard/recent-rides',
     alerts: 'admin/dashboard/alerts',
   },
 
