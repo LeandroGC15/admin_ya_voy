@@ -40,7 +40,13 @@ export function EditButton({ onClick, disabled, loading }: Omit<ActionButtonProp
   );
 }
 
-export function DeleteButton({ onClick, disabled, loading }: Omit<ActionButtonProps, 'variant'>) {
+export function DeleteButton({
+  onClick,
+  disabled,
+  loading,
+  text = 'Eliminar',
+  loadingText = 'Eliminando...'
+}: Omit<ActionButtonProps, 'variant'> & { text?: string; loadingText?: string }) {
   return (
     <Button
       onClick={onClick}
@@ -49,7 +55,7 @@ export function DeleteButton({ onClick, disabled, loading }: Omit<ActionButtonPr
       size="sm"
     >
       <Trash2 className="h-4 w-4 mr-2" />
-      {loading ? 'Eliminando...' : 'Eliminar'}
+      {loading ? loadingText : text}
     </Button>
   );
 }
@@ -90,6 +96,8 @@ export function ActionButtons({
   canDelete = true,
   canView = true,
   loading = false,
+  deleteText = 'Eliminar',
+  deleteLoadingText = 'Eliminando...',
 }: {
   onEdit?: () => void;
   onDelete?: () => void;
@@ -98,6 +106,8 @@ export function ActionButtons({
   canDelete?: boolean;
   canView?: boolean;
   loading?: boolean;
+  deleteText?: string;
+  deleteLoadingText?: string;
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -108,7 +118,13 @@ export function ActionButtons({
         <EditButton onClick={onEdit} disabled={loading} loading={loading} />
       )}
       {canDelete && onDelete && (
-        <DeleteButton onClick={onDelete} disabled={loading} loading={loading} />
+        <DeleteButton
+          onClick={onDelete}
+          disabled={loading}
+          loading={loading}
+          text={deleteText}
+          loadingText={deleteLoadingText}
+        />
       )}
     </div>
   );

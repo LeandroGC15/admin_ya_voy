@@ -25,27 +25,83 @@ export const userSchema = z.object({
   averageRating: z.number(),
 });
 
-// Create user schema
+// Create user schema with enhanced validation
 export const createUserSchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido'),
-  email: z.string().email('Email inválido'),
-  phone: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  country: z.string().optional(),
-  userType: z.enum(['passenger', 'driver']).default('passenger'),
+  name: z.string()
+    .min(2, 'El nombre debe tener al menos 2 caracteres')
+    .max(100, 'El nombre no puede tener más de 100 caracteres')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El nombre solo puede contener letras y espacios'),
+  email: z.string()
+    .email('El email debe tener un formato válido')
+    .max(255, 'El email no puede tener más de 255 caracteres'),
+  phone: z.string()
+    .regex(/^[\+]?[0-9\s\-\(\)]+$/, 'El teléfono solo puede contener números, espacios, guiones y paréntesis')
+    .min(7, 'El teléfono debe tener al menos 7 caracteres')
+    .max(20, 'El teléfono no puede tener más de 20 caracteres')
+    .optional()
+    .or(z.literal('')),
+  city: z.string()
+    .min(2, 'La ciudad debe tener al menos 2 caracteres')
+    .max(100, 'La ciudad no puede tener más de 100 caracteres')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'La ciudad solo puede contener letras y espacios')
+    .optional()
+    .or(z.literal('')),
+  state: z.string()
+    .min(2, 'El estado debe tener al menos 2 caracteres')
+    .max(100, 'El estado no puede tener más de 100 caracteres')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El estado solo puede contener letras y espacios')
+    .optional()
+    .or(z.literal('')),
+  country: z.string()
+    .min(2, 'El país debe tener al menos 2 caracteres')
+    .max(100, 'El país no puede tener más de 100 caracteres')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El país solo puede contener letras y espacios')
+    .optional()
+    .or(z.literal('')),
+  userType: z.enum(['passenger', 'driver'], {
+    errorMap: () => ({ message: 'El tipo de usuario debe ser Pasajero o Conductor' })
+  }).default('passenger'),
 });
 
-// Update user schema
+// Update user schema with enhanced validation
 export const updateUserSchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido').optional(),
-  email: z.string().email('Email inválido').optional(),
-  phone: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  country: z.string().optional(),
+  name: z.string()
+    .min(2, 'El nombre debe tener al menos 2 caracteres')
+    .max(100, 'El nombre no puede tener más de 100 caracteres')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El nombre solo puede contener letras y espacios')
+    .optional(),
+  email: z.string()
+    .email('El email debe tener un formato válido')
+    .max(255, 'El email no puede tener más de 255 caracteres')
+    .optional(),
+  phone: z.string()
+    .regex(/^[\+]?[0-9\s\-\(\)]+$/, 'El teléfono solo puede contener números, espacios, guiones y paréntesis')
+    .min(7, 'El teléfono debe tener al menos 7 caracteres')
+    .max(20, 'El teléfono no puede tener más de 20 caracteres')
+    .optional()
+    .or(z.literal('')),
+  city: z.string()
+    .min(2, 'La ciudad debe tener al menos 2 caracteres')
+    .max(100, 'La ciudad no puede tener más de 100 caracteres')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'La ciudad solo puede contener letras y espacios')
+    .optional()
+    .or(z.literal('')),
+  state: z.string()
+    .min(2, 'El estado debe tener al menos 2 caracteres')
+    .max(100, 'El estado no puede tener más de 100 caracteres')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El estado solo puede contener letras y espacios')
+    .optional()
+    .or(z.literal('')),
+  country: z.string()
+    .min(2, 'El país debe tener al menos 2 caracteres')
+    .max(100, 'El país no puede tener más de 100 caracteres')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El país solo puede contener letras y espacios')
+    .optional()
+    .or(z.literal('')),
   isActive: z.boolean().optional(),
-  userType: z.enum(['passenger', 'driver']).optional(),
+  userType: z.enum(['passenger', 'driver'], {
+    errorMap: () => ({ message: 'El tipo de usuario debe ser Pasajero o Conductor' })
+  }).optional(),
 });
 
 // Search users schema

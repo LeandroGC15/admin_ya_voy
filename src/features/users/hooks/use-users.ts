@@ -39,17 +39,53 @@ export function useUsers(params: SearchUsersInput = {}) {
   );
 }
 
-// Create user hook
+// Create user hook - creates basic user then updates with additional fields
 export function useCreateUser() {
   return useApiMutation(
     async (userData: CreateUserInput): Promise<User> => {
       try {
-        const response = await api.post<User>(ENDPOINTS.users.base, userData);
-        alert('Usuario creado exitosamente');
-        if (!response || !response.data) {
+        // Step 1: Create basic user with legacy endpoint
+        const createPayload = {
+          name: userData.name,
+          email: userData.email,
+          clerkId: `admin_created_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Generate temporary clerkId
+        };
+
+        const createResponse = await api.post<{ data: User[] }>(ENDPOINTS.legacy.users, createPayload);
+        if (!createResponse || !createResponse.data || !createResponse.data.data || createResponse.data.data.length === 0) {
           throw new Error('Invalid API response: no data received');
         }
-        return response.data;
+
+        const newUser = createResponse.data.data[0];
+
+        // Step 2: If there are additional fields, update the user immediately
+        const hasAdditionalFields = userData.phone || userData.city || userData.state || userData.country || userData.userType;
+
+        if (hasAdditionalFields) {
+          const updatePayload: any = {};
+
+          // Only include fields that have values and are different from current user data
+          if (userData.phone && userData.phone.trim() !== '') {
+            updatePayload.phone = userData.phone;
+          }
+          if (userData.city && userData.city.trim() !== '') {
+            updatePayload.city = userData.city;
+          }
+          if (userData.state && userData.state.trim() !== '') {
+            updatePayload.state = userData.state;
+          }
+          if (userData.country && userData.country.trim() !== '') {
+            updatePayload.country = userData.country;
+          }
+          // Note: userType is not supported in the regular API, it's handled by the backend
+
+          if (Object.keys(updatePayload).length > 0) {
+            await api.put<User>(ENDPOINTS.legacy.userById(newUser.id), updatePayload);
+          }
+        }
+
+        alert('Usuario creado exitosamente');
+        return newUser;
       } catch (error: any) {
         console.error('Error creating user:', error);
         alert(`Error al crear usuario: ${error.message || 'Error desconocido'}`);
@@ -69,12 +105,30 @@ export function useCreateUser() {
   );
 }
 
-// Update user hook
+// Update user hook - supports full user updates using regular API endpoint
 export function useUpdateUser() {
   return useApiMutation(
     async ({ userId, userData }: { userId: string; userData: UpdateUserInput }): Promise<User> => {
       try {
-        const response = await api.put<User>(ENDPOINTS.users.byId(userId), userData);
+        // Check if only isActive is being changed - use admin endpoint for status
+        const isOnlyStatusChange = Object.keys(userData).length === 1 && userData.isActive !== undefined;
+
+        let endpoint: string;
+        let payload: any;
+
+        if (isOnlyStatusChange) {
+          // Use admin endpoint for status changes only
+          endpoint = ENDPOINTS.users.status(userId);
+          payload = { isActive: userData.isActive };
+        } else {
+          // Use regular API endpoint for full user updates
+          endpoint = ENDPOINTS.legacy.userById(userId);
+          // Filter out isActive from the payload since it's handled separately
+          const { isActive, ...updateData } = userData;
+          payload = updateData;
+        }
+
+        const response = await api.put<User>(endpoint, payload);
         alert('Usuario actualizado exitosamente');
         if (!response || !response.data) {
           throw new Error('Invalid API response: no data received');
@@ -99,16 +153,30 @@ export function useUpdateUser() {
   );
 }
 
-// Delete user hook
+// Delete user hook - uses admin API endpoint (soft delete)
 export function useDeleteUser() {
   return useApiMutation(
     async (userId: string): Promise<void> => {
       try {
-        await api.delete<void>(ENDPOINTS.users.byId(userId));
+        const response = await api.delete(ENDPOINTS.users.byId(userId));
         alert('Usuario eliminado exitosamente');
+        console.log('Delete response:', response);
       } catch (error: any) {
         console.error('Error deleting user:', error);
-        alert(`Error al eliminar usuario: ${error.message || 'Error desconocido'}`);
+
+        // Provide more specific error messages
+        let errorMessage = 'Error desconocido al eliminar usuario';
+        if (error.response?.status === 404) {
+          errorMessage = 'Usuario no encontrado';
+        } else if (error.response?.status === 403) {
+          errorMessage = 'No tienes permisos para eliminar este usuario';
+        } else if (error.response?.status === 409) {
+          errorMessage = 'No se puede eliminar el usuario porque tiene viajes o pedidos activos';
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+
+        alert(`Error al eliminar usuario: ${errorMessage}`);
         throw error;
       }
     },

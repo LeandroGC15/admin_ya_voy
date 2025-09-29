@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { DataTable, Modal, CreateButton, ActionButtons } from '@/features/core/components';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/features/users/hooks';
 import { invalidateQueries } from '@/lib/api/react-query-client';
@@ -113,14 +114,19 @@ const UsersPage: React.FC = () => {
   };
 
   const handleDelete = (user: User) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar al usuario ${user.name}?`)) {
+    const confirmed = window.confirm(
+      `¿Estás seguro de que quieres eliminar al usuario "${user.name}"?\n\n` +
+      `Esta acción desactivará la cuenta pero mantendrá los datos para auditoría.`
+    );
+
+    if (confirmed) {
       deleteUserMutation.mutate(user.id.toString(), {
         onSuccess: () => {
           invalidateQueries(['users']);
         },
         onError: (error: any) => {
           console.error('Error deleting user:', error);
-          alert(`Error al eliminar usuario: ${error.message || 'Error desconocido'}`);
+          // Error handling is already done in the hook
         },
       });
     }
@@ -194,6 +200,8 @@ const UsersPage: React.FC = () => {
       canDelete={true}
       canView={false}
       loading={deleteUserMutation.isPending}
+      deleteText="Eliminar"
+      deleteLoadingText="Eliminando..."
     />
   );
 
@@ -267,72 +275,96 @@ const UsersPage: React.FC = () => {
       >
         <form onSubmit={createForm.handleSubmit(handleCreate)} className="space-y-4">
           <div>
-            <Label htmlFor="create-name">Nombre *</Label>
+            <Label htmlFor="create-name">Nombre <span className="text-red-500">*</span></Label>
             <Input
               id="create-name"
               {...createForm.register('name')}
-              placeholder="Nombre completo"
+              placeholder="Ej: Juan Pérez"
+              className={createForm.formState.errors.name ? 'border-red-500' : ''}
             />
             {createForm.formState.errors.name && (
-              <p className="text-sm text-red-500">{createForm.formState.errors.name.message}</p>
+              <p className="text-sm text-red-500 mt-1">{createForm.formState.errors.name.message}</p>
             )}
           </div>
+
           <div>
-            <Label htmlFor="create-email">Email *</Label>
+            <Label htmlFor="create-email">Email <span className="text-red-500">*</span></Label>
             <Input
               id="create-email"
               type="email"
               {...createForm.register('email')}
-              placeholder="email@ejemplo.com"
+              placeholder="usuario@ejemplo.com"
+              className={createForm.formState.errors.email ? 'border-red-500' : ''}
             />
             {createForm.formState.errors.email && (
-              <p className="text-sm text-red-500">{createForm.formState.errors.email.message}</p>
+              <p className="text-sm text-red-500 mt-1">{createForm.formState.errors.email.message}</p>
             )}
           </div>
+
           <div>
             <Label htmlFor="create-phone">Teléfono</Label>
             <Input
               id="create-phone"
+              type="tel"
               {...createForm.register('phone')}
-              placeholder="+1234567890"
+              placeholder="+57 300 123 4567"
+              className={createForm.formState.errors.phone ? 'border-red-500' : ''}
             />
+            {createForm.formState.errors.phone && (
+              <p className="text-sm text-red-500 mt-1">{createForm.formState.errors.phone.message}</p>
+            )}
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="create-city">Ciudad</Label>
               <Input
                 id="create-city"
                 {...createForm.register('city')}
-                placeholder="Ciudad"
+                placeholder="Ej: Bogotá"
+                className={createForm.formState.errors.city ? 'border-red-500' : ''}
               />
+              {createForm.formState.errors.city && (
+                <p className="text-sm text-red-500 mt-1">{createForm.formState.errors.city.message}</p>
+              )}
             </div>
             <div>
-              <Label htmlFor="create-state">Estado</Label>
+              <Label htmlFor="create-state">Estado/Departamento</Label>
               <Input
                 id="create-state"
                 {...createForm.register('state')}
-                placeholder="Estado"
+                placeholder="Ej: Cundinamarca"
+                className={createForm.formState.errors.state ? 'border-red-500' : ''}
               />
+              {createForm.formState.errors.state && (
+                <p className="text-sm text-red-500 mt-1">{createForm.formState.errors.state.message}</p>
+              )}
             </div>
           </div>
+
           <div>
             <Label htmlFor="create-country">País</Label>
             <Input
               id="create-country"
               {...createForm.register('country')}
-              placeholder="País"
+              placeholder="Ej: Colombia"
+              className={createForm.formState.errors.country ? 'border-red-500' : ''}
             />
+            {createForm.formState.errors.country && (
+              <p className="text-sm text-red-500 mt-1">{createForm.formState.errors.country.message}</p>
+            )}
           </div>
-          <div>
-            <Label htmlFor="create-userType">Tipo de Usuario</Label>
+
+          <div className="relative">
+            <Label htmlFor="create-userType">Tipo de Usuario <span className="text-red-500">*</span></Label>
             <Select
               value={createForm.watch('userType')}
               onValueChange={(value) => createForm.setValue('userType', value as 'passenger' | 'driver')}
             >
-              <SelectTrigger>
+              <SelectTrigger className="relative z-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50">
                 <SelectItem value="passenger">Pasajero</SelectItem>
                 <SelectItem value="driver">Conductor</SelectItem>
               </SelectContent>
@@ -362,83 +394,110 @@ const UsersPage: React.FC = () => {
       >
         <form onSubmit={editForm.handleSubmit(handleUpdate)} className="space-y-4">
           <div>
-            <Label htmlFor="edit-name">Nombre *</Label>
+            <Label htmlFor="edit-name">Nombre <span className="text-red-500">*</span></Label>
             <Input
               id="edit-name"
               {...editForm.register('name')}
-              placeholder="Nombre completo"
+              placeholder="Ej: Juan Pérez"
+              className={editForm.formState.errors.name ? 'border-red-500' : ''}
             />
             {editForm.formState.errors.name && (
-              <p className="text-sm text-red-500">{editForm.formState.errors.name.message}</p>
+              <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.name.message}</p>
             )}
           </div>
+
           <div>
-            <Label htmlFor="edit-email">Email *</Label>
+            <Label htmlFor="edit-email">Email <span className="text-red-500">*</span></Label>
             <Input
               id="edit-email"
               type="email"
               {...editForm.register('email')}
-              placeholder="email@ejemplo.com"
+              placeholder="usuario@ejemplo.com"
+              className={editForm.formState.errors.email ? 'border-red-500' : ''}
             />
             {editForm.formState.errors.email && (
-              <p className="text-sm text-red-500">{editForm.formState.errors.email.message}</p>
+              <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.email.message}</p>
             )}
           </div>
+
           <div>
             <Label htmlFor="edit-phone">Teléfono</Label>
             <Input
               id="edit-phone"
+              type="tel"
               {...editForm.register('phone')}
-              placeholder="+1234567890"
+              placeholder="+57 300 123 4567"
+              className={editForm.formState.errors.phone ? 'border-red-500' : ''}
             />
+            {editForm.formState.errors.phone && (
+              <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.phone.message}</p>
+            )}
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="edit-city">Ciudad</Label>
               <Input
                 id="edit-city"
                 {...editForm.register('city')}
-                placeholder="Ciudad"
+                placeholder="Ej: Bogotá"
+                className={editForm.formState.errors.city ? 'border-red-500' : ''}
               />
+              {editForm.formState.errors.city && (
+                <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.city.message}</p>
+              )}
             </div>
             <div>
-              <Label htmlFor="edit-state">Estado</Label>
+              <Label htmlFor="edit-state">Estado/Departamento</Label>
               <Input
                 id="edit-state"
                 {...editForm.register('state')}
-                placeholder="Estado"
+                placeholder="Ej: Cundinamarca"
+                className={editForm.formState.errors.state ? 'border-red-500' : ''}
               />
+              {editForm.formState.errors.state && (
+                <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.state.message}</p>
+              )}
             </div>
           </div>
+
           <div>
             <Label htmlFor="edit-country">País</Label>
             <Input
               id="edit-country"
               {...editForm.register('country')}
-              placeholder="País"
+              placeholder="Ej: Colombia"
+              className={editForm.formState.errors.country ? 'border-red-500' : ''}
             />
+            {editForm.formState.errors.country && (
+              <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.country.message}</p>
+            )}
           </div>
-          <div>
-            <Label htmlFor="edit-userType">Tipo de Usuario</Label>
+
+          <div className="relative">
+            <Label htmlFor="edit-userType">Tipo de Usuario <span className="text-red-500">*</span></Label>
             <Select
               value={editForm.watch('userType') || 'passenger'}
               onValueChange={(value) => editForm.setValue('userType', value as 'passenger' | 'driver')}
             >
-              <SelectTrigger>
+              <SelectTrigger className="relative z-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50">
                 <SelectItem value="passenger">Pasajero</SelectItem>
                 <SelectItem value="driver">Conductor</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center space-x-2">
+
+          <div className="flex items-center space-x-2 pt-2">
             <Checkbox
               id="edit-isActive"
               {...editForm.register('isActive')}
             />
-            <Label htmlFor="edit-isActive">Usuario activo</Label>
+            <Label htmlFor="edit-isActive" className="text-sm font-medium">
+              Usuario activo
+            </Label>
           </div>
         </form>
       </Modal>

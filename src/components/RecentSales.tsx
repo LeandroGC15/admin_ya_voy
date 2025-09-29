@@ -1,162 +1,148 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { api } from "../lib/api/api-client";
-import { ENDPOINTS } from "../lib/endpoints";
+import React, { useState } from "react";
 import { Button } from "./ui/button";
+import { RefreshCw } from "lucide-react";
 import { useSession } from "next-auth/react";
-
-// Interfaces 
-//Vehículo solicitado 
-
-interface RequestedVehicleType { id: number; name: string; displayName: string; icon: string; isActive: boolean; createdAt: string; updatedAt: string; } 
-// Nivel o categoría de la carrera 
-interface Tier { id: number; name: string; baseFare: string; perMinuteRate: string; perMileRate: string; imageUrl: string; }
- // Conductor (puede ser null si no hay conductor asignado)
-interface Driver { id: number; firstName: string; lastName: string; profileImageUrl: string; carImageUrl: string; carModel: string; licensePlate: string; carSeats: number; vehicleTypeId: number; status: string; verificationStatus: string; canDoDeliveries: boolean; currentLatitude: string; currentLongitude: string; lastLocationUpdate: string; locationAccuracy: number | null; isLocationActive: boolean; createdAt: string; updatedAt: string; vehicleType: { id: number; name: string; displayName: string; icon: string; isActive: boolean; createdAt: string; updatedAt: string; }; } 
-// Calificación de la carrera 
-interface Rating { id: number; rideId: number; orderId?: number | null; storeId?: number | null; ratedByUserId: number; ratedUserId: number; ratingValue: number; comment: string; createdAt: string; } 
-// Mensaje asociado a la carrera 
-interface Message { id: number; rideId: number; orderId?: number | null; errandId?: number | null; parcelId?: number | null; senderId: number; messageText: string; createdAt: string; }
- // Carrera completa export 
- interface RideDetail { rideId: number; originAddress: string; destinationAddress: string; originLatitude: string; originLongitude: string; destinationLatitude: string; destinationLongitude: string; rideTime: number; farePrice: string; paymentStatus: string; status: string; driverId: number | null; userId: number; tierId: number; requestedVehicleTypeId: number | null; scheduledFor: string | null; cancelledAt: string | null; cancelledBy: string | null; cancellationReason: string | null; cancellationNotes: string | null; createdAt: string; updatedAt: string; driver: Driver | null; tier: Tier; requestedVehicleType: RequestedVehicleType | null; ratings: Rating[]; messages: Message[]; }
-
-
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
-
-interface DriverSummary {
-  id: number;
-  firstName: string;
-  lastName: string;
-}
-
-interface RideData {
-  id: number;
-  name: string;
-  email: string;
-  amount: string;
-  type: "user" | "driver";
-}
+import { useRecentRides, type RideData } from "@/features/dashboard";
 
 export default function RecentSales() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [viewType, setViewType] = useState<"users" | "drivers">("users");
-  const [recentRides, setRecentRides] = useState<RideData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [limit] = useState(100);
 
-  useEffect(() => {
-    if (!session?.accessToken) {
-      setError("No tienes sesión activa");
-      setLoading(false);
-      return;
-    }
+  // Use TanStack Query hook for recent rides
+  const {
+    data: recentRides = [],
+    isLoading,
+    error,
+    refetch,
+    isRefetching
+  } = useRecentRides(viewType, 20);
 
-    const fetchRecentRides = async () => {
-      setLoading(true);
-      setError(null);
-      const headers = { Authorization: `Bearer ${session.accessToken}` };
+  // Handle unauthenticated state
+  if (status === 'unauthenticated') {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Debes iniciar sesión para ver las carreras.</p>
+      </div>
+    );
+  }
 
-      try {
-        let rides: RideData[] = [];
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <RefreshCw className="mx-auto h-8 w-8 animate-spin mb-4 text-gray-500" />
+        <p className="text-gray-500">Cargando carreras recientes...</p>
+      </div>
+    );
+  }
 
-        if (viewType === "users") {
-          const usersResponse = await api.get<User[]>(`${ENDPOINTS.users.base}?limit=${limit}`, { headers });
-          const users = usersResponse.data ?? [];
-
-          const userRidesPromises = users.map(async (user) => {
-            const response = await api.get<RideDetail[]>(ENDPOINTS.rides.rideByUser(user.id), { headers });
-            const userRides = response.data ?? [];
-            return userRides.map((ride) => ({
-              id: ride.rideId,
-              name: user.name,
-              email: ride.driver ? `${ride.driver.firstName} ${ride.driver.lastName}` : "Pendiente",
-              amount: `+$${parseFloat(ride.farePrice).toFixed(2)}`,
-              type: "user" as const,
-            }));
-          });
-
-          rides = (await Promise.all(userRidesPromises)).flat()
-            .sort((a, b) => b.id - a.id)
-            .slice(0, limit);
-
-        } else if (viewType === "drivers") {
-          const driversResponse = await api.get<DriverSummary[]>(`${ENDPOINTS.drivers.base}?limit=${limit}`, { headers });
-          const drivers = driversResponse.data ?? [];
-
-          const driverRidesPromises = drivers.map(async (driver) => {
-            const response = await api.get<RideDetail[]>(`${ENDPOINTS.rides.driverRides(driver.id)}?status=completed&limit=5`, { headers });
-            const driverRides = response.data ?? [];
-            return driverRides.map((ride) => ({
-              id: ride.rideId,
-              name: `${driver.firstName} ${driver.lastName}`,
-              email: ride.userId ? `Usuario #${ride.userId}` : "Pendiente",
-              amount: `+$${parseFloat(ride.farePrice).toFixed(2)}`,
-              type: "driver" as const,
-            }));
-          });
-
-          rides = (await Promise.all(driverRidesPromises)).flat()
-            .sort((a, b) => b.id - a.id)
-            .slice(0, limit);
-        }
-
-        setRecentRides(rides);
-      } catch (err) {
-        console.error("Error fetching recent rides:", err);
-        setError("Error al cargar las carreras recientes.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRecentRides();
-    const intervalId = setInterval(fetchRecentRides, 30000);
-    return () => clearInterval(intervalId);
-  }, [session, viewType, limit]);
-
-  if (!session) return <p className="text-red-500">Debes iniciar sesión para ver las carreras.</p>;
+  // Handle error state
+  if (error) {
+    return (
+      <div className="text-center py-8 space-y-4">
+        <p className="text-red-500">
+          Error al cargar las carreras recientes: {error.message || 'Error desconocido'}
+        </p>
+        <Button
+          onClick={() => refetch()}
+          disabled={isRefetching}
+          variant="outline"
+          size="sm"
+        >
+          {isRefetching ? (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              Recargando...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Reintentar
+            </>
+          )}
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-center space-x-4 mb-4">
+    <div className="space-y-6">
+      {/* Header with title and refresh button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Carreras Recientes</h2>
+          <p className="text-sm text-muted-foreground">
+            {viewType === "users" ? "Últimas carreras de usuarios" : "Últimas carreras completadas por conductores"}
+          </p>
+        </div>
+        <Button
+          onClick={() => refetch()}
+          disabled={isRefetching}
+          variant="outline"
+          size="sm"
+        >
+          {isRefetching ? (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              Actualizando...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Actualizar
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* View type selector */}
+      <div className="flex justify-center space-x-4">
         <Button
           onClick={() => setViewType("users")}
           variant={viewType === "users" ? "default" : "outline"}
+          disabled={isLoading || isRefetching}
         >
           Carreras de Usuarios
         </Button>
         <Button
           onClick={() => setViewType("drivers")}
           variant={viewType === "drivers" ? "default" : "outline"}
+          disabled={isLoading || isRefetching}
         >
           Carreras de Conductores
         </Button>
       </div>
 
-      {loading && <p>Cargando carreras...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-      {!loading && !error && recentRides.length === 0 && (
-        <p>No se encontraron carreras recientes.</p>
-      )}
-
+      {/* Rides list */}
       <div className="space-y-4">
-        {recentRides.map((ride) => (
-          <div key={ride.id} className="flex items-center p-2 border rounded-md">
-            <div className="h-10 w-10 rounded-full bg-muted flex-shrink-0"></div>
-            <div className="ml-4 space-y-1">
-              <p className="text-sm font-medium leading-none text-foreground">{ride.name}</p>
-              <p className="text-sm text-muted-foreground">{ride.email}</p>
-            </div>
-            <div className="ml-auto font-medium text-foreground">{ride.amount}</div>
+        {recentRides.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No se encontraron carreras recientes.
           </div>
-        ))}
+        ) : (
+          recentRides.map((ride: RideData) => (
+            <div key={ride.id} className="flex items-center p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-medium text-primary">
+                  {ride.type === "user" ? "U" : "C"}
+                </span>
+              </div>
+              <div className="ml-4 flex-1 min-w-0">
+                <p className="text-sm font-medium leading-none text-foreground truncate">
+                  {ride.name}
+                </p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {ride.email}
+                </p>
+              </div>
+              <div className="ml-4 font-medium text-foreground">
+                {ride.amount}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
