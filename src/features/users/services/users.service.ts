@@ -1,4 +1,5 @@
 import { api } from '@/lib/api/api-client';
+import { ENDPOINTS } from '@/lib/endpoints';
 import type { ApiResponse } from '@/interfaces/ApiResponse';
 
 export interface UserData {
@@ -72,7 +73,7 @@ export const fetchUsers = async (params?: {
   userType?: string;
 }): Promise<UserListResponse> => {
   try {
-    const response = await api.get<UserListResponse>('admin/users', {
+    const response = await api.get<UserListResponse>(ENDPOINTS.users.base, {
       params: {
         page: params?.page || 1,
         limit: params?.limit || 10,
@@ -93,7 +94,7 @@ export const fetchUsers = async (params?: {
  */
 export const createUser = async (userData: CreateUserPayload): Promise<ApiResponse<UserData>> => {
   try {
-    const response = await api.post<UserData>('admin/users', userData);
+    const response = await api.post<UserData>(ENDPOINTS.users.base, userData);
     return response;
   } catch (error) {
     console.error('Error creating user:', error);
@@ -106,7 +107,7 @@ export const createUser = async (userData: CreateUserPayload): Promise<ApiRespon
  */
 export const updateUser = async (userId: string, userData: UpdateUserPayload): Promise<ApiResponse<UserData>> => {
   try {
-    const response = await api.put<UserData>(`admin/users/${userId}`, userData);
+    const response = await api.put<UserData>(ENDPOINTS.users.byId(userId), userData);
     return response;
   } catch (error) {
     console.error('Error updating user:', error);
@@ -119,7 +120,7 @@ export const updateUser = async (userId: string, userData: UpdateUserPayload): P
  */
 export const deleteUser = async (userId: string): Promise<ApiResponse<void>> => {
   try {
-    const response = await api.delete<void>(`admin/users/${userId}`);
+    const response = await api.delete<void>(ENDPOINTS.users.byId(userId));
     return response;
   } catch (error) {
     console.error('Error deleting user:', error);
@@ -132,7 +133,7 @@ export const deleteUser = async (userId: string): Promise<ApiResponse<void>> => 
  */
 export const searchUsers = async (email: string): Promise<UserListResponse> => {
   try {
-    const response = await api.get<UserListResponse>('admin/users/search', {
+    const response = await api.get<UserListResponse>(ENDPOINTS.users.search, {
       params: { email },
     });
     return response;

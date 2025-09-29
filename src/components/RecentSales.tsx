@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { api } from "../lib/api/api-client";
+import { ENDPOINTS } from "../lib/endpoints";
 import { Button } from "./ui/button";
 import { useSession } from "next-auth/react";
 
@@ -66,11 +67,11 @@ export default function RecentSales() {
         let rides: RideData[] = [];
 
         if (viewType === "users") {
-          const usersResponse = await api.get<User[]>("/admin/users?limit=" + limit, { headers });
+          const usersResponse = await api.get<User[]>(`${ENDPOINTS.users.base}?limit=${limit}`, { headers });
           const users = usersResponse.data ?? [];
 
           const userRidesPromises = users.map(async (user) => {
-            const response = await api.get<RideDetail[]>(`/api/ride/${user.id}`, { headers });
+            const response = await api.get<RideDetail[]>(ENDPOINTS.rides.rideByUser(user.id), { headers });
             const userRides = response.data ?? [];
             return userRides.map((ride) => ({
               id: ride.rideId,
@@ -86,11 +87,11 @@ export default function RecentSales() {
             .slice(0, limit);
 
         } else if (viewType === "drivers") {
-          const driversResponse = await api.get<DriverSummary[]>("/admin/drivers?limit=" + limit, { headers });
+          const driversResponse = await api.get<DriverSummary[]>(`${ENDPOINTS.drivers.base}?limit=${limit}`, { headers });
           const drivers = driversResponse.data ?? [];
 
           const driverRidesPromises = drivers.map(async (driver) => {
-            const response = await api.get<RideDetail[]>(`/api/driver/${driver.id}/rides?status=completed&limit=5`, { headers });
+            const response = await api.get<RideDetail[]>(`${ENDPOINTS.rides.driverRides(driver.id)}?status=completed&limit=5`, { headers });
             const driverRides = response.data ?? [];
             return driverRides.map((ride) => ({
               id: ride.rideId,

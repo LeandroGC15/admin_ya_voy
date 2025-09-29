@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import MetricCard from '../../../components/MetricCard';
 import { Users, Car, ShoppingCart, DollarSign, Bell, TrendingUp, Truck, CircleDollarSign, Home, ShieldCheck } from 'lucide-react';
 import { api } from '../../../lib/api/api-client';
+import { ENDPOINTS } from '../../../lib/endpoints';
 import { MetricsData } from '../../../interfaces/MetricsResponse';
 
 interface MetricCardData {
@@ -32,7 +33,7 @@ useEffect(() => {
 
     try {
   const response = await api.get<MetricsData>(
-    '/admin/dashboard/metrics',
+    ENDPOINTS.dashboard.metrics,
     { headers: { Authorization: `Bearer ${session.accessToken}` } }
   );
 

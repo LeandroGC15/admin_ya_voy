@@ -34,7 +34,7 @@ export interface ApiMutationOptions<TData = unknown, TVariables = unknown> {
 
 // Custom hook for API queries with automatic token handling
 export function useApiQuery<TData = unknown>(
-  queryKey: string[],
+  queryKey: readonly unknown[],
   queryFn: () => Promise<TData>,
   options: ApiQueryOptions = {}
 ) {

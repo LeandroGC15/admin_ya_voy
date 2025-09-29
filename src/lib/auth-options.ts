@@ -6,6 +6,7 @@ import {
   RefreshTokenResponse,
 } from "../features/auth/types/next-auth";
 import axios from "axios";
+import { ENDPOINTS, getFullEndpoint } from "./endpoints";
 
 interface ApiResponse<T> {
   data: T;
@@ -48,7 +49,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
     const { data: payload } = await axios.post<
       ApiResponse<RefreshTokenResponse>
     >(
-      `${process.env.NEXT_PUBLIC_API_URL}admin/auth/refresh`,
+      getFullEndpoint(ENDPOINTS.auth.refresh),
       body,
       { headers: { "Content-Type": "application/json" } }
     );
@@ -106,7 +107,7 @@ export const authOptions: AuthOptions = {
           const { data: payload } = await axios.post<
             ApiResponse<LoginResponse>
           >(
-            `${process.env.NEXT_PUBLIC_API_URL}admin/auth/login`,
+            getFullEndpoint(ENDPOINTS.auth.login),
             { email: credentials.email, password: credentials.password },
             { headers: { "Content-Type": "application/json" } }
           );

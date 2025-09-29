@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useCreateUserLegacy } from '../hooks';
+import { toast } from 'sonner';
 
 interface UserCreationFormProps {
   onClose: () => void;
@@ -11,50 +12,39 @@ interface UserCreationFormProps {
 const UserCreationForm: React.FC<UserCreationFormProps> = ({ onClose, onUserCreated }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+
+  const createUserMutation = useCreateUserLegacy();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
 
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      if (!API_URL) {
-        throw new Error('La URL de la API no está configurada en las variables de entorno.');
-      }
-
-      const response = await axios.post(`${API_URL}api/user`, {
-        name,
-        email,
-        clerkId: `temp_frontend_${Date.now()}`, // Placeholder para satisfacer la validación del backend
-      });
-
-      if (response.status === 201) {
-        setSuccess('Usuario creado exitosamente!');
-        setName('');
-        setEmail('');
-        onUserCreated();
-      } else {
-        setError(`Error inesperado: ${response.statusText}`);
-      }
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
-        if (err.response.status === 409) {
-          setError('El email ya está registrado.');
-        } else {
-          setError(`Error al crear el usuario: ${err.response.data.message || err.message}`);
-        }
-      } else {
-        setError(`Error al crear el usuario: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      console.error('Error creating user:', err);
-    } finally {
-      setLoading(false);
+    if (!name.trim() || !email.trim()) {
+      toast.error('Por favor complete todos los campos');
+      return;
     }
+
+    createUserMutation.mutate(
+      {
+        name: name.trim(),
+        email: email.trim(),
+        clerkId: `temp_frontend_${Date.now()}`,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Usuario creado exitosamente!');
+          setName('');
+          setEmail('');
+          onUserCreated();
+        },
+        onError: (error: any) => {
+          if (error.message?.includes('409') || error.message?.includes('already exists')) {
+            toast.error('El email ya está registrado');
+          } else {
+            toast.error(`Error al crear usuario: ${error.message || 'Error desconocido'}`);
+          }
+        },
+      }
+    );
   };
 
   return (
@@ -88,23 +78,21 @@ const UserCreationForm: React.FC<UserCreationFormProps> = ({ onClose, onUserCrea
               required
             />
           </div>
-          {error && <p className="mb-4 text-red-500 text-sm">{error}</p>}
-          {success && <p className="mb-4 text-green-500 text-sm">{success}</p>}
           <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
               className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-              disabled={loading}
+              disabled={createUserMutation.isPending}
             >
               Cancelar
             </button>
             <button
               type="submit"
               className="rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-              disabled={loading}
+              disabled={createUserMutation.isPending}
             >
-              {loading ? 'Creando...' : 'Crear Usuario'}
+              {createUserMutation.isPending ? 'Creando...' : 'Crear Usuario'}
             </button>
           </div>
         </form>

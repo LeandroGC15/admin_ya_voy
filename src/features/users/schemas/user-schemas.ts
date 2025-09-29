@@ -1,27 +1,28 @@
 import { z } from 'zod';
 
-// Base user schema
+// Base user schema (según documentación de API)
 export const userSchema = z.object({
-  id: z.string(),
-  name: z.string().min(1, 'El nombre es requerido'),
-  email: z.string().email('Email inválido'),
+  id: z.number(),
+  name: z.string(),
+  email: z.string().email(),
   phone: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
   country: z.string().optional(),
-  isActive: z.boolean().optional(),
   userType: z.enum(['passenger', 'driver']).optional(),
-  adminRole: z.string().optional(),
-  createdAt: z.string().optional(),
-  clerkId: z.string().optional(),
+  isActive: z.boolean(),
+  emailVerified: z.boolean(),
+  phoneVerified: z.boolean(),
+  identityVerified: z.boolean(),
+  createdAt: z.string(),
   wallet: z.object({
     balance: z.number(),
+    totalTransactions: z.number(),
   }).optional(),
-  _count: z.object({
-    rides: z.number().optional(),
-    deliveryOrders: z.number().optional(),
-    ratings: z.number().optional(),
-  }).optional(),
+  totalRides: z.number(),
+  completedRides: z.number(),
+  cancelledRides: z.number(),
+  averageRating: z.number(),
 });
 
 // Create user schema
@@ -56,21 +57,13 @@ export const searchUsersSchema = z.object({
   limit: z.number().min(1).max(100).optional(),
 });
 
-// User list response schema
+// User list response schema (según documentación de API)
 export const userListResponseSchema = z.object({
-  data: z.array(userSchema),
-  pagination: z.object({
-    page: z.number(),
-    limit: z.number(),
-    total: z.number(),
-    totalPages: z.number(),
-    hasNext: z.boolean(),
-    hasPrev: z.boolean(),
-  }),
-  filters: z.object({
-    applied: z.array(z.string()),
-    searchTerm: z.string(),
-  }),
+  users: z.array(userSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number(),
 });
 
 // Types inferred from schemas

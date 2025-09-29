@@ -1,4 +1,5 @@
 import { api } from '@/lib/api/api-client';
+import { ENDPOINTS } from '@/lib/endpoints';
 import { AuthResponseData } from '../interfaces/authResponse';
 
 // Types
@@ -10,7 +11,7 @@ export interface LoginCredentials {
 export const loginAdmin = async (credentials: LoginCredentials): Promise<AuthResponseData> => {
   try {
     console.log('Sending login request with:', credentials);
-    const response = await api.post<AuthResponseData>('/admin/auth/login', credentials, {
+    const response = await api.post<AuthResponseData>(ENDPOINTS.auth.login, credentials, {
       withCredentials: true,
       headers: {
         'Content-Type': 'application/json',

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useUserSearch } from '../hooks';
 import UserUpdateForm from './UserUpdateForm'; // Importar el nuevo componente
+import { toast } from 'sonner';
 
 interface UserSearchFormProps {
   onClose: () => void; // Mantener onClose si el formulario se puede cerrar
@@ -63,73 +64,51 @@ const UserSearchForm: React.FC<UserSearchFormProps> = ({ onClose, onSelectUserFo
   const [city, setCity] = useState('');
   const [userType, setUserType] = useState<string>('');
   const [isActive, setIsActive] = useState<boolean | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [users, setUsers] = useState<UserData[] | null>(null);
+  const [searchTriggered, setSearchTriggered] = useState(false);
+
+  // React Query hook
+  const { data: searchResult, isLoading, error } = useUserSearch(
+    {
+      email: email || undefined,
+      name: name || undefined,
+      phone: phone || undefined,
+      city: city || undefined,
+      userType: userType as 'passenger' | 'driver' || undefined,
+      isActive,
+      limit: 50,
+    },
+    searchTriggered
+  );
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
   const [totalPages, setTotalPages] = useState(1); // Estado para el total de páginas
   const limit = 5; // Definir un límite por página
   const [searchPerformed, setSearchPerformed] = useState(false); // Nuevo estado para controlar el layout
-  // const [selectedUserId, setSelectedUserId] = useState<string | null>(null); // Eliminado
-  // const [selectedAction, setSelectedAction] = useState<string>(''); // Eliminado
-  // const [initialUpdateData, setInitialUpdateData] = useState<any>(null); // Eliminado
-
-  const handleSubmit = async (e: React.FormEvent, page: number = 1) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    // No reiniciar users aquí si queremos mostrar los resultados de la página anterior mientras carga
-
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      if (!API_URL) {
-        throw new Error('La URL de la API no está configurada en las variables de entorno.');
-      }
-
-      const params = new URLSearchParams();
-      if (email) params.append('email', email);
-      if (name) params.append('name', name);
-      if (phone) params.append('phone', phone);
-      if (city) params.append('city', city);
-      if (userType) params.append('userType', userType);
-      if (isActive !== undefined) params.append('isActive', isActive.toString());
-      params.append('page', page.toString()); // Añadir parámetro de página
-      params.append('limit', limit.toString()); // Añadir parámetro de límite
-
-      let url = `${API_URL}api/user`;
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-
-      const response = await axios.get<ApiResponseData>(url); // Usar la interfaz ApiResponseData
-      
-      if (response.status === 200 && response.data && response.data.data && response.data.data.data) {
-        console.log('Datos de usuarios recibidos (solo array de data):', response.data.data.data); // Log del array de usuarios
-        setUsers(response.data.data.data);
-        setCurrentPage(response.data.data.pagination.page);
-        setTotalPages(response.data.data.pagination.totalPages);
-
-        if (response.data.data.data.length > 0) {
-          setSearchPerformed(true);
-        } else {
-          setSearchPerformed(false);
-          setError('No se encontraron usuarios con los criterios de búsqueda.');
-        }
+  // Handle search results from React Query
+  React.useEffect(() => {
+    if (searchResult) {
+      if (searchResult.users && searchResult.users.length > 0) {
+        setUsers(searchResult.users);
+        setCurrentPage(searchResult.page);
+        setTotalPages(searchResult.totalPages);
+        setSearchPerformed(true);
       } else {
+        setUsers([]);
         setSearchPerformed(false);
-        setError(`Error inesperado: ${response.statusText || 'Respuesta vacía o inválida'}`);
       }
-    } catch (err) {
-      setSearchPerformed(false);
-      if (axios.isAxiosError(err) && err.response) {
-        setError(`Error al buscar usuarios: ${err.response.data.message || err.message}`);
-      } else {
-        setError(`Error al buscar usuarios: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      console.error('Error searching users:', err);
-    } finally {
-      setLoading(false);
     }
+  }, [searchResult]);
+
+  // Handle errors
+  React.useEffect(() => {
+    if (error) {
+      setSearchPerformed(false);
+      toast.error('Error al buscar usuarios');
+    }
+  }, [error]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchTriggered(true);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -228,7 +207,7 @@ const UserSearchForm: React.FC<UserSearchFormProps> = ({ onClose, onSelectUserFo
                   <div className="flex justify-center mt-6 space-x-4">
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1 || loading}
+                      disabled={currentPage === 1 || isLoading}
                       className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
                     >
                       Anterior
@@ -236,7 +215,7 @@ const UserSearchForm: React.FC<UserSearchFormProps> = ({ onClose, onSelectUserFo
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2">Página {currentPage} de {totalPages}</span>
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages || loading}
+                      disabled={currentPage === totalPages || isLoading}
                       className="rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
                     >
                       Siguiente
@@ -341,16 +320,16 @@ const UserSearchForm: React.FC<UserSearchFormProps> = ({ onClose, onSelectUserFo
                 type="button"
                 onClick={handleClose}
                 className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-                disabled={loading}
+                disabled={isLoading}
               >
                 Cerrar
               </button>
               <button
                 type="submit"
                 className="rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                disabled={loading}
+                disabled={isLoading}
               >
-                {loading ? 'Buscando...' : 'Buscar'}
+                {isLoading ? 'Buscando...' : 'Buscar'}
               </button>
             </div>
           </form>

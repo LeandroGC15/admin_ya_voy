@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DataTable, Modal, CreateButton, ActionButtons } from '@/features/core/components';
-import { useDrivers, useCreateDriver, useDeleteDriver, driverKeys } from '@/features/drivers/hooks';
+import { useDrivers, useCreateDriver, useDeleteDriver } from '@/features/drivers/hooks';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { createDriverSchema, type Driver, type CreateDriverInput, type SearchDriversInput } from '@/features/drivers/schemas/driver-schemas';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,7 @@ const DriversPage: React.FC = () => {
   const createDriverMutation = useCreateDriver();
   const deleteDriverMutation = useDeleteDriver();
 
-  const drivers = driversResponse?.drivers || [];
+  const drivers = driversResponse?.data || [];
   const pagination = driversResponse ? {
     currentPage: driversResponse.page,
     totalPages: driversResponse.totalPages,
@@ -54,7 +54,7 @@ const DriversPage: React.FC = () => {
       onSuccess: () => {
         setShowCreateModal(false);
         createForm.reset();
-        invalidateQueries(driverKeys.lists());
+        invalidateQueries(['drivers']);
       },
     });
   };
@@ -64,7 +64,7 @@ const DriversPage: React.FC = () => {
     if (window.confirm(`¿Estás seguro de que quieres eliminar al conductor ${fullName}?`)) {
       deleteDriverMutation.mutate(driver.id.toString(), {
         onSuccess: () => {
-          invalidateQueries(driverKeys.lists());
+          invalidateQueries(['drivers']);
         },
       });
     }

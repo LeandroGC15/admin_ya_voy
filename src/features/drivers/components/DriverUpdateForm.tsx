@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useDriverSearch, useUpdateDriverStatusLegacy, invalidateQueries } from '../hooks';
+import { toast } from 'sonner';
 
 interface DriverUpdateFormProps {
   driverId?: string;
@@ -22,11 +23,17 @@ const DriverUpdateForm: React.FC<DriverUpdateFormProps> = ({
   initialDriverData: propInitialDriverData,
 }) => {
   const [currentStep, setCurrentStep] = useState<'identifyDriver' | 'updateFields'>(propDriverId && propInitialDriverData ? 'updateFields' : 'identifyDriver');
-  const [emailToSearch, setEmailToSearch] = useState(''); // Se usará para buscar por email o license plate
+  const [searchCriteria, setSearchCriteria] = useState('');
   const [formData, setFormData] = useState<any>(propInitialDriverData || {});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [currentDriverId, setCurrentDriverId] = useState<string | undefined>(propDriverId);
+
+  // React Query hooks
+  const { data: searchResults, isLoading: isSearching, error: searchError } = useDriverSearch(
+    searchCriteria ? { firstName: searchCriteria } : {},
+    !!searchCriteria && currentStep === 'identifyDriver'
+  );
+
+  const updateStatusMutation = useUpdateDriverStatusLegacy();
 
   useEffect(() => {
     if (propDriverId && propInitialDriverData) {
@@ -40,50 +47,46 @@ const DriverUpdateForm: React.FC<DriverUpdateFormProps> = ({
     }
   }, [propDriverId, propInitialDriverData]);
 
+  // Handle search results from React Query
+  useEffect(() => {
+    if (searchResults && searchResults.length > 0) {
+      const driver = searchResults[0];
+      setCurrentDriverId(driver.id.toString());
+      setFormData(driver);
+      setCurrentStep('updateFields');
+      setSearchCriteria(''); // Clear search after finding result
+    }
+  }, [searchResults]);
+
+  // Handle search error
+  useEffect(() => {
+    if (searchError) {
+      toast.error('Error al buscar conductor');
+    }
+  }, [searchError]);
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      if (!API_URL) {
-        throw new Error('La URL de la API no está configurada en las variables de entorno.');
-      }
-
-      let queryParam = '';
-      // Simple heuristic to guess if it's a license plate (e.g., contains a hyphen, or is short and alphanumeric)
-      if (emailToSearch.includes('-') || (emailToSearch.length <= 10 && /^[a-zA-Z0-9]+$/.test(emailToSearch))) {
-        queryParam = `licensePlate=${emailToSearch}`;
-      } else if (emailToSearch.includes('@') && emailToSearch.includes('.')) {
-        // Si parece un email, por ahora lo dejamos sin un filtro específico en el backend
-        // Asumimos que el backend podría manejarlo en el futuro o se ignorará si no hay un filtro de email.
-        // Para este caso, vamos a buscar por firstName/lastName si el emailToSearch no es una placa.
-        queryParam = `firstName=${emailToSearch}`;
-      } else {
-        queryParam = `firstName=${emailToSearch}`;
-      }
-
-      const response = await axios.get(`${API_URL}api/driver?${queryParam}`);
-
-      if (response.status === 200 && response.data && response.data.data && response.data.data.data.length > 0) {
-        const driver = response.data.data.data[0];
-        setCurrentDriverId(driver.id);
-        setFormData(driver);
-        setCurrentStep('updateFields');
-      } else {
-        setError('Conductor no encontrado con los criterios de búsqueda.');
-      }
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
-        setError(err.response.data.message || err.message);
-      } else {
-        setError(`Error al buscar conductor: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      console.error('Error searching driver:', err);
-    } finally {
-      setLoading(false);
+    if (!searchCriteria.trim()) {
+      toast.error('Por favor ingrese un criterio de búsqueda');
+      return;
     }
+
+    // The search will be triggered by the useEffect when searchCriteria changes
+    // For now, we'll use a simple heuristic
+    let criteria = {};
+    const searchValue = searchCriteria.trim();
+
+    if (searchValue.includes('-') || (searchValue.length <= 10 && /^[a-zA-Z0-9]+$/.test(searchValue))) {
+      criteria = { licensePlate: searchValue };
+    } else if (searchValue.includes('@') && searchValue.includes('.')) {
+      criteria = { email: searchValue };
+    } else {
+      criteria = { firstName: searchValue };
+    }
+
+    // Trigger search by updating search criteria
+    setSearchCriteria(searchValue);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -96,42 +99,29 @@ const DriverUpdateForm: React.FC<DriverUpdateFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
 
     if (!currentDriverId) {
-      setError('No hay conductor seleccionado para actualizar.');
-      setLoading(false);
+      toast.error('No hay conductor seleccionado para actualizar.');
       return;
     }
 
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      if (!API_URL) {
-        throw new Error('La URL de la API no está configurada en las variables de entorno.');
-      }
-
-      // Envía solo el campo 'status' al endpoint de actualización de estado.
-      const response = await axios.put(`${API_URL}api/driver/${currentDriverId}/status`, {
+    updateStatusMutation.mutate(
+      {
+        driverId: currentDriverId,
         status: formData.status,
-      });
-
-      if (response.status === 200) {
-        onDriverUpdated();
-        onClose();
-      } else {
-        setError(response.data.message || 'Error al actualizar el conductor.');
+      },
+      {
+        onSuccess: () => {
+          toast.success('Conductor actualizado exitosamente');
+          invalidateQueries(['drivers']);
+          onDriverUpdated();
+          onClose();
+        },
+        onError: (error: any) => {
+          toast.error(`Error al actualizar conductor: ${error.message || 'Error desconocido'}`);
+        },
       }
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
-        setError(err.response.data.message || err.message);
-      } else {
-        setError(`Error al actualizar conductor: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      console.error('Error updating driver:', err);
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   return (
@@ -161,16 +151,16 @@ const DriverUpdateForm: React.FC<DriverUpdateFormProps> = ({
                   type="button"
                   onClick={onClose}
                   className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-                  disabled={loading}
+                  disabled={updateStatusMutation.isPending}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   className="rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                  disabled={loading}
+                  disabled={isSearching}
                 >
-                  {loading ? 'Buscando...' : 'Buscar Conductor'}
+                  {isSearching ? 'Buscando...' : 'Buscar Conductor'}
                 </button>
               </div>
             </form>
@@ -262,16 +252,16 @@ const DriverUpdateForm: React.FC<DriverUpdateFormProps> = ({
                   type="button"
                   onClick={onClose}
                   className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-                  disabled={loading}
+                  disabled={updateStatusMutation.isPending}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   className="rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                  disabled={loading}
+                  disabled={updateStatusMutation.isPending}
                 >
-                  {loading ? 'Actualizando...' : 'Actualizar'}
+                  {updateStatusMutation.isPending ? 'Actualizando...' : 'Actualizar'}
                 </button>
               </div>
             </form>

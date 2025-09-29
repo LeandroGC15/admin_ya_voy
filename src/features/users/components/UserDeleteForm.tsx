@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useDeleteUserLegacy } from '../hooks';
+import { toast } from 'sonner';
 
 interface UserDeleteFormProps {
   onClose: () => void;
@@ -10,51 +11,31 @@ interface UserDeleteFormProps {
 
 const UserDeleteForm: React.FC<UserDeleteFormProps> = ({ onClose, onUserDeleted }) => {
   const [userId, setUserId] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+
+  const deleteUserMutation = useDeleteUserLegacy();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
 
-    if (!userId) {
-      setError('Por favor, ingrese el ID del usuario.');
-      setLoading(false);
+    if (!userId.trim()) {
+      toast.error('Por favor, ingrese el ID del usuario.');
       return;
     }
 
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      if (!API_URL) {
-        throw new Error('La URL de la API no está configurada en las variables de entorno.');
-      }
-
-      const response = await axios.delete(`${API_URL}api/user/${userId}`);
-
-      if (response.status === 200) {
-        setSuccess(`Usuario con ID ${userId} eliminado exitosamente.`);
+    deleteUserMutation.mutate(userId.trim(), {
+      onSuccess: () => {
+        toast.success(`Usuario con ID ${userId} eliminado exitosamente.`);
         setUserId('');
         onUserDeleted();
-      } else {
-        setError(`Error inesperado: ${response.statusText}`);
-      }
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
-        if (err.response.status === 404) {
-          setError('Usuario no encontrado con ese ID.');
+      },
+      onError: (error: any) => {
+        if (error.message?.includes('404') || error.message?.includes('not found')) {
+          toast.error('Usuario no encontrado con ese ID.');
         } else {
-          setError(`Error al eliminar el usuario: ${err.response.data.message || err.message}`);
+          toast.error(`Error al eliminar usuario: ${error.message || 'Error desconocido'}`);
         }
-      } else {
-        setError(`Error al eliminar el usuario: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      console.error('Error deleting user:', err);
-    } finally {
-      setLoading(false);
-    }
+      },
+    });
   };
 
   return (
@@ -75,23 +56,21 @@ const UserDeleteForm: React.FC<UserDeleteFormProps> = ({ onClose, onUserDeleted 
               required
             />
           </div>
-          {error && <p className="mb-4 text-red-500 text-sm">{error}</p>}
-          {success && <p className="mb-4 text-green-500 text-sm">{success}</p>}
           <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
               className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-              disabled={loading}
+              disabled={deleteUserMutation.isPending}
             >
               Cancelar
             </button>
             <button
               type="submit"
               className="rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:bg-red-500 dark:hover:bg-red-600"
-              disabled={loading}
+              disabled={deleteUserMutation.isPending}
             >
-              {loading ? 'Eliminando...' : 'Eliminar Usuario'}
+              {deleteUserMutation.isPending ? 'Eliminando...' : 'Eliminar Usuario'}
             </button>
           </div>
         </form>

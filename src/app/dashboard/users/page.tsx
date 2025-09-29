@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DataTable, Modal, CreateButton, ActionButtons } from '@/features/core/components';
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, userKeys } from '@/features/users/hooks';
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/features/users/hooks';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { createUserSchema, updateUserSchema, type User, type CreateUserInput, type UpdateUserInput, type SearchUsersInput } from '@/features/users/schemas/user-schemas';
 import { Button } from '@/components/ui/button';
@@ -50,7 +50,6 @@ const UsersPage: React.FC = () => {
   React.useEffect(() => {
     if (error) {
       console.error('Error loading users:', error);
-      alert(`Error al cargar usuarios: ${error.message || 'Error desconocido'}`);
     }
   }, [error]);
 
@@ -58,11 +57,11 @@ const UsersPage: React.FC = () => {
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
 
-  const users = usersResponse?.data || [];
+  const users = usersResponse?.users || [];
   const pagination = usersResponse ? {
-    currentPage: usersResponse.pagination.page,
-    totalPages: usersResponse.pagination.totalPages,
-    totalItems: usersResponse.pagination.total,
+    currentPage: usersResponse.page,
+    totalPages: usersResponse.totalPages,
+    totalItems: usersResponse.total,
   } : null;
 
   const handleCreate = (data: CreateUserInput) => {
@@ -70,7 +69,7 @@ const UsersPage: React.FC = () => {
       onSuccess: () => {
         setShowCreateModal(false);
         createForm.reset();
-        invalidateQueries(userKeys.lists());
+        invalidateQueries(['users']);
       },
       onError: (error: any) => {
         console.error('Error creating user:', error);
@@ -97,12 +96,12 @@ const UsersPage: React.FC = () => {
   const handleUpdate = (data: UpdateUserInput) => {
     if (selectedUser) {
       updateUserMutation.mutate(
-        { userId: selectedUser.id, userData: data },
+        { userId: selectedUser.id.toString(), userData: data },
         {
           onSuccess: () => {
             setShowEditModal(false);
             setSelectedUser(null);
-            invalidateQueries(userKeys.lists());
+            invalidateQueries(['users']);
           },
           onError: (error: any) => {
             console.error('Error updating user:', error);
@@ -115,9 +114,9 @@ const UsersPage: React.FC = () => {
 
   const handleDelete = (user: User) => {
     if (window.confirm(`¿Estás seguro de que quieres eliminar al usuario ${user.name}?`)) {
-      deleteUserMutation.mutate(user.id, {
+      deleteUserMutation.mutate(user.id.toString(), {
         onSuccess: () => {
-          invalidateQueries(userKeys.lists());
+          invalidateQueries(['users']);
         },
         onError: (error: any) => {
           console.error('Error deleting user:', error);

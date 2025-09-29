@@ -1,5 +1,6 @@
-import { useApiQuery, useApiMutation, createQueryKey } from '@/lib/api/react-query-client';
+import { useApiQuery, useApiMutation } from '@/lib/api/react-query-client';
 import { api } from '@/lib/api/api-client';
+import { ENDPOINTS } from '@/lib/endpoints';
 import type {
   User,
   CreateUserInput,
@@ -8,23 +9,14 @@ import type {
   UserListResponse
 } from '../schemas/user-schemas';
 
-// Query Keys
-export const userKeys = {
-  all: ['users'] as const,
-  lists: () => [...userKeys.all, 'list'] as const,
-  list: (params: SearchUsersInput) => [...userKeys.lists(), params] as const,
-  details: () => [...userKeys.all, 'detail'] as const,
-  detail: (id: string) => [...userKeys.details(), id] as const,
-};
-
 // Fetch users hook
 export function useUsers(params: SearchUsersInput = {}) {
   return useApiQuery(
-    userKeys.list(params),
+    ['users', 'list', params],
     async (): Promise<UserListResponse> => {
       try {
-        const response = await api.get<UserListResponse>('admin/users', {
-          params: {
+        const response = await api.get<UserListResponse>(ENDPOINTS.users.base, {
+          params: { 
             page: params.page || 1,
             limit: params.limit || 10,
             search: params.search,
@@ -32,10 +24,12 @@ export function useUsers(params: SearchUsersInput = {}) {
             userType: params.userType,
           },
         });
-        return response;
+        if (!response || !response.data) {
+          throw new Error('Invalid API response: no data received');
+        }
+        return response.data;
       } catch (error: any) {
         console.error('Error fetching users:', error);
-        alert(`Error al cargar usuarios: ${error.message || 'Error desconocido'}`);
         throw error;
       }
     },
@@ -50,9 +44,12 @@ export function useCreateUser() {
   return useApiMutation(
     async (userData: CreateUserInput): Promise<User> => {
       try {
-        const response = await api.post<User>('admin/users', userData);
+        const response = await api.post<User>(ENDPOINTS.users.base, userData);
         alert('Usuario creado exitosamente');
-        return response;
+        if (!response || !response.data) {
+          throw new Error('Invalid API response: no data received');
+        }
+        return response.data;
       } catch (error: any) {
         console.error('Error creating user:', error);
         alert(`Error al crear usuario: ${error.message || 'Error desconocido'}`);
@@ -77,9 +74,12 @@ export function useUpdateUser() {
   return useApiMutation(
     async ({ userId, userData }: { userId: string; userData: UpdateUserInput }): Promise<User> => {
       try {
-        const response = await api.put<User>(`admin/users/${userId}`, userData);
+        const response = await api.put<User>(ENDPOINTS.users.byId(userId), userData);
         alert('Usuario actualizado exitosamente');
-        return response;
+        if (!response || !response.data) {
+          throw new Error('Invalid API response: no data received');
+        }
+        return response.data;
       } catch (error: any) {
         console.error('Error updating user:', error);
         alert(`Error al actualizar usuario: ${error.message || 'Error desconocido'}`);
@@ -104,7 +104,7 @@ export function useDeleteUser() {
   return useApiMutation(
     async (userId: string): Promise<void> => {
       try {
-        await api.delete<void>(`admin/users/${userId}`);
+        await api.delete<void>(ENDPOINTS.users.byId(userId));
         alert('Usuario eliminado exitosamente');
       } catch (error: any) {
         console.error('Error deleting user:', error);
@@ -130,10 +130,13 @@ export function useSearchUsersByEmail() {
   return useApiMutation(
     async (email: string): Promise<UserListResponse> => {
       try {
-        const response = await api.get<UserListResponse>('admin/users/search', {
+        const response = await api.get<UserListResponse>(ENDPOINTS.users.search, {
           params: { email },
         });
-        return response;
+        if (!response || !response.data) {
+          throw new Error('Invalid API response: no data received');
+        }
+        return response.data;
       } catch (error: any) {
         console.error('Error searching users by email:', error);
         alert(`Error al buscar usuarios: ${error.message || 'Error desconocido'}`);
@@ -152,11 +155,14 @@ export function useSearchUsersByEmail() {
 // Get user by ID hook
 export function useUser(userId: string) {
   return useApiQuery(
-    userKeys.detail(userId),
+    ['users', 'detail', userId],
     async (): Promise<User> => {
       try {
-        const response = await api.get<User>(`admin/users/${userId}`);
-        return response;
+        const response = await api.get<User>(ENDPOINTS.users.byId(userId));
+        if (!response || !response.data) {
+          throw new Error('Invalid API response: no data received');
+        }
+        return response.data;
       } catch (error: any) {
         console.error('Error fetching user:', error);
         alert(`Error al cargar usuario: ${error.message || 'Error desconocido'}`);

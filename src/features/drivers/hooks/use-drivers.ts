@@ -1,5 +1,6 @@
 import { useApiQuery, useApiMutation, createQueryKey } from '@/lib/api/react-query-client';
 import { api } from '@/lib/api/api-client';
+import { ENDPOINTS } from '@/lib/endpoints';
 import type {
   Driver,
   CreateDriverInput,
@@ -8,21 +9,13 @@ import type {
   DriversData
 } from '../schemas/driver-schemas';
 
-// Query Keys
-export const driverKeys = {
-  all: ['drivers'] as const,
-  lists: () => [...driverKeys.all, 'list'] as const,
-  list: (params: SearchDriversInput) => [...driverKeys.lists(), params] as const,
-  details: () => [...driverKeys.all, 'detail'] as const,
-  detail: (id: number) => [...driverKeys.details(), id] as const,
-};
 
 // Fetch drivers hook
 export function useDrivers(params: SearchDriversInput = {}) {
   return useApiQuery(
-    driverKeys.list(params),
+    ['drivers', 'list', params],
     async (): Promise<DriverListResponse> => {
-      const response = await api.get<DriverListResponse>('api/driver', {
+      const response = await api.get<DriverListResponse>(ENDPOINTS.drivers.base, {
         params: {
           page: params.page || 1,
           limit: params.limit || 10,
@@ -31,7 +24,13 @@ export function useDrivers(params: SearchDriversInput = {}) {
           verificationStatus: params.verificationStatus,
         },
       });
-      return response;
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      return response.data;
     },
     {
       enabled: true,
@@ -43,8 +42,14 @@ export function useDrivers(params: SearchDriversInput = {}) {
 export function useCreateDriver() {
   return useApiMutation(
     async (driverData: CreateDriverInput): Promise<Driver> => {
-      const response = await api.post<Driver>('api/driver/register', driverData);
-      return response;
+      const response = await api.post<Driver>(ENDPOINTS.drivers.register, driverData);
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      return response.data;
     },
     {
       onSuccess: (newDriver) => {
@@ -59,7 +64,7 @@ export function useCreateDriver() {
 export function useDeleteDriver() {
   return useApiMutation(
     async (driverId: string): Promise<void> => {
-      await api.delete<void>(`admin/drivers/${driverId}`);
+      await api.delete<void>(ENDPOINTS.drivers.byId(driverId));
     },
     {
       onSuccess: () => {
@@ -73,10 +78,16 @@ export function useDeleteDriver() {
 // Get driver by ID hook
 export function useDriver(driverId: number) {
   return useApiQuery(
-    driverKeys.detail(driverId),
+    ['drivers', 'detail', driverId],
     async (): Promise<Driver> => {
-      const response = await api.get<Driver>(`admin/drivers/${driverId}`);
-      return response;
+      const response = await api.get<Driver>(ENDPOINTS.drivers.byId(driverId));
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      return response.data;
     },
     {
       enabled: !!driverId,
@@ -88,8 +99,11 @@ export function useDriver(driverId: number) {
 export function useUpdateDriverStatus() {
   return useApiMutation(
     async ({ driverId, status }: { driverId: number; status: string }): Promise<Driver> => {
-      const response = await api.patch<Driver>(`admin/drivers/${driverId}/status`, { status });
-      return response;
+      const response = await api.patch<Driver>(ENDPOINTS.drivers.status(driverId), { status });
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      return response.data;
     },
     {
       onSuccess: (updatedDriver) => {
@@ -104,8 +118,11 @@ export function useUpdateDriverStatus() {
 export function useUpdateDriverVerification() {
   return useApiMutation(
     async ({ driverId, verificationStatus }: { driverId: number; verificationStatus: string }): Promise<Driver> => {
-      const response = await api.patch<Driver>(`admin/drivers/${driverId}/verification`, { verificationStatus });
-      return response;
+      const response = await api.patch<Driver>(ENDPOINTS.drivers.verification(driverId), { verificationStatus });
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      return response.data;
     },
     {
       onSuccess: (updatedDriver) => {

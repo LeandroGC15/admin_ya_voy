@@ -64,7 +64,7 @@ export const searchDriversSchema = z.object({
 
 // Driver list response schema
 export const driverListResponseSchema = z.object({
-  drivers: z.array(driverSchema),
+  data: z.array(driverSchema),
   total: z.number(),
   page: z.number(),
   totalPages: z.number(),

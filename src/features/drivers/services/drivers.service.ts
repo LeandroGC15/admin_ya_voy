@@ -1,4 +1,5 @@
 import { api } from '@/lib/api/api-client';
+import { ENDPOINTS } from '@/lib/endpoints';
 import type { ApiResponse } from '@/interfaces/ApiResponse';
 import type { RegisterDriverPayload, DriverData } from '../interfaces/drivers';
 import type { DriverSearchValues } from '../schemas/driver-search.schema';
@@ -23,7 +24,7 @@ interface RegisterDriverData {
  */
 export const registerDriver = async (driverData: RegisterDriverPayload): Promise<ApiResponse<RegisterDriverData>> => {
   try {
-    const response = await api.post<RegisterDriverData>('api/driver/register', driverData);
+    const response = await api.post<RegisterDriverData>(ENDPOINTS.drivers.register, driverData);
     return response;
   } catch (error) {
     console.error('Error registering driver:', error);
@@ -39,7 +40,7 @@ export const registerDriver = async (driverData: RegisterDriverPayload): Promise
  */
 export const deleteDriver = async (driverId: string): Promise<ApiResponse<void>> => {
   try {
-    const response = await api.delete<void>(`admin/drivers/${driverId}`);
+    const response = await api.delete<void>(ENDPOINTS.drivers.byId(driverId));
     return response;
   } catch (error) {
     console.error(`Error deleting driver ${driverId}:`, error);

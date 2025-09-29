@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useUserByEmail, useUpdateUserLegacy } from '../hooks';
+import { toast } from 'sonner';
 
 interface UserUpdateFormProps {
   userId?: string; // Ahora es opcional
@@ -32,9 +33,11 @@ const UserUpdateForm: React.FC<UserUpdateFormProps> = ({
   const [currentStep, setCurrentStep] = useState<'identifyUser' | 'updateFields'>(propUserId && propInitialUserData ? 'updateFields' : 'identifyUser');
   const [emailToSearch, setEmailToSearch] = useState('');
   const [formData, setFormData] = useState<any>(propInitialUserData || {});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(propUserId);
+
+  // React Query hooks
+  const { data: searchResults, isLoading: isSearching } = useUserByEmail(emailToSearch, !!emailToSearch && currentStep === 'identifyUser');
+  const updateUserMutation = useUpdateUserLegacy();
 
   useEffect(() => {
     if (propUserId && propInitialUserData) {
@@ -48,37 +51,27 @@ const UserUpdateForm: React.FC<UserUpdateFormProps> = ({
     }
   }, [propUserId, propInitialUserData]);
 
+  // Handle search results from React Query
+  useEffect(() => {
+    if (searchResults && searchResults.users && searchResults.users.length > 0) {
+      const user = searchResults.users[0];
+      setCurrentUserId(user.id.toString());
+      setFormData(user);
+      setCurrentStep('updateFields');
+      setEmailToSearch(''); // Clear search after finding result
+    }
+  }, [searchResults]);
+
   const handleEmailSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      if (!API_URL) {
-        throw new Error('La URL de la API no está configurada en las variables de entorno.');
-      }
-
-      const response = await axios.get(`${API_URL}api/user?email=${emailToSearch}`);
-
-      if (response.status === 200 && response.data && response.data.data && response.data.data.data.length > 0) {
-        const user = response.data.data.data[0];
-        setCurrentUserId(user.id);
-        setFormData(user);
-        setCurrentStep('updateFields');
-      } else {
-        setError('Usuario no encontrado con ese email.');
-      }
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
-        setError(err.response.data.message || err.message);
-      } else {
-        setError(`Error al buscar usuario: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      console.error('Error searching user by email:', err);
-    } finally {
-      setLoading(false);
+    if (!emailToSearch.trim()) {
+      toast.error('Por favor ingrese un email para buscar');
+      return;
     }
+
+    // The search will be triggered by the useEffect when emailToSearch changes
+    // For now, we'll trigger it manually by setting the state
+    // This is handled by the useUserByEmail hook above
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -91,39 +84,28 @@ const UserUpdateForm: React.FC<UserUpdateFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
 
     if (!currentUserId) {
-      setError('No hay usuario seleccionado para actualizar.');
-      setLoading(false);
+      toast.error('No hay usuario seleccionado para actualizar.');
       return;
     }
 
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      if (!API_URL) {
-        throw new Error('La URL de la API no está configurada en las variables de entorno.');
+    updateUserMutation.mutate(
+      {
+        userId: currentUserId,
+        userData: formData,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Usuario actualizado exitosamente');
+          onUserUpdated();
+          onClose();
+        },
+        onError: (error: any) => {
+          toast.error(`Error al actualizar usuario: ${error.message || 'Error desconocido'}`);
+        },
       }
-
-      const response = await axios.put(`${API_URL}api/user/${currentUserId}`, formData);
-
-      if (response.status === 200) {
-        onUserUpdated();
-        onClose();
-      } else {
-        setError(response.data.message || 'Error al actualizar el usuario.');
-      }
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
-        setError(err.response.data.message || err.message);
-      } else {
-        setError(`Error al actualizar usuario: ${err instanceof Error ? err.message : String(err)}`);
-      }
-      console.error('Error updating user:', err);
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   return (
@@ -154,16 +136,16 @@ const UserUpdateForm: React.FC<UserUpdateFormProps> = ({
                   type="button"
                   onClick={onClose}
                   className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-                  disabled={loading}
+                  disabled={updateUserMutation.isPending}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   className="rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                  disabled={loading}
+                  disabled={updateUserMutation.isPending}
                 >
-                  {loading ? 'Buscando...' : 'Buscar Usuario'}
+                  {isSearching ? 'Buscando...' : 'Buscar Usuario'}
                 </button>
               </div>
             </form>
@@ -385,16 +367,16 @@ const UserUpdateForm: React.FC<UserUpdateFormProps> = ({
                   type="button"
                   onClick={onClose}
                   className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-                  disabled={loading}
+                  disabled={updateUserMutation.isPending}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   className="rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                  disabled={loading}
+                  disabled={updateUserMutation.isPending}
                 >
-                  {loading ? 'Actualizando...' : 'Actualizar'}
+                  {updateUserMutation.isPending ? 'Actualizando...' : 'Actualizar'}
                 </button>
               </div>
             </form>

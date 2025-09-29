@@ -1,6 +1,7 @@
 import { ApiResponse } from '@/interfaces/ApiResponse';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { getSession } from 'next-auth/react';
+import { ENDPOINTS } from '../endpoints';
 
 // Types
 export interface ServerErrorResponse {
@@ -120,7 +121,7 @@ class ApiClient {
             const session = await getSession();
             if (!session?.refreshToken) throw new Error('No refresh token found');
 
-            const { data } = await this.instance.post<{ access_token: string }>('/admin/auth/refresh', {
+            const { data } = await this.instance.post<{ access_token: string }>(ENDPOINTS.auth.refresh, {
               refresh_token: session.refreshToken,
             });
 
@@ -147,29 +148,29 @@ class ApiClient {
     );
   }
 
-  public async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.instance.get<ApiResponse<T>>(url, config);
-    return response.data;
+  public async get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const response = await this.instance.get<T>(url, config);
+    return response;
   }
 
-  public async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.instance.post<ApiResponse<T>>(url, data, config);
-    return response.data;
+  public async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const response = await this.instance.post<T>(url, data, config);
+    return response;
   }
 
-  public async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.instance.put<ApiResponse<T>>(url, data, config);
-    return response.data;
+  public async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const response = await this.instance.put<T>(url, data, config);
+    return response;
   }
 
-  public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.instance.delete<ApiResponse<T>>(url, config);
-    return response.data;
+  public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const response = await this.instance.delete<T>(url, config);
+    return response;
   }
 
-  public async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.instance.patch<ApiResponse<T>>(url, data, config);
-    return response.data;
+  public async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const response = await this.instance.patch<T>(url, data, config);
+    return response;
   }
 }
 
