@@ -7,6 +7,7 @@ import {
 } from "../features/auth/types/next-auth";
 import axios from "axios";
 import { ENDPOINTS, getFullEndpoint } from "./endpoints";
+import { JWT } from "next-auth/jwt";
 
 interface ApiResponse<T> {
   data: T;
@@ -33,17 +34,12 @@ export interface MappedUser extends NextAuthUser {
   accessTokenExpiry: number; // ms
 }
 
-// 🔹 JWT personalizado
-export interface JWT extends MappedUser {
-  error?: string;
-}
-
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
     console.log("[Refresh] Intentando refresh token para:", token.admin?.email);
 
     const body: RefreshTokenRequest = {
-      refresh_token: token.refreshToken,
+      refreshToken: token.refreshToken,
     };
 
     const { data: payload } = await axios.post<
@@ -186,13 +182,12 @@ export const authOptions: AuthOptions = {
     async session({ session, token }) {
 
       const jwtToken = token as unknown as JWT;
-
       session.user = {
         id: jwtToken.id,
         name: jwtToken.name,
         email: jwtToken.email,
-        role: jwtToken.role,
-        permissions: jwtToken.permissions,
+        role: jwtToken.admin.role,
+        permissions: jwtToken.admin.permissions,
       };
 
       session.accessToken = jwtToken.accessToken;

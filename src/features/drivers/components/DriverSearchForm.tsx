@@ -114,14 +114,15 @@ export default function DriverSearchForm({ onClose, onSearchResults }: DriverSea
   useEffect(() => {
     console.log('Data cambió:', data);
     if (data) {
-      // La respuesta real tiene la estructura: {data: Array, pagination: {...}}
+      // La respuesta tiene la estructura: {data: SearchDriversData, pagination: {...}}
+      const searchData = data.data as SearchDriversData;
       const results = {
-        drivers: data.data || [], // Los drivers están directamente en data.data
+        drivers: searchData.drivers || [], // Los drivers están en data.drivers
         total: data.pagination?.total || 0,
         page: data.pagination?.page || currentPage,
-        totalPages: data.pagination?.totalPages || 1,
+        totalPages: data.pagination?.pages || 1,
       };
-      
+
       console.log('Enviando resultados al padre:', results);
       onSearchResults(results);
     }
@@ -183,8 +184,8 @@ export default function DriverSearchForm({ onClose, onSearchResults }: DriverSea
   };
 
   const handlePageChange = (newPage: number) => {
-    const totalPages = data && data.pagination ? data.pagination.totalPages : 1;
-    
+    const totalPages = data && data.pagination ? data.pagination.pages : 1;
+
     if (newPage > 0 && newPage <= totalPages) {
       console.log('Cambiando a página:', newPage);
       setCurrentPage(newPage);
@@ -208,7 +209,7 @@ export default function DriverSearchForm({ onClose, onSearchResults }: DriverSea
     hasSearched,
     currentPage,
     dataExists: !!data,
-    driversCount: data?.data?.length || 0,
+    driversCount: (data?.data as SearchDriversData)?.drivers?.length || 0,
     searchTrigger
   });
 
@@ -408,7 +409,7 @@ export default function DriverSearchForm({ onClose, onSearchResults }: DriverSea
               </p>
             </div>
 
-            {data.data && data.data.length > 0 ? (
+            {(data.data as SearchDriversData).drivers && (data.data as SearchDriversData).drivers.length > 0 ? (
               <>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -432,7 +433,7 @@ export default function DriverSearchForm({ onClose, onSearchResults }: DriverSea
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {data.data.map((driver: DriverData) => (
+                      {(data.data as SearchDriversData).drivers.map((driver: DriverData) => (
                         <tr key={driver.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {driver.id}
@@ -467,10 +468,10 @@ export default function DriverSearchForm({ onClose, onSearchResults }: DriverSea
                 </div>
                 
                 {/* Paginación */}
-                {data.pagination && data.pagination.totalPages > 1 && (
+                {data.pagination && data.pagination.pages > 1 && (
                   <div className="mt-4 flex justify-between items-center">
                     <p className="text-sm text-gray-500">
-                      Página {currentPage} de {data.pagination.totalPages} 
+                      Página {currentPage} de {data.pagination.pages}
                       ({data.pagination.total} resultados en total)
                     </p>
                     <div className="flex space-x-2">
@@ -483,13 +484,13 @@ export default function DriverSearchForm({ onClose, onSearchResults }: DriverSea
                         Anterior
                       </Button>
                       <span className="flex items-center px-4 text-sm text-gray-500">
-                        {currentPage} / {data.pagination.totalPages}
+                        {currentPage} / {data.pagination.pages}
                       </span>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage >= data.pagination.totalPages || isLoading}
+                        disabled={currentPage >= data.pagination.pages || isLoading}
                       >
                         Siguiente
                       </Button>

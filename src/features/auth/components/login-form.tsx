@@ -10,13 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { loginSchema, type LoginFormData } from "@/features/auth/schemas/auth.schema";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2, XCircle } from "lucide-react";
+import { Loader2, XCircle, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signIn, SignInResponse } from "next-auth/react";
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const { register, handleSubmit, formState: { errors }, control, clearErrors } = useForm<LoginFormData>({
@@ -87,14 +88,32 @@ const onSubmit = async (data: LoginFormData) => {
 
         <div className="space-y-2">
           <label htmlFor="password" className="text-sm font-medium">Contraseña</label>
-          <Input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            disabled={isLoading}
-            {...register("password")}
-            className={cn(errors.password && "border-red-500")}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              disabled={isLoading}
+              {...register("password")}
+              className={cn(
+                "pr-10",
+                errors.password && "border-red-500"
+              )}
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors duration-200 focus:outline-none focus:text-gray-600 dark:focus:text-gray-300"
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={isLoading}
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
           {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
         </div>
 

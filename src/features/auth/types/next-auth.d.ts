@@ -18,6 +18,14 @@ declare module "next-auth" {
     refreshToken: string;
     admin: Admin;
     expiresIn: number; // timestamp UNIX
+    user: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+      role: string;
+      permissions: string[];
+    };
   }
 
   interface User {
@@ -42,7 +50,7 @@ declare module "next-auth/jwt" {
 }
 
 export interface RefreshTokenRequest {
-  refresh_token: string;
+  refreshToken: string;
 }
 
 export interface RefreshTokenResponse {

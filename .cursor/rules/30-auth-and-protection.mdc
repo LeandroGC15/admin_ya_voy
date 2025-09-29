@@ -1,0 +1,28 @@
+---
+alwaysApply: true
+description: Authentication, sessions, and protecting routes in the admin app
+---
+
+# Auth & Route Protection
+
+## NextAuth setup
+- Route handler: [src/app/api/auth/[...nextauth]/route.ts](mdc:src/app/api/auth/[...nextauth]/route.ts)
+- Auth options (providers, callbacks): [src/lib/auth-options.ts](mdc:src/lib/auth-options.ts)
+- NextAuth types: [src/features/auth/types/next-auth.d.ts](mdc:src/features/auth/types/next-auth.d.ts)
+
+## Providers
+- Session provider wrapper: [src/providers/session-provider.tsx](mdc:src/providers/session-provider.tsx)
+- Mounted via the root providers: [src/providers.tsx](mdc:src/providers.tsx)
+
+## Guarding routes
+- Server side: check the session and `redirect` unauthenticated requests in `page.tsx` or `layout.tsx` as needed.
+- Client side: wrap content with [src/components/auth/ProtectedRoute.tsx](mdc:src/components/auth/ProtectedRoute.tsx) when rendering must wait for the session state on the client.
+- Middleware: use [src/middleware.ts](mdc:src/middleware.ts) for global constraints.
+
+## Auth UI
+- Login form: [src/features/auth/components/login-form.tsx](mdc:src/features/auth/components/login-form.tsx)
+- Register form: [src/features/auth/components/RegisterForm.tsx](mdc:src/features/auth/components/RegisterForm.tsx)
+
+Notes:
+- Keep any auth-specific logic inside the `features/auth` module. Pages should only delegate to it.
+

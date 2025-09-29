@@ -1,0 +1,36 @@
+---
+globs: *.ts,*.tsx
+description: TypeScript and React coding standards for this repo
+---
+
+# Coding Standards (TypeScript & React)
+
+## TypeScript
+- Prefer explicit types for all exported functions, props, and public APIs.
+- Avoid `any`. Use discriminated unions and feature-level interfaces under `interfaces/` where relevant.
+- Co-locate types with features under `src/features/**/interfaces` or use shared types in [src/interfaces](mdc:src/interfaces).
+- Keep function names verb-based and variables noun-based. Avoid abbreviations.
+- Handle errors explicitly. Return typed results; see [src/interfaces/ApiResponse.ts](mdc:src/interfaces/ApiResponse.ts).
+
+## React
+- Default to Server Components. Add `"use client"` at the top only when client features are required.
+- Name components in `PascalCase`; hooks in `camelCase` starting with `use`.
+- Prefer named exports. Group public exports via feature `index.ts` where present.
+- Keep components small and focused. Extract presentational UI into `src/components/ui` when reusable.
+
+## Imports & Organization
+- Within a feature, prefer relative imports. Cross-feature imports should go through the feature's public surface (e.g., `index.ts`) or shared locations under `src/components` or `src/lib`.
+- Do not import from another feature's `internal` folders; promote shared pieces if needed.
+
+## Forms & Validation
+- Use the shared form primitives from [src/components/forms](mdc:src/components/forms) and [src/components/ui/form.tsx](mdc:src/components/ui/form.tsx) when building forms.
+- Keep schemas with the feature under `schemas/` (e.g., [src/features/auth/schemas/auth.schema.ts](mdc:src/features/auth/schemas/auth.schema.ts)).
+
+## Data Fetching
+- Use the centralized API client [src/lib/api/api-client.ts](mdc:src/lib/api/api-client.ts) and endpoint map [src/lib/endpoints.ts](mdc:src/lib/endpoints.ts).
+- For React Query, initialize via [src/providers/query-provider.tsx](mdc:src/providers/query-provider.tsx) and helpers in [src/lib/react-query-client.ts](mdc:src/lib/react-query-client.ts).
+
+## Linting & TS Config
+- Follow [eslint.config.mjs](mdc:eslint.config.mjs). Fix lints before commit.
+- Respect compiler options from [tsconfig.json](mdc:tsconfig.json).
+

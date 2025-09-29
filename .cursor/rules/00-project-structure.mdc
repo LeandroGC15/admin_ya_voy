@@ -1,0 +1,64 @@
+---
+alwaysApply: true
+description: High-level project structure and important entry points for the admin app
+---
+
+# Admin YaVoy – Project Structure
+
+This project is a Next.js App Router application with a feature-first organization. Use the links below to jump to key files.
+
+## App Router and Pages
+- Root layout: [src/app/layout.tsx](mdc:src/app/layout.tsx)
+- Root page: [src/app/page.tsx](mdc:src/app/page.tsx)
+- Auth pages: [src/app/login/page.tsx](mdc:src/app/login/page.tsx), [src/app/register/page.tsx](mdc:src/app/register/page.tsx)
+- Dashboard shell: [src/app/dashboard/layout.tsx](mdc:src/app/dashboard/layout.tsx)
+- Dashboard pages: 
+  - Overview: [src/app/dashboard/page.tsx](mdc:src/app/dashboard/page.tsx)
+  - Users: [src/app/dashboard/users/page.tsx](mdc:src/app/dashboard/users/page.tsx)
+  - Drivers: [src/app/dashboard/drivers/page.tsx](mdc:src/app/dashboard/drivers/page.tsx)
+  - Metrics: [src/app/dashboard/metrics/page.tsx](mdc:src/app/dashboard/metrics/page.tsx)
+
+## Authentication
+- Route handler (NextAuth): [src/app/api/auth/[...nextauth]/route.ts](mdc:src/app/api/auth/[...nextauth]/route.ts)
+- Auth options: [src/lib/auth-options.ts](mdc:src/lib/auth-options.ts)
+- Session provider: [src/providers/session-provider.tsx](mdc:src/providers/session-provider.tsx)
+- Auth UI: [src/features/auth/components/login-form.tsx](mdc:src/features/auth/components/login-form.tsx), [src/features/auth/components/RegisterForm.tsx](mdc:src/features/auth/components/RegisterForm.tsx)
+- Protected route helper: [src/components/auth/ProtectedRoute.tsx](mdc:src/components/auth/ProtectedRoute.tsx)
+
+## Data Layer
+- API client: [src/lib/api/api-client.ts](mdc:src/lib/api/api-client.ts)
+- API endpoints map: [src/lib/endpoints.ts](mdc:src/lib/endpoints.ts)
+- React Query client: [src/lib/react-query-client.ts](mdc:src/lib/react-query-client.ts)
+- Query provider: [src/providers/query-provider.tsx](mdc:src/providers/query-provider.tsx)
+- API documentation: [docs/admin-api-documentation.md](mdc:docs/admin-api-documentation.md)
+
+## Features (Domain Modules)
+Each feature owns its UI, hooks, schemas, and services.
+- Auth: [src/features/auth](mdc:src/features/auth)
+- Users: [src/features/users](mdc:src/features/users)
+  - Service: [src/features/users/services/users.service.ts](mdc:src/features/users/services/users.service.ts)
+- Drivers: [src/features/drivers](mdc:src/features/drivers)
+  - Service: [src/features/drivers/services/drivers.service.ts](mdc:src/features/drivers/services/drivers.service.ts)
+- Core shared feature: [src/features/core/components](mdc:src/features/core/components)
+
+## Shared Components
+- UI primitives: [src/components/ui](mdc:src/components/ui)
+- Forms: [src/components/forms](mdc:src/components/forms)
+- App chrome: [src/components/Header.tsx](mdc:src/components/Header.tsx), [src/components/Sidebar.tsx](mdc:src/components/Sidebar.tsx)
+- Charts and cards: [src/components/OverviewChart.tsx](mdc:src/components/OverviewChart.tsx), [src/components/MetricCard.tsx](mdc:src/components/MetricCard.tsx), [src/components/StatCard.tsx](mdc:src/components/StatCard.tsx), [src/app/dashboard/components/TotalUsersCard.tsx](mdc:src/app/dashboard/components/TotalUsersCard.tsx)
+
+## Middleware and Providers
+- Middleware: [src/middleware.ts](mdc:src/middleware.ts)
+- Combined providers: [src/providers.tsx](mdc:src/providers.tsx)
+- Theme provider: [src/providers/theme-provider.tsx](mdc:src/providers/theme-provider.tsx)
+
+## Configuration
+- Next.js config: [next.config.ts](mdc:next.config.ts)
+- ESLint config: [eslint.config.mjs](mdc:eslint.config.mjs)
+- TypeScript config: [tsconfig.json](mdc:tsconfig.json)
+- PostCSS config: [postcss.config.mjs](mdc:postcss.config.mjs)
+
+Conventions:
+- Favor feature-local modules. If multiple features need a UI primitive or utility, promote it to `src/components` or `src/lib` respectively.
+- Keep routing-only concerns in `src/app/**` and domain logic in `src/features/**`.
+

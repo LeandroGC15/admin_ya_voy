@@ -1,0 +1,41 @@
+---
+alwaysApply: true
+description: UI components, forms, tables, and design conventions
+---
+
+# UI Components & Conventions
+
+Todas las piezas de UI se construyen sobre la librería shadcn/ui; mantén la API y el estilo consistentes con sus patrones.
+
+## Primitives
+- Prefer shared UI primitives under [src/components/ui](mdc:src/components/ui) (shadcn/ui wrappers):
+  - Buttons: [src/components/ui/button.tsx](mdc:src/components/ui/button.tsx)
+  - Inputs: [src/components/ui/input.tsx](mdc:src/components/ui/input.tsx)
+  - Selects: [src/components/ui/select.tsx](mdc:src/components/ui/select.tsx)
+  - Labels: [src/components/ui/label.tsx](mdc:src/components/ui/label.tsx)
+  - Checkboxes: [src/components/ui/checkbox.tsx](mdc:src/components/ui/checkbox.tsx)
+  - Table: [src/components/ui/table.tsx](mdc:src/components/ui/table.tsx)
+  - Theme toggle: [src/components/ui/theme-toggle.tsx](mdc:src/components/ui/theme-toggle.tsx)
+
+## Forms
+- Use shared form wrappers: [src/components/forms](mdc:src/components/forms) and [src/components/ui/form.tsx](mdc:src/components/ui/form.tsx).
+- Feature-specific forms live under each feature (e.g., users/drivers/auth) and should compose primitives.
+
+## App Chrome
+- Header: [src/components/Header.tsx](mdc:src/components/Header.tsx)
+- Sidebar: [src/components/Sidebar.tsx](mdc:src/components/Sidebar.tsx)
+
+## Feature Components
+- Core shared widgets: [src/features/core/components](mdc:src/features/core/components)
+  - Modal: [src/features/core/components/modal.tsx](mdc:src/features/core/components/modal.tsx)
+  - Data table: [src/features/core/components/data-table.tsx](mdc:src/features/core/components/data-table.tsx)
+  - Action buttons: [src/features/core/components/action-buttons.tsx](mdc:src/features/core/components/action-buttons.tsx)
+- Dashboard widgets: [src/app/dashboard/components](mdc:src/app/dashboard/components)
+  - Total users card: [src/app/dashboard/components/TotalUsersCard.tsx](mdc:src/app/dashboard/components/TotalUsersCard.tsx)
+- Charts & stats: [src/components/OverviewChart.tsx](mdc:src/components/OverviewChart.tsx), [src/components/MetricCard.tsx](mdc:src/components/MetricCard.tsx), [src/components/StatCard.tsx](mdc:src/components/StatCard.tsx)
+
+Guidelines:
+- Keep feature components self-contained. If a component becomes reusable across features, promote it to `src/components`.
+- Keep style rules in [src/app/globals.css](mdc:src/app/globals.css). Prefer composition of primitives over ad-hoc elements.
+- Extiende shadcn/ui localmente solo dentro de `src/components/ui`; evita dependencias directas a `@/components/ui` desde otros paquetes de shadcn.
+

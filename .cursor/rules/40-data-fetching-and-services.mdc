@@ -1,0 +1,32 @@
+---
+alwaysApply: true
+description: Data fetching patterns, API client, services, and React Query usage
+---
+
+# Data Fetching & Services
+
+## Building requests
+- Use the centralized API client: [src/lib/api/api-client.ts](mdc:src/lib/api/api-client.ts)
+- Centralize endpoint paths in: [src/lib/endpoints.ts](mdc:src/lib/endpoints.ts)
+- Keep domain-specific requests within feature services, e.g.:
+  - Users: [src/features/users/services/users.service.ts](mdc:src/features/users/services/users.service.ts)
+  - Drivers: [src/features/drivers/services/drivers.service.ts](mdc:src/features/drivers/services/drivers.service.ts)
+
+## React Query
+- Shared client config: [src/lib/react-query-client.ts](mdc:src/lib/react-query-client.ts)
+- Provider: [src/providers/query-provider.tsx](mdc:src/providers/query-provider.tsx)
+- Feature hooks wrap queries/mutations, e.g.:
+  - Users: [src/features/users/hooks](mdc:src/features/users/hooks)
+  - Drivers: [src/features/drivers/hooks](mdc:src/features/drivers/hooks)
+  - Core utilities: [src/features/core/hooks](mdc:src/features/core/hooks)
+
+## Types & Responses
+- Prefer returning typed results using shared types under [src/interfaces](mdc:src/interfaces), e.g., [src/interfaces/ApiResponse.ts](mdc:src/interfaces/ApiResponse.ts) and domain interfaces under each feature.
+
+## API Documentation
+- Refer to the backend endpoints and payloads: [docs/admin-api-documentation.md](mdc:docs/admin-api-documentation.md)
+
+Guidelines:
+- Keep services side-effect free and reusable. Handle transformation and validation at the service or hook boundary.
+- Co-locate schemas under `schemas/` inside each feature for request/response validation.
+

@@ -1,0 +1,30 @@
+---
+alwaysApply: true
+description: Next.js App Router usage and conventions for this project
+---
+
+# Next.js App Router Guidelines
+
+## File-based routing
+- Pages live under `src/app/**/page.tsx`.
+- Layouts live under `src/app/**/layout.tsx` and wrap child routes.
+- Route handlers (API) live under `src/app/api/**/route.ts`.
+
+Key files:
+- Root layout: [src/app/layout.tsx](mdc:src/app/layout.tsx)
+- Dashboard layout: [src/app/dashboard/layout.tsx](mdc:src/app/dashboard/layout.tsx)
+- NextAuth route: [src/app/api/auth/[...nextauth]/route.ts](mdc:src/app/api/auth/[...nextauth]/route.ts)
+- Middleware: [src/middleware.ts](mdc:src/middleware.ts)
+
+## Server vs Client Components
+- Default to Server Components for data safety and performance.
+- Mark components that need state/effects/contexts with `"use client"`.
+- Providers that rely on browser APIs or contexts (theme, session, react-query) are set up in [src/providers.tsx](mdc:src/providers.tsx) and mounted from layouts.
+
+## Navigation & Redirects
+- Use Next.js navigation helpers in Server Components (e.g., `redirect`) to guard routes based on session.
+- Client-side guards can use [src/components/auth/ProtectedRoute.tsx](mdc:src/components/auth/ProtectedRoute.tsx).
+
+## Co-location
+- Keep route-only logic in `src/app/**`. Place domain logic in feature modules under `src/features/**`.
+
