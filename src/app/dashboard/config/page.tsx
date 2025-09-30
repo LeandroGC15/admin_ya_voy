@@ -1,25 +1,28 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import ApiKeysSearchForm from '@/features/config/components/ApiKeysSearchForm';
+import { Key, Settings } from 'lucide-react';
 import FeatureFlagsSearchForm from '@/features/config/components/FeatureFlagsSearchForm';
 import {
   useApiKeysAnalytics,
   useCategoriesOverview,
-  useRolloutStatus
+  useRolloutStatus,
+  useRotationStats
 } from '@/features/config/hooks';
-import { ApiKey, FeatureFlag } from '@/features/config/interfaces/config';
+import { ApiKey } from '@/features/config/schemas/api-keys.schemas';
+import { FeatureFlag } from '@/features/config/interfaces/config';
 
 export default function ConfigDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'api-keys' | 'feature-flags' | 'general'>('api-keys');
-  const [apiKeysSearchModalOpen, setApiKeysSearchModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'api-keys' | 'feature-flags' | 'general'>('overview');
   const [featureFlagsSearchModalOpen, setFeatureFlagsSearchModalOpen] = useState(false);
 
   // Analytics data
   const { data: apiKeysAnalytics } = useApiKeysAnalytics();
   const { data: categoriesOverview } = useCategoriesOverview();
   const { data: rolloutStatus } = useRolloutStatus();
+  const { data: rotationStats } = useRotationStats();
 
   return (
     <div className="p-6">
@@ -65,6 +68,16 @@ export default function ConfigDashboardPage() {
       <div className="mb-6">
         <nav className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
           <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'overview'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Vista General
+          </button>
+          <button
             onClick={() => setActiveTab('api-keys')}
             className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
               activeTab === 'api-keys'
@@ -97,27 +110,179 @@ export default function ConfigDashboardPage() {
         </nav>
       </div>
 
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* API Keys Card */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Key className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">API Keys</h3>
+                    <p className="text-sm text-gray-600">Vista general y gestión completa</p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total</span>
+                  <span className="font-semibold">{apiKeysAnalytics?.analytics.totalKeys || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Activas</span>
+                  <span className="font-semibold text-green-600">{apiKeysAnalytics?.analytics.activeKeys || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Expiran pronto</span>
+                  <span className="font-semibold text-yellow-600">{apiKeysAnalytics?.analytics.expiringSoon || 0}</span>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <Link href="/dashboard/config/api-keys">
+                  <Button className="w-full">
+                    Gestionar API Keys
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Feature Flags Card */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Settings className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Feature Flags</h3>
+                    <p className="text-sm text-gray-600">Control de funcionalidades</p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total</span>
+                  <span className="font-semibold">{categoriesOverview ? Object.values(categoriesOverview.overview).reduce((acc, cat) => acc + cat.total, 0) : 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Habilitadas</span>
+                  <span className="font-semibold text-green-600">{categoriesOverview ? Object.values(categoriesOverview.overview).reduce((acc, cat) => acc + cat.enabled, 0) : 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Rollout completo</span>
+                  <span className="font-semibold text-blue-600">{rolloutStatus?.rolloutStatus.fullRollout || 0}</span>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  className="w-full"
+                  onClick={() => setActiveTab('feature-flags')}
+                >
+                  Gestionar Feature Flags
+                </Button>
+              </div>
+            </div>
+
+            {/* General Settings Card */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <Settings className="h-6 w-6 text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Configuración General</h3>
+                    <p className="text-sm text-gray-600">Ajustes del sistema</p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600">
+                  Configuraciones generales del sistema, preferencias y ajustes administrativos.
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => setActiveTab('general')}
+                >
+                  Ver Configuración
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h4 className="text-lg font-semibold mb-4">Actividad Reciente</h4>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">API Keys activas monitoreadas</p>
+                    <p className="text-xs text-gray-600">{apiKeysAnalytics?.analytics.activeKeys || 0} claves funcionando correctamente</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Rotaciones pendientes</p>
+                    <p className="text-xs text-gray-600">{rotationStats?.keysNeedingRotation || 0} claves necesitan atención</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h4 className="text-lg font-semibold mb-4">Sugerencias</h4>
+              <div className="space-y-3">
+                {(apiKeysAnalytics?.analytics.expiringSoon || 0) > 0 && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ {apiKeysAnalytics?.analytics.expiringSoon} API keys expiran pronto. Considera renovarlas.
+                    </p>
+                  </div>
+                )}
+                {(apiKeysAnalytics?.analytics.expired || 0) > 0 && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-800">
+                      🚨 {apiKeysAnalytics?.analytics.expired} API keys han expirado. Reemplázalas inmediatamente.
+                    </p>
+                  </div>
+                )}
+                {(!apiKeysAnalytics?.analytics.expiringSoon && !apiKeysAnalytics?.analytics.expired) && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800">
+                      ✅ Todas las API keys están en buen estado.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* API Keys Tab */}
       {activeTab === 'api-keys' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Gestión de API Keys</h2>
-              <p className="text-sm text-gray-600">Administra las claves de API para servicios externos</p>
+              <h2 className="text-xl font-semibold text-gray-900">API Keys - Vista General</h2>
+              <p className="text-sm text-gray-600">Vista general de las claves API del sistema</p>
             </div>
             <div className="flex gap-3">
-              <Button
-                onClick={() => setApiKeysSearchModalOpen(true)}
-                variant="outline"
-              >
-                Buscar API Keys
-              </Button>
-              <Button variant="secondary">
-                Crear API Key (Próximamente)
-              </Button>
-              <Button variant="secondary">
-                Claves Estándar (Próximamente)
-              </Button>
+              <Link href="/dashboard/config/api-keys">
+                <Button variant="default">
+                  Gestión Completa
+                </Button>
+              </Link>
             </div>
           </div>
 
@@ -175,27 +340,6 @@ export default function ConfigDashboardPage() {
             </div>
           )}
 
-          {/* API Keys Search Modal */}
-          <ApiKeysSearchForm
-            isOpen={apiKeysSearchModalOpen}
-            onClose={() => setApiKeysSearchModalOpen(false)}
-            onSelectApiKeyForUpdate={(apiKey: ApiKey) => {
-              console.log('Update API key:', apiKey);
-              // TODO: Implement update modal
-            }}
-            onSelectApiKeyForDelete={(apiKey: ApiKey) => {
-              console.log('Delete API key:', apiKey);
-              // TODO: Implement delete modal
-            }}
-            onSelectApiKeyForToggle={(apiKey: ApiKey) => {
-              console.log('Toggle API key:', apiKey);
-              // TODO: Implement toggle modal
-            }}
-            onSelectApiKeyForRotate={(apiKey: ApiKey) => {
-              console.log('Rotate API key:', apiKey);
-              // TODO: Implement rotate modal
-            }}
-          />
         </div>
       )}
 

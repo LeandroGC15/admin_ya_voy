@@ -6,25 +6,7 @@ import type { ApiKeysResponse } from '../interfaces/config';
 // Query Keys
 export const configOperationsKeys = {
   all: ['configOperations'] as const,
-  apiKeysByService: (service: string, environment: string) =>
-    [...configOperationsKeys.all, 'apiKeysByService', service, environment] as const,
 };
-
-// Get API keys by service and environment
-export function useApiKeysByService(service: string, environment: string) {
-  return useApiQuery(
-    configOperationsKeys.apiKeysByService(service, environment),
-    async (): Promise<ApiKeysResponse> => {
-      const response = await api.get<ApiKeysResponse>(
-        ENDPOINTS.config.apiKeyService(service, environment)
-      );
-      return response.data;
-    },
-    {
-      enabled: !!service && !!environment,
-    }
-  );
-}
 
 // Combined hook for config dashboard data
 export function useConfigDashboard() {
