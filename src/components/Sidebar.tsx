@@ -10,7 +10,7 @@ const Sidebar = () => {
   return (
     <aside className="hidden w-64 flex-shrink-0 bg-[#3F5B7F] md:block">
       <div className="flex h-16 items-center justify-center bg-background">
-        <h1 className="text-2xl font-bold text-white">YaVoy!</h1>
+        <h1 className="text-2xl font-bold text-primary">YaVoy!</h1>
       </div>
       <nav className="mt-6 flex flex-col gap-2 px-4">
         {/* Dashboard */}
@@ -47,17 +47,20 @@ const Sidebar = () => {
 
           {isConfigOpen && (
             <div className="ml-4 mt-1 space-y-1">
+              <Link href="/dashboard/config" className="block rounded-md px-4 py-2 text-sm text-gray-200 hover:bg-[#5C7E9F] hover:text-white font-medium">
+                 Panel de Configuración
+              </Link>
               <Link href="/dashboard/config/general" className="block rounded-md px-4 py-2 text-sm text-gray-300 hover:bg-[#5C7E9F] hover:text-white">
-                Configuraciones Generales
+                 Configuraciones Generales
               </Link>
               <Link href="/dashboard/config/pricing" className="block rounded-md px-4 py-2 text-sm text-gray-300 hover:bg-[#5C7E9F] hover:text-white">
-                Pricing
+                 Pricing
               </Link>
               <Link href="/dashboard/config/reports" className="block rounded-md px-4 py-2 text-sm text-gray-300 hover:bg-[#5C7E9F] hover:text-white">
-                Reportes y Analytics
+                 Reportes y Analytics
               </Link>
               <Link href="/dashboard/config/geography" className="block rounded-md px-4 py-2 text-sm text-gray-300 hover:bg-[#5C7E9F] hover:text-white">
-                Geografía
+                 Geografía
               </Link>
             </div>
           )}

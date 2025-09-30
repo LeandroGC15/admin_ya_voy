@@ -22,10 +22,10 @@ interface RegisterDriverData {
  * @param driverData The driver's registration data.
  * @returns A promise that resolves with the registration response.
  */
-export const registerDriver = async (driverData: RegisterDriverPayload): Promise<ApiResponse<RegisterDriverData>> => {
+export const registerDriver = async (driverData: RegisterDriverPayload): Promise<RegisterDriverData> => {
   try {
     const response = await api.post<RegisterDriverData>(ENDPOINTS.drivers.register, driverData);
-    return response;
+    return response.data;
   } catch (error) {
     console.error('Error registering driver:', error);
     throw error;
@@ -38,10 +38,9 @@ export const registerDriver = async (driverData: RegisterDriverPayload): Promise
  * @param driverId The ID of the driver to delete.
  * @returns A promise that resolves with the delete response.
  */
-export const deleteDriver = async (driverId: string): Promise<ApiResponse<void>> => {
+export const deleteDriver = async (driverId: string): Promise<void> => {
   try {
-    const response = await api.delete<void>(ENDPOINTS.drivers.byId(driverId));
-    return response;
+    await api.delete<void>(ENDPOINTS.drivers.byId(driverId));
   } catch (error) {
     console.error(`Error deleting driver ${driverId}:`, error);
     throw error;
@@ -56,7 +55,7 @@ export const deleteDriver = async (driverId: string): Promise<ApiResponse<void>>
  */
 export const searchDrivers = async (
   searchParams: Partial<DriverSearchValues> = {}
-): Promise<ApiResponse<SearchDriversData>> => {
+): Promise<SearchDriversData> => {
   try {
     const { search, page = 1, limit = 10, ...restParams } = searchParams;
     let searchCriteria = {};
@@ -79,13 +78,13 @@ export const searchDrivers = async (
       Object.entries(params).filter(([_, v]) => v !== undefined && v !== '')
     );
   
-    const response = await api.get<SearchDriversData>('api/driver', { 
+    const response = await api.get<SearchDriversData>('api/driver', {
       params: cleanParams,
       paramsSerializer: {
         indexes: null // Prevents array indices in URLs
       }
     });
-    return response;
+    return response.data;
   } catch (error) {
     console.error('Error searching drivers:', error);
     throw error;

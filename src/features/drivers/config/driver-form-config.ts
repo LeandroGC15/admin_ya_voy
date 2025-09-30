@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { createForm, field, fieldPresets } from '@/components/forms';
 import { driverFormSchema } from '../schemas/driver.schema';
 import { DriverFormValues } from '../schemas/driver.schema';
-import { useCreateDriver, useDeleteDriver, useDrivers } from '../hooks/use-drivers';
+import { useCreateDriver, useDeleteDriver, useDrivers, useUpdateDriverStatus } from '../hooks/use-drivers';
 
 // Función para crear la configuración del formulario de registro/creación de drivers
 export function createDriverCreateFormConfig() {
@@ -61,9 +61,7 @@ export function createDriverSearchFormConfig() {
           { value: 'suspended', label: 'Suspendido' },
         ]),
     )
-    .operations({
-      search: useDrivers({}),
-    })
+    .operations({})
     .layout({ columns: 3, responsive: true })
     .ui({
       submitButtonText: 'Buscar',

@@ -163,14 +163,17 @@ export class FormConfigBuilder<T extends Record<string, any> = any, TData = any,
     return this;
   }
 
-  fields(...fields: FieldConfig<T>[]): this {
-    this.config.fields = fields;
+  fields(...fields: (FieldConfig<T> | FieldBuilder)[]): this {
+    this.config.fields = fields.map(field =>
+      field instanceof FieldBuilder ? field.build() : field
+    );
     return this;
   }
 
-  addField(field: FieldConfig<T>): this {
+  addField(field: FieldConfig<T> | FieldBuilder): this {
     if (!this.config.fields) this.config.fields = [];
-    this.config.fields.push(field);
+    const builtField = field instanceof FieldBuilder ? field.build() : field;
+    this.config.fields.push(builtField);
     return this;
   }
 
@@ -221,6 +224,12 @@ export class FormConfigBuilder<T extends Record<string, any> = any, TData = any,
     return this;
   }
 
+  // Allow forms without fields (useful for delete confirmations)
+  allowEmptyFields(): this {
+    this.config.allowEmptyFields = true;
+    return this;
+  }
+
   build(): FormConfig<T, TData, TVariables> {
     if (!this.config.schema) {
       throw new Error('Schema is required for form configuration');
@@ -228,7 +237,7 @@ export class FormConfigBuilder<T extends Record<string, any> = any, TData = any,
     if (!this.config.defaultValues) {
       throw new Error('Default values are required for form configuration');
     }
-    if (!this.config.fields || this.config.fields.length === 0) {
+    if (!this.config.allowEmptyFields && (!this.config.fields || this.config.fields.length === 0)) {
       throw new Error('At least one field is required for form configuration');
     }
 

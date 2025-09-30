@@ -390,7 +390,7 @@ export function FieldRenderer<T extends Record<string, any> = any>({
       default:
         return (
           <div className="text-red-500 text-sm">
-            Tipo de campo no soportado: {field.type}
+            Tipo de campo no soportado: {(field as any).type}
           </div>
         );
     }

@@ -99,6 +99,7 @@ export interface FormConfig<T extends FieldValues = any, TData = any, TVariables
   defaultValues: T;
   fields: FieldConfig<T>[];
   operations: FormOperations<TData, TVariables>;
+  allowEmptyFields?: boolean; // Permite formularios sin campos (útil para confirmaciones de eliminación)
   layout?: {
     columns?: number;
     gap?: string;

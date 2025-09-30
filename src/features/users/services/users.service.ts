@@ -82,7 +82,7 @@ export const fetchUsers = async (params?: {
         userType: params?.userType,
       },
     });
-    return response;
+    return response.data;
   } catch (error) {
     console.error('Error fetching users:', error);
     throw error;
@@ -92,10 +92,10 @@ export const fetchUsers = async (params?: {
 /**
  * Creates a new user
  */
-export const createUser = async (userData: CreateUserPayload): Promise<ApiResponse<UserData>> => {
+export const createUser = async (userData: CreateUserPayload): Promise<UserData> => {
   try {
     const response = await api.post<UserData>(ENDPOINTS.users.base, userData);
-    return response;
+    return response.data;
   } catch (error) {
     console.error('Error creating user:', error);
     throw error;
@@ -105,10 +105,10 @@ export const createUser = async (userData: CreateUserPayload): Promise<ApiRespon
 /**
  * Updates an existing user
  */
-export const updateUser = async (userId: string, userData: UpdateUserPayload): Promise<ApiResponse<UserData>> => {
+export const updateUser = async (userId: string, userData: UpdateUserPayload): Promise<UserData> => {
   try {
     const response = await api.put<UserData>(ENDPOINTS.users.byId(userId), userData);
-    return response;
+    return response.data;
   } catch (error) {
     console.error('Error updating user:', error);
     throw error;
@@ -118,10 +118,9 @@ export const updateUser = async (userId: string, userData: UpdateUserPayload): P
 /**
  * Deletes a user
  */
-export const deleteUser = async (userId: string): Promise<ApiResponse<void>> => {
+export const deleteUser = async (userId: string): Promise<void> => {
   try {
-    const response = await api.delete<void>(ENDPOINTS.users.byId(userId));
-    return response;
+    await api.delete<void>(ENDPOINTS.users.byId(userId));
   } catch (error) {
     console.error('Error deleting user:', error);
     throw error;
@@ -136,7 +135,7 @@ export const searchUsers = async (email: string): Promise<UserListResponse> => {
     const response = await api.get<UserListResponse>(ENDPOINTS.users.search, {
       params: { email },
     });
-    return response;
+    return response.data;
   } catch (error) {
     console.error('Error searching users:', error);
     throw error;

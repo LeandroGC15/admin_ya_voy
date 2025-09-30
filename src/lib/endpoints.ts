@@ -97,8 +97,23 @@ export const ENDPOINTS = {
     },
     featureFlags: 'admin/config/feature-flags',
     featureFlagById: (id: string | number) => `admin/config/feature-flags/${id}`,
+    featureFlagByKey: (key: string) => `admin/config/feature-flags/key/${key}`,
     featureFlagToggle: (id: string | number) => `admin/config/feature-flags/${id}/toggle`,
-    evaluateFlag: (flagName: string) => `admin/config/feature-flags/evaluate/${flagName}`,
+    evaluateFlag: 'admin/config/feature-flags/evaluate',
+    createStandardFlags: 'admin/config/feature-flags/create-standard-flags',
+    bulkUpdateFlags: 'admin/config/feature-flags/bulk-update',
+    categoriesOverview: 'admin/config/feature-flags/categories/overview',
+    rolloutStatus: 'admin/config/feature-flags/rollout/status',
+    cache: {
+      stats: 'admin/config/feature-flags/cache/stats',
+      warmup: 'admin/config/feature-flags/cache/warmup',
+      clear: 'admin/config/feature-flags/cache/clear',
+      clearKey: (key: string) => `admin/config/feature-flags/cache/clear/${key}`,
+      cleanup: 'admin/config/feature-flags/cache/cleanup',
+    },
+    public: {
+      evaluate: 'admin/config/feature-flags/public/evaluate',
+    },
   },
 
   // Reports & Analytics
