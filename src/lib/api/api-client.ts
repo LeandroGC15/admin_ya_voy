@@ -41,7 +41,7 @@ export class ApiError extends Error {
 
     if (error instanceof ApiError) return error;
 
-    return new ApiError(error.message || 'An unknown error occurred', (error as any).status || 0, (error as any).data || {});
+    return new ApiError(error.message || 'An unknown error occurred', error.response?.status || 0, error.response?.data || {});
   }
 }
 

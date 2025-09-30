@@ -8,7 +8,7 @@ import { FieldRenderer } from './field-renderer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface CrudSearchFormProps<T extends Record<string, any> = any, TData = any, TVariables = any>
+interface CrudSearchFormProps<T extends Record<string, unknown> = Record<string, unknown>, TData = unknown, TVariables = unknown>
   extends FormComponentProps<T, TData, TVariables> {
   className?: string;
   showSearchButton?: boolean;
@@ -21,7 +21,7 @@ interface CrudSearchFormProps<T extends Record<string, any> = any, TData = any, 
   autoSearchDelay?: number; // Delay en ms para búsqueda automática
 }
 
-export function CrudSearchForm<T extends Record<string, any> = any, TData = any, TVariables = any>({
+export function CrudSearchForm<T extends Record<string, unknown> = Record<string, unknown>, TData = unknown, TVariables = unknown>({
   config,
   className,
   showSearchButton = true,

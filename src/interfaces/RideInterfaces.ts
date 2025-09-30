@@ -110,7 +110,9 @@ export interface RideListResponse {
   totalPages: number;
 }
 
-export interface RideDetailResponse extends RideDetail {}
+export interface RideDetailResponse extends RideDetail {
+  _type?: never;
+}
 
 export interface ReassignRideRequest {
   newDriverId: number;

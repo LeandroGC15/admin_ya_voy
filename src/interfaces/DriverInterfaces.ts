@@ -133,7 +133,9 @@ export interface DriverListResponse {
   totalPages: number;
 }
 
-export interface DriverDetailResponse extends DriverDetail {}
+export interface DriverDetailResponse extends DriverDetail {
+  _type?: never;
+}
 
 export interface UpdateDriverStatusRequest {
   status: 'online' | 'offline' | 'busy' | 'suspended';

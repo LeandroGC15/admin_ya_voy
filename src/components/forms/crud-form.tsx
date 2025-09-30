@@ -6,7 +6,7 @@ import { FormComponentProps } from '@/types/form-system';
 import { FieldRenderer } from './field-renderer';
 import { cn } from '@/lib/utils';
 
-export function CrudForm<T extends Record<string, any> = any, TData = any, TVariables = any>({
+export function CrudForm<T extends Record<string, unknown> = Record<string, unknown>, TData = unknown, TVariables = unknown>({
   config,
   className,
 }: FormComponentProps<T, TData, TVariables> & { className?: string }) {

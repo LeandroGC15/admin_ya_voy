@@ -18,16 +18,7 @@ import {
   type BulkUpdateApiKeysInput,
   type SearchApiKeysInput,
 } from '../schemas/api-keys.schemas';
-import {
-  useCreateApiKey,
-  useUpdateApiKey,
-  useDeleteApiKey,
-  useToggleApiKey,
-  useRotateApiKey,
-  useForceRotateApiKey,
-  useBulkUpdateApiKeys,
-  useCreateStandardApiKeys,
-} from '../hooks/use-api-keys';
+// Removed hook imports to avoid calling hooks inside non-component functions
 
 // Función para crear la configuración del formulario de creación de API keys
 export function createApiKeyCreateFormConfig() {
@@ -152,9 +143,6 @@ export function createApiKeyCreateFormConfig() {
         .required(false)
         .description('Etiquetas para organizar las claves'),
     )
-    .operations({
-      create: useCreateApiKey(),
-    })
     .layout({ columns: 2, responsive: true })
     .ui({
       submitButtonText: 'Crear API Key',
@@ -238,9 +226,6 @@ export function createApiKeyUpdateFormConfig() {
         .required(false)
         .description('Etiquetas para organizar las claves'),
     )
-    .operations({
-      update: useUpdateApiKey(),
-    })
     .layout({ columns: 2, responsive: true })
     .ui({
       submitButtonText: 'Actualizar API Key',
@@ -267,9 +252,6 @@ export function createApiKeyDeleteFormConfig() {
         .required()
         .description('ID único de la clave API a eliminar'),
     )
-    .operations({
-      delete: useDeleteApiKey(),
-    })
     .layout({ columns: 1 })
     .ui({
       submitButtonText: 'Eliminar API Key',
@@ -293,9 +275,6 @@ export function createApiKeyToggleFormConfig() {
         .label('Clave activa')
         .description('Marque para activar o desmarque para desactivar la clave'),
     )
-    .operations({
-      update: useToggleApiKey(),
-    })
     .layout({ columns: 1 })
     .ui({
       submitButtonText: 'Cambiar Estado',
@@ -325,9 +304,6 @@ export function createApiKeyRotateFormConfig() {
         .required(false)
         .description('Razón opcional para auditar la rotación'),
     )
-    .operations({
-      update: useRotateApiKey(),
-    })
     .layout({ columns: 1 })
     .ui({
       submitButtonText: 'Rotar Clave',
@@ -352,9 +328,6 @@ export function createApiKeyForceRotateFormConfig() {
         .required()
         .description('Razón obligatoria para la rotación forzada'),
     )
-    .operations({
-      update: useForceRotateApiKey(),
-    })
     .layout({ columns: 1 })
     .ui({
       submitButtonText: 'Forzar Rotación',
@@ -414,9 +387,6 @@ export function createStandardApiKeysFormConfig() {
         .required(false)
         .description('Crear también claves públicas cuando aplique'),
     )
-    .operations({
-      create: useCreateStandardApiKeys(),
-    })
     .layout({ columns: 1 })
     .ui({
       submitButtonText: 'Crear Claves Estándar',
@@ -491,9 +461,6 @@ export function createBulkUpdateApiKeysFormConfig() {
         .required(false)
         .description('Etiquetas para agregar a las claves'),
     )
-    .operations({
-      update: useBulkUpdateApiKeys(),
-    })
     .layout({ columns: 2, responsive: true })
     .ui({
       submitButtonText: 'Actualizar Claves',

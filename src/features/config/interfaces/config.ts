@@ -110,7 +110,9 @@ export interface ServiceEnvironmentParams {
 }
 
 // API key response (single)
-export interface ApiKeyResponse extends ApiKey {}
+export interface ApiKeyResponse extends ApiKey {
+  _type?: never;
+}
 
 // Decrypted API key response
 export interface DecryptedApiKeyResponse {
@@ -118,7 +120,9 @@ export interface DecryptedApiKeyResponse {
 }
 
 // API keys by service/environment response
-export interface ApiKeysResponse extends Array<ApiKey> {}
+export interface ApiKeysResponse extends Array<ApiKey> {
+  _type?: never;
+}
 
 // Bulk update API keys payload
 export interface BulkApiKeyUpdateDto {
@@ -337,7 +341,9 @@ export interface FeatureFlagKeyParams {
 }
 
 // Feature flag response (single)
-export interface FeatureFlagResponse extends FeatureFlag {}
+export interface FeatureFlagResponse extends FeatureFlag {
+  _type?: never;
+}
 
 // Create standard feature flags payload
 export interface CreateStandardFeatureFlagsDto {

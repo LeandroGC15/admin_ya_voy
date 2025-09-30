@@ -184,7 +184,7 @@ export function FormProvider<T extends FieldValues = any, TData = any, TVariable
     } finally {
       setState(prev => ({ ...prev, isSubmitting: false }));
     }
-  }, [form, state.operation, state.selectedItem, config.operations, config.id, queryClient, close]);
+  }, [form, state.operation, state.selectedItem, config.operations, config.id, queryClient, close, config.persistence?.enabled, draftPersistence]);
 
   const reset = useCallback((clearDraft = false) => {
     form.reset(config.defaultValues as DefaultValues<T>);

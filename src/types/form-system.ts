@@ -19,7 +19,7 @@ export type FieldType =
   | 'hidden';
 
 // Configuración base para un campo
-export interface BaseFieldConfig<T extends FieldValues = any> {
+export interface BaseFieldConfig<T extends FieldValues = FieldValues> {
   name: Path<T>;
   type: FieldType;
   label?: string;
@@ -33,7 +33,7 @@ export interface BaseFieldConfig<T extends FieldValues = any> {
   // Condiciones para mostrar/ocultar el campo
   condition?: {
     field: Path<T>;
-    value: any;
+    value: unknown;
     operator?: 'equals' | 'not_equals' | 'includes' | 'not_includes' | 'greater_than' | 'less_than';
   };
   // Función personalizada para determinar si mostrar el campo
@@ -41,7 +41,7 @@ export interface BaseFieldConfig<T extends FieldValues = any> {
 }
 
 // Configuración específica para campos de tipo select
-export interface SelectFieldConfig<T extends FieldValues = any> extends BaseFieldConfig<T> {
+export interface SelectFieldConfig<T extends FieldValues = FieldValues> extends BaseFieldConfig<T> {
   type: 'select';
   options: Array<{ value: string | number; label: string; disabled?: boolean }>;
   multiple?: boolean;

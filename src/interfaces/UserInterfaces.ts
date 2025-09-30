@@ -97,7 +97,9 @@ export interface UserListResponse {
   totalPages: number;
 }
 
-export interface UserDetailResponse extends UserDetail {}
+export interface UserDetailResponse extends UserDetail {
+  _type?: never;
+}
 
 export interface UpdateUserStatusRequest {
   isActive: boolean;

@@ -21,7 +21,7 @@ const modalSizes = {
   full: 'sm:max-w-full',
 };
 
-export function CrudModal<T extends Record<string, any> = any, TData = any, TVariables = any>({
+export function CrudModal<T extends Record<string, unknown> = Record<string, unknown>, TData = unknown, TVariables = unknown>({
   config,
   children,
   className,

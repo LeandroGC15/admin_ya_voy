@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { createForm, field, fieldPresets } from '@/components/forms';
 import { driverFormSchema } from '../schemas/driver.schema';
 import { DriverFormValues } from '../schemas/driver.schema';
-import { useCreateDriver, useDeleteDriver, useDrivers, useUpdateDriverStatus } from '../hooks/use-drivers';
+// Removed hook imports to avoid calling hooks inside non-component functions
 
 // Función para crear la configuración del formulario de registro/creación de drivers
 export function createDriverCreateFormConfig() {
@@ -29,9 +29,6 @@ export function createDriverCreateFormConfig() {
         .description('Placa del vehículo sin espacios'),
       fieldPresets.carSeats().description('Número de asientos disponibles'),
     )
-    .operations({
-      create: useCreateDriver(),
-    })
     .layout({ columns: 2, responsive: true })
     .ui({
       submitButtonText: 'Registrar Conductor',
@@ -85,9 +82,6 @@ export function createDriverDeleteFormConfig() {
       field.text('driverId').label('ID del Conductor').placeholder('Ingrese el ID').required()
         .description('ID único del conductor a eliminar'),
     )
-    .operations({
-      delete: useDeleteDriver(),
-    })
     .layout({ columns: 1 })
     .ui({
       submitButtonText: 'Eliminar Conductor',
@@ -122,9 +116,6 @@ export function createDriverUpdateFormConfig() {
         .description('Placa del vehículo sin espacios'),
       fieldPresets.carSeats().description('Número de asientos disponibles'),
     )
-    .operations({
-      update: useUpdateDriverStatus(),
-    })
     .layout({ columns: 2, responsive: true })
     .ui({
       submitButtonText: 'Actualizar Conductor',
