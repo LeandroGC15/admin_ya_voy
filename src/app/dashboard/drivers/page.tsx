@@ -42,7 +42,7 @@ const DriversPage: React.FC = () => {
   const createDriverMutation = useCreateDriver();
   const deleteDriverMutation = useDeleteDriver();
 
-  const drivers = driversResponse?.data || [];
+  const drivers = driversResponse?.drivers || [];
   const pagination = driversResponse ? {
     currentPage: driversResponse.page,
     totalPages: driversResponse.totalPages,

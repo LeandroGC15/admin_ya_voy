@@ -31,8 +31,8 @@ export const ENDPOINTS = {
 
   // Driver Management
   drivers: {
-    base: 'api/driver',
-    register: 'api/driver/register',
+    base: 'admin/drivers',
+    register: 'admin/drivers/register',
     byId: (id: string | number) => `admin/drivers/${id}`,
     status: (id: string | number) => `admin/drivers/${id}/status`,
     verification: (id: string | number) => `admin/drivers/${id}/verification`,
