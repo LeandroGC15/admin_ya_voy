@@ -114,22 +114,34 @@ const UsersPage: React.FC = () => {
   };
 
   const handleDelete = (user: User) => {
+    // Mostrar confirmación personalizada
     const confirmed = window.confirm(
-      `¿Estás seguro de que quieres eliminar al usuario "${user.name}"?\n\n` +
-      `Esta acción desactivará la cuenta pero mantendrá los datos para auditoría.`
+      `¿Eliminar usuario "${user.name}"?\n\n` +
+      `⚠️ Esta acción no se puede deshacer.\n` +
+      `El usuario será eliminado permanentemente del sistema.`
     );
 
-    if (confirmed) {
-      deleteUserMutation.mutate(user.id.toString(), {
-        onSuccess: () => {
-          invalidateQueries(['users']);
-        },
-        onError: (error: any) => {
-          console.error('Error deleting user:', error);
-          // Error handling is already done in the hook
-        },
-      });
-    }
+    if (!confirmed) return;
+
+    // Ejecutar eliminación si el usuario confirma
+    deleteUserMutation.mutate(user.id.toString(), {
+      onSuccess: () => {
+        // Refrescar tabla y mostrar único mensaje de éxito
+        invalidateQueries(['users']);
+        alert('Usuario eliminado exitosamente');
+      },
+      onError: (error: any) => {
+        console.error('Error deleting user:', error);
+        // Mensaje de error único y específico
+        const status = error?.response?.status;
+        let message = 'Error desconocido al eliminar usuario';
+        if (status === 404) message = 'Usuario no encontrado';
+        else if (status === 403) message = 'No tienes permisos para eliminar este usuario';
+        else if (status === 409) message = 'No se puede eliminar el usuario porque tiene viajes o pedidos activos';
+        else if (error?.response?.data?.message) message = error.response.data.message;
+        alert(`Error al eliminar usuario: ${message}`);
+      },
+    });
   };
 
   const handleSearch = (searchTerm: string) => {

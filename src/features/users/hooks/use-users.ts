@@ -153,41 +153,37 @@ export function useUpdateUser() {
   );
 }
 
-// Delete user hook - uses admin API endpoint (soft delete)
+// Delete user hook - uses admin API endpoint (hard delete)
 export function useDeleteUser() {
   return useApiMutation(
     async (userId: string): Promise<void> => {
+      // Validate userId is numeric before making request
+      if (!userId || isNaN(Number(userId))) {
+        throw new Error('ID de usuario inválido');
+      }
+
+      // Try DELETE without body first - if it fails, backend may require empty object
       try {
-        const response = await api.delete(ENDPOINTS.users.byId(userId));
-        alert('Usuario eliminado exitosamente');
-        console.log('Delete response:', response);
-      } catch (error: any) {
-        console.error('Error deleting user:', error);
-
-        // Provide more specific error messages
-        let errorMessage = 'Error desconocido al eliminar usuario';
-        if (error.response?.status === 404) {
-          errorMessage = 'Usuario no encontrado';
-        } else if (error.response?.status === 403) {
-          errorMessage = 'No tienes permisos para eliminar este usuario';
-        } else if (error.response?.status === 409) {
-          errorMessage = 'No se puede eliminar el usuario porque tiene viajes o pedidos activos';
-        } else if (error.response?.data?.message) {
-          errorMessage = error.response.data.message;
+        await api.delete(ENDPOINTS.users.byId(userId));
+      } catch (deleteError: any) {
+        // If DELETE without body fails with 400, try with empty object
+        if (deleteError.response?.status === 400) {
+          await api.delete(ENDPOINTS.users.byId(userId), {
+            data: {}
+          });
+        } else {
+          // Re-throw other errors
+          throw deleteError;
         }
-
-        alert(`Error al eliminar usuario: ${errorMessage}`);
-        throw error;
       }
     },
     {
       onSuccess: () => {
-        // Invalidate and refetch users list
-        // This will be handled by the component using the hook
+        // Success handling is done by the caller (page component)
       },
       onError: (error: any) => {
+        // Centralized error logging; UI handled by caller
         console.error('Delete user mutation error:', error);
-        alert(`Error al eliminar usuario: ${error.message || 'Error desconocido'}`);
       },
     }
   );
