@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { DataTable, ActionButtons } from '@/features/core/components';
-import { ApiKey, ApiKeysListResponse } from '../../schemas/api-keys.schemas';
+import { ApiKeyListItem, ApiKeysListResponse } from '../../schemas/api-keys.schemas';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Key, Shield, AlertTriangle, CheckCircle, Clock, RotateCcw } from 'lucide-react';
@@ -10,12 +10,12 @@ import { Key, Shield, AlertTriangle, CheckCircle, Clock, RotateCcw } from 'lucid
 interface ApiKeysTableProps {
   data: ApiKeysListResponse | undefined;
   loading: boolean;
-  onApiKeySelect?: (apiKey: ApiKey) => void;
-  onApiKeyEdit?: (apiKey: ApiKey) => void;
-  onApiKeyDelete?: (apiKey: ApiKey) => void;
-  onApiKeyToggle?: (apiKey: ApiKey) => void;
-  onApiKeyRotate?: (apiKey: ApiKey) => void;
-  onApiKeyForceRotate?: (apiKey: ApiKey) => void;
+  onApiKeySelect?: (apiKey: ApiKeyListItem) => void;
+  onApiKeyEdit?: (apiKey: ApiKeyListItem) => void;
+  onApiKeyDelete?: (apiKey: ApiKeyListItem) => void;
+  onApiKeyToggle?: (apiKey: ApiKeyListItem) => void;
+  onApiKeyRotate?: (apiKey: ApiKeyListItem) => void;
+  onApiKeyForceRotate?: (apiKey: ApiKeyListItem) => void;
 }
 
 export function ApiKeysTable({
@@ -91,37 +91,32 @@ export function ApiKeysTable({
 
   const columns = [
     {
-      key: 'id' as keyof ApiKey,
+      key: 'id' as keyof ApiKeyListItem,
       header: 'ID',
       render: (value: number) => (
         <span className="font-mono text-sm">{value}</span>
       ),
     },
     {
-      key: 'name' as keyof ApiKey,
+      key: 'name' as keyof ApiKeyListItem,
       header: 'Nombre',
-      render: (value: string, row: ApiKey) => (
+      render: (value: string, row: ApiKeyListItem) => (
         <div className="flex items-center gap-2">
           <Key className="h-4 w-4 text-gray-400" />
           <div>
             <div className="font-medium">{value}</div>
-            {row.description && (
-              <div className="text-sm text-gray-500 truncate max-w-48">
-                {row.description}
-              </div>
+            {row.isPrimary && (
+              <Badge variant="secondary" className="text-xs">
+                <Shield className="h-3 w-3 mr-1" />
+                Primaria
+              </Badge>
             )}
           </div>
-          {row.isPrimary && (
-            <Badge variant="secondary" className="text-xs">
-              <Shield className="h-3 w-3 mr-1" />
-              Primaria
-            </Badge>
-          )}
         </div>
       ),
     },
     {
-      key: 'service' as keyof ApiKey,
+      key: 'service' as keyof ApiKeyListItem,
       header: 'Servicio',
       render: (value: string) => (
         <Badge variant="outline">
@@ -130,7 +125,7 @@ export function ApiKeysTable({
       ),
     },
     {
-      key: 'environment' as keyof ApiKey,
+      key: 'environment' as keyof ApiKeyListItem,
       header: 'Ambiente',
       render: (value: string) => (
         <Badge className={getEnvironmentColor(value)}>
@@ -139,27 +134,9 @@ export function ApiKeysTable({
       ),
     },
     {
-      key: 'keyType' as keyof ApiKey,
-      header: 'Tipo',
-      render: (value: string) => (
-        <Badge className={getKeyTypeColor(value)}>
-          {value.replace('_', ' ')}
-        </Badge>
-      ),
-    },
-    {
-      key: 'accessLevel' as keyof ApiKey,
-      header: 'Acceso',
-      render: (value: string) => (
-        <Badge className={getAccessLevelColor(value)}>
-          {value}
-        </Badge>
-      ),
-    },
-    {
-      key: 'isActive' as keyof ApiKey,
+      key: 'isActive' as keyof ApiKeyListItem,
       header: 'Estado',
-      render: (value: boolean, row: ApiKey) => (
+      render: (value: boolean, row: ApiKeyListItem) => (
         <div className="flex items-center gap-2">
           <Badge variant={value ? "secondary" : "destructive"}>
             {value ? (
@@ -174,7 +151,7 @@ export function ApiKeysTable({
               </>
             )}
           </Badge>
-          {row.usageCount > 0 && (
+          {row.usageCount && row.usageCount > 0 && (
             <span className="text-xs text-gray-500">
               {row.usageCount} usos
             </span>
@@ -183,9 +160,9 @@ export function ApiKeysTable({
       ),
     },
     {
-      key: 'expiresAt' as keyof ApiKey,
+      key: 'expiresAt' as keyof ApiKeyListItem,
       header: 'Expira',
-      render: (value: string) => {
+      render: (value: string | null | undefined) => {
         if (!value) return <span className="text-gray-400">Nunca</span>;
 
         const expirationDate = new Date(value);
@@ -214,34 +191,9 @@ export function ApiKeysTable({
         );
       },
     },
-    {
-      key: 'lastRotated' as keyof ApiKey,
-      header: 'Última Rotación',
-      render: (value: string) => (
-        <div className="text-sm text-gray-600">
-          {value ? (
-            <div className="flex items-center gap-1">
-              <RotateCcw className="h-3 w-3" />
-              {new Date(value).toLocaleDateString()}
-            </div>
-          ) : (
-            <span className="text-gray-400">Nunca</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'createdAt' as keyof ApiKey,
-      header: 'Creado',
-      render: (value: string) => (
-        <div className="text-sm text-gray-600">
-          {new Date(value).toLocaleDateString()}
-        </div>
-      ),
-    },
   ];
 
-  const renderActions = (apiKey: ApiKey) => (
+  const renderActions = (apiKey: ApiKeyListItem) => (
     <div className="flex items-center gap-2">
       <Button
         variant="default"

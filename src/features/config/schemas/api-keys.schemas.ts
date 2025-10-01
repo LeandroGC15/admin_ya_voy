@@ -106,9 +106,21 @@ export const apiKeySchema = z.object({
   updatedAt: z.string(),
 });
 
-// API Keys list response schema
+// API Key list item schema (optimized for list views)
+export const apiKeyListItemSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  service: z.string(),
+  environment: z.string(),
+  isActive: z.boolean(),
+  isPrimary: z.boolean(),
+  expiresAt: z.string().nullable().optional(),
+  usageCount: z.number().optional(),
+});
+
+// API Keys list response schema (paginated)
 export const apiKeysListResponseSchema = z.object({
-  keys: z.array(apiKeySchema),
+  keys: z.array(apiKeyListItemSchema),
   total: z.number(),
   page: z.number(),
   limit: z.number(),
@@ -255,6 +267,7 @@ export type SearchApiKeysInput = z.infer<typeof searchApiKeysSchema>;
 export type RotationAuditHistoryInput = z.infer<typeof rotationAuditHistorySchema>;
 
 export type ApiKey = z.infer<typeof apiKeySchema>;
+export type ApiKeyListItem = z.infer<typeof apiKeyListItemSchema>;
 export type ApiKeysListResponse = z.infer<typeof apiKeysListResponseSchema>;
 export type DecryptedApiKeyResponse = z.infer<typeof decryptedApiKeyResponseSchema>;
 export type ApiKeysByServiceResponse = z.infer<typeof apiKeysByServiceResponseSchema>;

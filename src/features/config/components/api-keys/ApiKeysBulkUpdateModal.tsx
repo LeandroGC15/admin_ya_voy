@@ -101,8 +101,7 @@ export function ApiKeysBulkUpdateModal({ isOpen, onClose, onSuccess }: ApiKeysBu
     return apiKeysData.keys.filter(apiKey =>
       apiKey.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       apiKey.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      apiKey.environment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      apiKey.keyType.toLowerCase().includes(searchTerm.toLowerCase())
+      apiKey.environment.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [apiKeysData?.keys, searchTerm]);
 
@@ -236,8 +235,7 @@ export function ApiKeysBulkUpdateModal({ isOpen, onClose, onSuccess }: ApiKeysBu
                           </div>
                           <div className="text-sm text-gray-500 mt-1">
                             <span className="capitalize">{apiKey.service}</span> •
-                            <span className="capitalize ml-1">{apiKey.environment}</span> •
-                            <span className="capitalize ml-1">{apiKey.keyType.replace('_', ' ')}</span>
+                            <span className="capitalize ml-1">{apiKey.environment}</span>
                           </div>
                         </div>
                       </div>

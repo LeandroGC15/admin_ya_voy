@@ -42,7 +42,7 @@ import {
 } from '@/features/config/hooks/use-api-keys';
 
 // Import types
-import { ApiKey } from '@/features/config/schemas/api-keys.schemas';
+import { ApiKey, ApiKeyListItem } from '@/features/config/schemas/api-keys.schemas';
 
 export default function ApiKeysPage() {
   // State management
@@ -88,37 +88,125 @@ export default function ApiKeysPage() {
   };
 
   // Handle API key selection and actions
-  const handleApiKeySelect = (apiKey: ApiKey) => {
-    setSelectedApiKey(apiKey);
+  const handleApiKeySelect = (apiKey: ApiKeyListItem) => {
+    // For selection, we can work with the list item data
+    // Convert to ApiKey format with available data
+    const apiKeyData: ApiKey = {
+      ...apiKey,
+      // Add default values for fields not available in list
+      keyType: 'secret',
+      accessLevel: 'read',
+      tags: [],
+      createdAt: '',
+      updatedAt: '',
+      description: '',
+      rotationPolicy: 'manual',
+      rateLimit: 0,
+      usageCount: apiKey.usageCount || 0, // Provide default value
+      expiresAt: apiKey.expiresAt || undefined, // Convert null to undefined and override
+      lastRotated: undefined,
+    };
+    setSelectedApiKey(apiKeyData);
     setCurrentTab('manage');
   };
 
-  const handleApiKeyEdit = (apiKey: ApiKey) => {
-    setSelectedApiKey(apiKey);
+  const handleApiKeyEdit = (apiKey: ApiKeyListItem) => {
+    // For editing, we need complete data, so we'll set the ID and let the modal fetch details
+    const apiKeyData: ApiKey = {
+      ...apiKey,
+      keyType: 'secret',
+      accessLevel: 'read',
+      tags: [],
+      createdAt: '',
+      updatedAt: '',
+      description: '',
+      rotationPolicy: 'manual',
+      rateLimit: 0,
+      usageCount: apiKey.usageCount || 0, // Provide default value
+      expiresAt: apiKey.expiresAt || undefined, // Convert null to undefined
+      lastRotated: undefined,
+    };
+    setSelectedApiKey(apiKeyData);
     setEditModalOpen(true);
   };
 
-  const handleApiKeyDelete = (apiKey: ApiKey) => {
-    setSelectedApiKey(apiKey);
+  const handleApiKeyDelete = (apiKey: ApiKeyListItem) => {
+    const apiKeyData: ApiKey = {
+      ...apiKey,
+      keyType: 'secret',
+      accessLevel: 'read',
+      tags: [],
+      createdAt: '',
+      updatedAt: '',
+      description: '',
+      rotationPolicy: 'manual',
+      rateLimit: 0,
+      usageCount: apiKey.usageCount || 0, // Provide default value
+      expiresAt: apiKey.expiresAt || undefined, // Convert null to undefined
+      lastRotated: undefined,
+    };
+    setSelectedApiKey(apiKeyData);
     setDeleteModalOpen(true);
   };
 
-  const handleApiKeyToggle = (apiKey: ApiKey) => {
-    setSelectedApiKey(apiKey);
+  const handleApiKeyToggle = (apiKey: ApiKeyListItem) => {
+    const apiKeyData: ApiKey = {
+      ...apiKey,
+      keyType: 'secret',
+      accessLevel: 'read',
+      tags: [],
+      createdAt: '',
+      updatedAt: '',
+      description: '',
+      rotationPolicy: 'manual',
+      rateLimit: 0,
+      usageCount: apiKey.usageCount || 0, // Provide default value
+      expiresAt: apiKey.expiresAt || undefined, // Convert null to undefined
+      lastRotated: undefined,
+    };
+    setSelectedApiKey(apiKeyData);
     setToggleModalOpen(true);
   };
 
-  const handleApiKeyRotate = (apiKey: ApiKey) => {
-    setSelectedApiKey(apiKey);
+  const handleApiKeyRotate = (apiKey: ApiKeyListItem) => {
+    const apiKeyData: ApiKey = {
+      ...apiKey,
+      keyType: 'secret',
+      accessLevel: 'read',
+      tags: [],
+      createdAt: '',
+      updatedAt: '',
+      description: '',
+      rotationPolicy: 'manual',
+      rateLimit: 0,
+      usageCount: apiKey.usageCount || 0, // Provide default value
+      expiresAt: apiKey.expiresAt || undefined, // Convert null to undefined
+      lastRotated: undefined,
+    };
+    setSelectedApiKey(apiKeyData);
     setRotateModalOpen(true);
   };
 
-  const handleApiKeyForceRotate = (apiKey: ApiKey) => {
-    setSelectedApiKey(apiKey);
+  const handleApiKeyForceRotate = (apiKey: ApiKeyListItem) => {
+    const apiKeyData: ApiKey = {
+      ...apiKey,
+      keyType: 'secret',
+      accessLevel: 'read',
+      tags: [],
+      createdAt: '',
+      updatedAt: '',
+      description: '',
+      rotationPolicy: 'manual',
+      rateLimit: 0,
+      usageCount: apiKey.usageCount || 0, // Provide default value
+      expiresAt: apiKey.expiresAt || undefined, // Convert null to undefined
+      lastRotated: undefined,
+    };
+    setSelectedApiKey(apiKeyData);
     setForceRotateModalOpen(true);
   };
 
-  const handleDecryptApiKey = async (apiKey: ApiKey) => {
+  const handleDecryptApiKey = async (apiKey: ApiKeyListItem) => {
     try {
       await decryptApiKeyMutation.mutateAsync(apiKey.id);
       setShowDecryptedKey(true);

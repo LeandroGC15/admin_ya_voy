@@ -77,7 +77,7 @@ export function useCreateApiKey() {
     },
     {
       onSuccess: () => {
-        // Invalidate API keys list
+        invalidateQueries(['apiKeys']);
       },
     }
   );
@@ -106,7 +106,7 @@ export function useDeleteApiKey() {
     },
     {
       onSuccess: () => {
-        // Invalidate API keys list
+        invalidateQueries(['apiKeys']);
       },
     }
   );
