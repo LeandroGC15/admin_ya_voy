@@ -23,6 +23,7 @@ export const ENDPOINTS = {
     base: 'admin/users',
     byId: (id: string | number) => `admin/users/${id}`,
     delete: 'admin/users/delete', // Endpoint específico para eliminación
+    restore: (id: string | number) => `admin/users/${id}/restore`,
     search: 'admin/users/search',
     status: (id: string | number) => `admin/users/${id}/status`,
     wallet: (id: string | number) => `admin/users/${id}/wallet`,

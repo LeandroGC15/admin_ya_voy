@@ -153,29 +153,24 @@ export function useUpdateUser() {
   );
 }
 
-// Delete user hook - uses admin API endpoint (hard delete)
+// Delete user hook - uses admin API endpoint (soft delete)
 export function useDeleteUser() {
   return useApiMutation(
-    async (userId: string): Promise<void> => {
+    async ({ userId, reason }: { userId: string; reason: string }): Promise<void> => {
       // Validate userId is numeric before making request
       if (!userId || isNaN(Number(userId))) {
         throw new Error('ID de usuario inválido');
       }
 
-      // Try DELETE without body first - if it fails, backend may require empty object
-      try {
-        await api.delete(ENDPOINTS.users.byId(userId));
-      } catch (deleteError: any) {
-        // If DELETE without body fails with 400, try with empty object
-        if (deleteError.response?.status === 400) {
-          await api.delete(ENDPOINTS.users.byId(userId), {
-            data: {}
-          });
-        } else {
-          // Re-throw other errors
-          throw deleteError;
-        }
+      // Validate reason is provided
+      if (!reason || reason.trim().length === 0) {
+        throw new Error('El motivo de desactivación es obligatorio');
       }
+
+      // Send DELETE request with reason in body (soft delete)
+      await api.delete(ENDPOINTS.users.byId(userId), {
+        data: { reason: reason.trim() }
+      });
     },
     {
       onSuccess: () => {
@@ -184,6 +179,32 @@ export function useDeleteUser() {
       onError: (error: any) => {
         // Centralized error logging; UI handled by caller
         console.error('Delete user mutation error:', error);
+      },
+    }
+  );
+}
+
+// Restore user hook - uses admin API endpoint (restore soft deleted user)
+export function useRestoreUser() {
+  return useApiMutation(
+    async ({ userId, reason }: { userId: string; reason?: string }): Promise<void> => {
+      // Validate userId is numeric before making request
+      if (!userId || isNaN(Number(userId))) {
+        throw new Error('ID de usuario inválido');
+      }
+
+      // Send PUT request to restore endpoint
+      await api.put(ENDPOINTS.users.restore(userId), {
+        reason: reason?.trim() || 'Restauración administrativa'
+      });
+    },
+    {
+      onSuccess: () => {
+        // Success handling is done by the caller (page component)
+      },
+      onError: (error: any) => {
+        // Centralized error logging; UI handled by caller
+        console.error('Restore user mutation error:', error);
       },
     }
   );

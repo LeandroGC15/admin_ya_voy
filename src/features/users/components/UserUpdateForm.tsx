@@ -1,42 +1,29 @@
 'use client';
 
 import React from 'react';
-import { FormProvider, CrudModal } from '@/components/forms';
-import { userUpdateFormConfig } from '../config/user-form-config';
-import { useUpdateUser } from '../hooks';
-import { toast } from 'sonner';
+import { UserEditModal } from './UserEditModal';
+import { type User } from '../schemas/user-schemas';
 
 interface UserUpdateFormProps {
   isOpen: boolean;
-  userId?: string;
-  initialData?: any;
+  user?: User | null;
   onClose: () => void;
   onUserUpdated: () => void;
 }
 
 const UserUpdateForm: React.FC<UserUpdateFormProps> = ({
   isOpen,
-  userId,
-  initialData,
+  user,
   onClose,
   onUserUpdated
 }) => {
-  const updateUserMutation = useUpdateUser();
-
-  if (!isOpen) return null;
-
-  // Create config with operations
-  const configWithOps = {
-    ...userUpdateFormConfig,
-    operations: {
-      update: updateUserMutation,
-    },
-  };
-
   return (
-    <FormProvider config={configWithOps}>
-      <CrudModal config={configWithOps} />
-    </FormProvider>
+    <UserEditModal
+      isOpen={isOpen}
+      onClose={onClose}
+      user={user}
+      onSuccess={onUserUpdated}
+    />
   );
 };
 

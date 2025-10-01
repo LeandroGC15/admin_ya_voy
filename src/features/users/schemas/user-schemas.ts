@@ -11,6 +11,7 @@ export const userSchema = z.object({
   country: z.string().optional(),
   userType: z.enum(['passenger', 'driver']).optional(),
   isActive: z.boolean(),
+  deletedAt: z.string().optional(), // Soft delete timestamp
   emailVerified: z.boolean(),
   phoneVerified: z.boolean(),
   identityVerified: z.boolean(),

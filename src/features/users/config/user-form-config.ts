@@ -131,17 +131,50 @@ export const userSearchFormConfig = createForm('users')
   })
   .build();
 
-// Configuración para eliminación de usuario
+// Configuración para eliminación de usuario (soft delete)
 export const userDeleteFormConfig = createForm('users')
-  .title('Eliminar Usuario')
-  .schema(z.object({})) // Schema vacío para eliminación
-  .defaultValues({})
-  .fields() // Sin campos para eliminación
+  .title('Desactivar Usuario')
+  .schema(z.object({
+    reason: z.string().min(1, 'El motivo es obligatorio').max(500, 'El motivo no puede exceder 500 caracteres')
+  }))
+  .defaultValues({
+    reason: ''
+  })
+  .fields(
+    field.textarea('reason')
+      .label('Motivo de Desactivación')
+      .placeholder('Ej: Violación de términos de servicio, solicitud del usuario, cuenta fraudulenta...')
+      .build()
+  )
   .operations({
     // Operations will be provided by the component using the form
   })
   .ui({
-    submitButtonText: 'Eliminar Usuario',
-    modalSize: 'sm'
+    submitButtonText: 'Confirmar Desactivación',
+    modalSize: 'md'
+  })
+  .build();
+
+// Configuración para restauración de usuario (restore soft deleted user)
+export const userRestoreFormConfig = createForm('users')
+  .title('Restaurar Usuario')
+  .schema(z.object({
+    reason: z.string().max(500, 'El motivo no puede exceder 500 caracteres').optional()
+  }))
+  .defaultValues({
+    reason: ''
+  })
+  .fields(
+    field.textarea('reason')
+      .label('Motivo de Restauración (opcional)')
+      .placeholder('Ej: Solicitud del usuario, error administrativo, verificación completada...')
+      .build()
+  )
+  .operations({
+    // Operations will be provided by the component using the form
+  })
+  .ui({
+    submitButtonText: 'Confirmar Restauración',
+    modalSize: 'md'
   })
   .build();

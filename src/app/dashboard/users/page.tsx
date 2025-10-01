@@ -5,18 +5,22 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { DataTable, Modal, CreateButton, ActionButtons } from '@/features/core/components';
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/features/users/hooks';
+import UserDeleteForm from '@/features/users/components/UserDeleteForm';
+import UserRestoreForm from '@/features/users/components/UserRestoreForm';
+import UserUpdateForm from '@/features/users/components/UserUpdateForm';
+import { useUsers, useCreateUser, useDeleteUser, useRestoreUser } from '@/features/users/hooks';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { createUserSchema, updateUserSchema, type User, type CreateUserInput, type UpdateUserInput, type SearchUsersInput } from '@/features/users/schemas/user-schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 
 const UsersPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchParams, setSearchParams] = useState<SearchUsersInput>({});
@@ -35,10 +39,6 @@ const UsersPage: React.FC = () => {
     },
   });
 
-  // React Hook Form for edit user
-  const editForm = useForm<UpdateUserInput>({
-    resolver: zodResolver(updateUserSchema),
-  });
 
   // React Query hooks
   const { data: usersResponse, isLoading, error } = useUsers({
@@ -55,8 +55,8 @@ const UsersPage: React.FC = () => {
   }, [error]);
 
   const createUserMutation = useCreateUser();
-  const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+  const restoreUserMutation = useRestoreUser();
 
   const users = usersResponse?.users || [];
   const pagination = usersResponse ? {
@@ -81,67 +81,79 @@ const UsersPage: React.FC = () => {
 
   const handleEdit = (user: User) => {
     setSelectedUser(user);
-    editForm.reset({
-      name: user.name,
-      email: user.email,
-      phone: user.phone || '',
-      city: user.city || '',
-      state: user.state || '',
-      country: user.country || '',
-      isActive: user.isActive,
-      userType: user.userType || 'passenger',
-    });
     setShowEditModal(true);
   };
 
-  const handleUpdate = (data: UpdateUserInput) => {
-    if (selectedUser) {
-      updateUserMutation.mutate(
-        { userId: selectedUser.id.toString(), userData: data },
-        {
-          onSuccess: () => {
-            setShowEditModal(false);
-            setSelectedUser(null);
-            invalidateQueries(['users']);
-          },
-          onError: (error: any) => {
-            console.error('Error updating user:', error);
-            alert(`Error al actualizar usuario: ${error.message || 'Error desconocido'}`);
-          },
-        }
-      );
-    }
-  };
 
   const handleDelete = (user: User) => {
-    // Mostrar confirmación personalizada
-    const confirmed = window.confirm(
-      `¿Eliminar usuario "${user.name}"?\n\n` +
-      `⚠️ Esta acción no se puede deshacer.\n` +
-      `El usuario será eliminado permanentemente del sistema.`
+    console.log('handleDelete called with user:', user);
+    // Mostrar modal de desactivación en lugar de confirmación simple
+    setSelectedUser(user);
+    setShowDeleteModal(true);
+    console.log('Modal state set to true');
+  };
+
+  const handleConfirmDelete = (reason: string) => {
+    if (!selectedUser) return;
+
+    // Ejecutar desactivación (soft delete) si el usuario confirma
+    deleteUserMutation.mutate(
+      { userId: selectedUser.id.toString(), reason },
+      {
+        onSuccess: () => {
+          // Refrescar tabla y mostrar mensaje de éxito
+          invalidateQueries(['users']);
+          setShowDeleteModal(false);
+          setSelectedUser(null);
+          alert('Usuario desactivado exitosamente. El usuario puede ser reactivado posteriormente.');
+        },
+        onError: (error: any) => {
+          console.error('Error deleting user:', error);
+          // Mensaje de error único y específico
+          const status = error?.response?.status;
+          let message = 'Error desconocido al desactivar usuario';
+          if (status === 404) message = 'Usuario no encontrado';
+          else if (status === 403) message = 'No tienes permisos para desactivar este usuario';
+          else if (status === 409) message = 'No se puede desactivar el usuario porque tiene viajes o pedidos activos';
+          else if (error?.response?.data?.message) message = error.response.data.message;
+          alert(`Error al desactivar usuario: ${message}`);
+        },
+      }
     );
+  };
 
-    if (!confirmed) return;
+  const handleRestore = (user: User) => {
+    // Mostrar modal de restauración
+    setSelectedUser(user);
+    setShowRestoreModal(true);
+  };
 
-    // Ejecutar eliminación si el usuario confirma
-    deleteUserMutation.mutate(user.id.toString(), {
-      onSuccess: () => {
-        // Refrescar tabla y mostrar único mensaje de éxito
-        invalidateQueries(['users']);
-        alert('Usuario eliminado exitosamente');
-      },
-      onError: (error: any) => {
-        console.error('Error deleting user:', error);
-        // Mensaje de error único y específico
-        const status = error?.response?.status;
-        let message = 'Error desconocido al eliminar usuario';
-        if (status === 404) message = 'Usuario no encontrado';
-        else if (status === 403) message = 'No tienes permisos para eliminar este usuario';
-        else if (status === 409) message = 'No se puede eliminar el usuario porque tiene viajes o pedidos activos';
-        else if (error?.response?.data?.message) message = error.response.data.message;
-        alert(`Error al eliminar usuario: ${message}`);
-      },
-    });
+  const handleConfirmRestore = (reason?: string) => {
+    if (!selectedUser) return;
+
+    // Ejecutar restauración si el usuario confirma
+    restoreUserMutation.mutate(
+      { userId: selectedUser.id.toString(), reason },
+      {
+        onSuccess: () => {
+          // Refrescar tabla y mostrar mensaje de éxito
+          invalidateQueries(['users']);
+          setShowRestoreModal(false);
+          setSelectedUser(null);
+          alert('Usuario restaurado exitosamente.');
+        },
+        onError: (error: any) => {
+          console.error('Error restoring user:', error);
+          // Mensaje de error único y específico
+          const status = error?.response?.status;
+          let message = 'Error desconocido al restaurar usuario';
+          if (status === 404) message = 'Usuario no encontrado o no está desactivado';
+          else if (status === 403) message = 'No tienes permisos para restaurar este usuario';
+          else if (error?.response?.data?.message) message = error.response.data.message;
+          alert(`Error al restaurar usuario: ${message}`);
+        },
+      }
+    );
   };
 
   const handleSearch = (searchTerm: string) => {
@@ -204,18 +216,29 @@ const UsersPage: React.FC = () => {
     },
   ];
 
-  const renderActions = (user: User) => (
-    <ActionButtons
-      onEdit={() => handleEdit(user)}
-      onDelete={() => handleDelete(user)}
-      canEdit={true}
-      canDelete={true}
-      canView={false}
-      loading={deleteUserMutation.isPending}
-      deleteText="Eliminar"
-      deleteLoadingText="Eliminando..."
-    />
-  );
+  const renderActions = (user: User) => {
+    const isSoftDeleted = !!user.deletedAt;
+
+    return (
+      <div className="flex gap-2">
+        <ActionButtons
+          onEdit={() => handleEdit(user)}
+          onDelete={isSoftDeleted ? () => handleRestore(user) : () => handleDelete(user)}
+          canEdit={!isSoftDeleted} // No permitir editar usuarios soft deleted
+          canDelete={true}
+          canView={false}
+          loading={deleteUserMutation.isPending || restoreUserMutation.isPending}
+          deleteText={isSoftDeleted ? "Restaurar" : "Desactivar"}
+          deleteLoadingText={isSoftDeleted ? "Restaurando..." : "Desactivando..."}
+        />
+        {isSoftDeleted && (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            Desactivado
+          </span>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -386,133 +409,52 @@ const UsersPage: React.FC = () => {
       </Modal>
 
       {/* Edit Modal */}
-      <Modal
+      <UserUpdateForm
         isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        title="Editar Usuario"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setShowEditModal(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={editForm.handleSubmit(handleUpdate)}
-              disabled={updateUserMutation.isPending}
-            >
-              {updateUserMutation.isPending ? 'Actualizando...' : 'Actualizar Usuario'}
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={editForm.handleSubmit(handleUpdate)} className="space-y-4">
-          <div>
-            <Label htmlFor="edit-name">Nombre <span className="text-red-500">*</span></Label>
-            <Input
-              id="edit-name"
-              {...editForm.register('name')}
-              placeholder="Ej: Juan Pérez"
-              className={editForm.formState.errors.name ? 'border-red-500' : ''}
-            />
-            {editForm.formState.errors.name && (
-              <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.name.message}</p>
-            )}
-          </div>
+        user={selectedUser}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedUser(null);
+        }}
+        onUserUpdated={() => {
+          setShowEditModal(false);
+          setSelectedUser(null);
+        }}
+      />
 
-          <div>
-            <Label htmlFor="edit-email">Email <span className="text-red-500">*</span></Label>
-            <Input
-              id="edit-email"
-              type="email"
-              {...editForm.register('email')}
-              placeholder="usuario@ejemplo.com"
-              className={editForm.formState.errors.email ? 'border-red-500' : ''}
-            />
-            {editForm.formState.errors.email && (
-              <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.email.message}</p>
-            )}
-          </div>
+      {/* Delete Modal */}
+      {(() => {
+        console.log('Rendering Delete Modal:', { showDeleteModal, selectedUser });
+        return null;
+      })()}
+      <UserDeleteForm
+        isOpen={showDeleteModal}
+        userId={selectedUser?.id.toString()}
+        userName={selectedUser?.name}
+        onClose={() => {
+          console.log('Modal onClose called');
+          setShowDeleteModal(false);
+          setSelectedUser(null);
+        }}
+        onUserDeleted={() => {
+          console.log('onUserDeleted called');
+          // This is handled by the mutation onSuccess callback
+        }}
+      />
 
-          <div>
-            <Label htmlFor="edit-phone">Teléfono</Label>
-            <Input
-              id="edit-phone"
-              type="tel"
-              {...editForm.register('phone')}
-              placeholder="+57 300 123 4567"
-              className={editForm.formState.errors.phone ? 'border-red-500' : ''}
-            />
-            {editForm.formState.errors.phone && (
-              <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.phone.message}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="edit-city">Ciudad</Label>
-              <Input
-                id="edit-city"
-                {...editForm.register('city')}
-                placeholder="Ej: Bogotá"
-                className={editForm.formState.errors.city ? 'border-red-500' : ''}
-              />
-              {editForm.formState.errors.city && (
-                <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.city.message}</p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="edit-state">Estado/Departamento</Label>
-              <Input
-                id="edit-state"
-                {...editForm.register('state')}
-                placeholder="Ej: Cundinamarca"
-                className={editForm.formState.errors.state ? 'border-red-500' : ''}
-              />
-              {editForm.formState.errors.state && (
-                <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.state.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="edit-country">País</Label>
-            <Input
-              id="edit-country"
-              {...editForm.register('country')}
-              placeholder="Ej: Colombia"
-              className={editForm.formState.errors.country ? 'border-red-500' : ''}
-            />
-            {editForm.formState.errors.country && (
-              <p className="text-sm text-red-500 mt-1">{editForm.formState.errors.country.message}</p>
-            )}
-          </div>
-
-          <div className="relative">
-            <Label htmlFor="edit-userType">Tipo de Usuario <span className="text-red-500">*</span></Label>
-            <Select
-              value={editForm.watch('userType') || 'passenger'}
-              onValueChange={(value) => editForm.setValue('userType', value as 'passenger' | 'driver')}
-            >
-              <SelectTrigger className="relative z-10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="z-50">
-                <SelectItem value="passenger">Pasajero</SelectItem>
-                <SelectItem value="driver">Conductor</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center space-x-2 pt-2">
-            <Checkbox
-              id="edit-isActive"
-              {...editForm.register('isActive')}
-            />
-            <Label htmlFor="edit-isActive" className="text-sm font-medium">
-              Usuario activo
-            </Label>
-          </div>
-        </form>
-      </Modal>
+      {/* Restore Modal */}
+      <UserRestoreForm
+        isOpen={showRestoreModal}
+        userId={selectedUser?.id.toString()}
+        userName={selectedUser?.name}
+        onClose={() => {
+          setShowRestoreModal(false);
+          setSelectedUser(null);
+        }}
+        onUserRestored={() => {
+          // This is handled by the mutation onSuccess callback
+        }}
+      />
     </div>
   );
 };
