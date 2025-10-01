@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DataTable, Modal, CreateButton, ActionButtons } from '@/features/core/components';
@@ -13,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const DriversPage: React.FC = () => {
+  const router = useRouter();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchParams, setSearchParams] = useState<SearchDriversInput>({});
@@ -122,21 +124,6 @@ const DriversPage: React.FC = () => {
       render: (value: string) => value || '-',
     },
     {
-      key: 'phoneNumber' as keyof Driver,
-      header: 'Teléfono',
-      render: (value: string) => value || '-',
-    },
-    {
-      key: 'carModel' as keyof Driver,
-      header: 'Vehículo',
-      render: (value: string) => value || '-',
-    },
-    {
-      key: 'licensePlate' as keyof Driver,
-      header: 'Placa',
-      render: (value: string) => value || '-',
-    },
-    {
       key: 'carSeats' as keyof Driver,
       header: 'Asientos',
       render: (value: number) => value || '-',
@@ -183,12 +170,17 @@ const DriversPage: React.FC = () => {
     },
   ];
 
+  const handleView = (driver: Driver) => {
+    router.push(`/dashboard/drivers/${driver.id}`);
+  };
+
   const renderActions = (driver: Driver) => (
     <ActionButtons
       onDelete={() => handleDelete(driver)}
+      onView={() => handleView(driver)}
       canEdit={false}
       canDelete={true}
-      canView={false}
+      canView={true}
       loading={deleteDriverMutation.isPending}
     />
   );

@@ -6,6 +6,7 @@ import type {
   CreateDriverInput,
   SearchDriversInput,
   DriverListResponse,
+  DriverDetailResponse,
   DriversData
 } from '../schemas/driver-schemas';
 
@@ -79,11 +80,8 @@ export function useDeleteDriver() {
 export function useDriver(driverId: number) {
   return useApiQuery(
     ['drivers', 'detail', driverId],
-    async (): Promise<Driver> => {
-      const response = await api.get<Driver>(ENDPOINTS.drivers.byId(driverId));
-      if (!response || !response.data) {
-        throw new Error('Invalid API response: no data received');
-      }
+    async (): Promise<DriverDetailResponse> => {
+      const response = await api.get<DriverDetailResponse>(ENDPOINTS.drivers.byId(driverId));
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
       }
@@ -118,7 +116,7 @@ export function useUpdateDriverStatus() {
 export function useUpdateDriverVerification() {
   return useApiMutation(
     async ({ driverId, verificationStatus }: { driverId: number; verificationStatus: string }): Promise<Driver> => {
-      const response = await api.patch<Driver>(ENDPOINTS.drivers.verification(driverId), { verificationStatus });
+      const response = await api.put<Driver>(ENDPOINTS.drivers.verification(driverId), { verificationStatus });
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
       }

@@ -104,36 +104,35 @@ export const driverStatsSchema = z.object({
 });
 
 // Driver detailed response schema (for GET /admin/drivers/:id)
+// Note: After the API client interceptor, response.data contains the inner data object directly
 export const driverDetailResponseSchema = z.object({
-  data: z.object({
-    basic: driverBasicSchema,
-    stats: driverStatsSchema,
-    address: driverAddressSchema,
-    documents: z.array(documentSchema),
-    vehicles: z.array(driverVehicleSchema),
-    currentWorkZone: workZoneSchema.nullable().optional(),
-    paymentMethods: z.array(z.object({
-      id: z.number(),
-      type: z.string(),
-      isDefault: z.boolean().optional(),
-    })).optional(),
-    recentRides: z.array(z.object({
-      id: z.number(),
-      status: z.string(),
-      createdAt: z.string(),
-      farePrice: z.number(),
-    })).optional(),
-    performanceStats: z.object({
-      todayRides: z.number().optional(),
-      weekRides: z.number().optional(),
-      monthRides: z.number().optional(),
-      todayEarnings: z.number().optional(),
-      weekEarnings: z.number().optional(),
-      monthEarnings: z.number().optional(),
-      averageResponseTime: z.number().optional(),
-      customerSatisfaction: z.number().optional(),
-    }).optional(),
-  }),
+  basic: driverBasicSchema,
+  stats: driverStatsSchema,
+  address: driverAddressSchema,
+  documents: z.array(documentSchema),
+  vehicles: z.array(driverVehicleSchema),
+  currentWorkZone: workZoneSchema.nullable().optional(),
+  paymentMethods: z.array(z.object({
+    id: z.number(),
+    type: z.string(),
+    isDefault: z.boolean().optional(),
+  })).optional(),
+  recentRides: z.array(z.object({
+    id: z.number(),
+    status: z.string(),
+    createdAt: z.string(),
+    farePrice: z.number(),
+  })).optional(),
+  performanceStats: z.object({
+    todayRides: z.number().optional(),
+    weekRides: z.number().optional(),
+    monthRides: z.number().optional(),
+    todayEarnings: z.number().optional(),
+    weekEarnings: z.number().optional(),
+    monthEarnings: z.number().optional(),
+    averageResponseTime: z.number().optional(),
+    customerSatisfaction: z.number().optional(),
+  }).optional(),
 });
 
 // Base driver schema (según documentación de API)

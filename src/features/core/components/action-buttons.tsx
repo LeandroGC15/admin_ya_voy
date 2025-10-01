@@ -68,8 +68,7 @@ export function ViewButton({ onClick, disabled }: Omit<ActionButtonProps, 'loadi
       variant="outline"
       size="sm"
     >
-      <Eye className="h-4 w-4 mr-2" />
-      Ver
+      <Eye className="h-4 w-4" />
     </Button>
   );
 }
