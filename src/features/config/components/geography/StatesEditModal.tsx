@@ -4,13 +4,12 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/features/core/components';
-import { useUpdateState, useCountries } from '../../hooks/use-geography';
+import { useUpdateState } from '../../hooks/use-geography';
 import { updateStateSchema } from '../../schemas/geography.schemas';
 import type { UpdateStateInput, State } from '../../schemas/geography.schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 
@@ -41,7 +40,6 @@ export function StatesEditModal({ isOpen, onClose, state, onSuccess }: StatesEdi
   });
 
   const updateStateMutation = useUpdateState();
-  const { data: countriesData } = useCountries({ limit: 100, isActive: true });
 
   // Reset form when state changes
   useEffect(() => {
@@ -129,25 +127,13 @@ export function StatesEditModal({ isOpen, onClose, state, onSuccess }: StatesEdi
 
           <div>
             <Label htmlFor="countryId">País</Label>
-            <Select
-              value={form.watch('countryId')?.toString()}
-              onValueChange={(value) => form.setValue('countryId', parseInt(value))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar país" />
-              </SelectTrigger>
-              <SelectContent>
-                {countriesData?.countries?.map((country) => (
-                  <SelectItem key={country.id} value={country.id.toString()}>
-                    <div className="flex items-center gap-2">
-                      {country.flag && <span>{country.flag}</span>}
-                      <span>{country.name}</span>
-                      <span className="text-xs text-gray-500">({country.isoCode2})</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2 p-2 border rounded-md bg-gray-50">
+              {state?.country?.flag && <span>{state.country.flag}</span>}
+              <span className="text-sm font-medium">{state?.country?.name}</span>
+              {state?.country?.isoCode2 && (
+                <span className="text-xs text-gray-500">({state.country.isoCode2})</span>
+              )}
+            </div>
             {form.formState.errors.countryId && (
               <p className="text-sm text-red-500">{form.formState.errors.countryId.message}</p>
             )}

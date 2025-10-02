@@ -4,14 +4,13 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/features/core/components';
-import { useUpdateCity, useStates } from '../../hooks/use-geography';
+import { useUpdateCity } from '../../hooks/use-geography';
 import { updateCitySchema } from '../../schemas/geography.schemas';
 import type { UpdateCityInput, City } from '../../schemas/geography.schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 
@@ -46,7 +45,6 @@ export function CitiesEditModal({ isOpen, onClose, city, onSuccess }: CitiesEdit
   });
 
   const updateCityMutation = useUpdateCity();
-  const { data: statesData } = useStates({ limit: 100, isActive: true });
 
   // Reset form when city changes
   useEffect(() => {
@@ -124,24 +122,10 @@ export function CitiesEditModal({ isOpen, onClose, city, onSuccess }: CitiesEdit
 
           <div className="col-span-2">
             <Label htmlFor="stateId">Estado</Label>
-            <Select
-              value={form.watch('stateId')?.toString()}
-              onValueChange={(value) => form.setValue('stateId', parseInt(value))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar estado" />
-              </SelectTrigger>
-              <SelectContent>
-                {statesData?.states?.map((state) => (
-                  <SelectItem key={state.id} value={state.id.toString()}>
-                    <div className="flex items-center gap-2">
-                      <span>{state.name}</span>
-                      <span className="text-xs text-gray-500">({state.code}) - {state.country?.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2 p-2 border rounded-md bg-gray-50">
+              <span className="text-sm font-medium">{city?.state?.name}</span>
+              <span className="text-xs text-gray-500">({city?.state?.code})</span>
+            </div>
             {form.formState.errors.stateId && (
               <p className="text-sm text-red-500">{form.formState.errors.stateId.message}</p>
             )}

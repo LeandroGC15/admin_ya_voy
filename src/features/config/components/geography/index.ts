@@ -4,6 +4,7 @@ export { CountriesCreateModal } from './CountriesCreateModal';
 export { CountriesEditModal } from './CountriesEditModal';
 export { CountriesDeleteModal } from './CountriesDeleteModal';
 export { CountriesToggleModal } from './CountriesToggleModal';
+export { CountriesBulkImportModal } from './CountriesBulkImportModal';
 
 export { StatesTable } from './StatesTable';
 export { StatesCreateModal } from './StatesCreateModal';

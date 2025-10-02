@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   MapPin,
   Globe,
@@ -15,7 +16,6 @@ import {
   BarChart3
 } from 'lucide-react';
 
-// Import hooks for overview stats
 import {
   useCountriesStatsByContinent,
   useStatesStatsByCountry,
@@ -23,16 +23,14 @@ import {
 } from '@/features/config/hooks/use-geography';
 
 export default function GeographyConfigPage() {
-  const { data: countriesStats } = useCountriesStatsByContinent();
-  const { data: statesStats } = useStatesStatsByCountry();
-  const { data: citiesStats } = useCitiesStatsByState();
+  const { data: countriesStats, isLoading: countriesLoading } = useCountriesStatsByContinent();
+  const { data: statesStats, isLoading: statesLoading } = useStatesStatsByCountry();
+  const { data: citiesStats, isLoading: citiesLoading } = useCitiesStatsByState();
 
-  const totalCountries = countriesStats?.stats?.reduce((acc, stat) => acc + stat.totalCountries, 0) || 0;
-  const activeCountries = countriesStats?.stats?.reduce((acc, stat) => acc + stat.activeCountries, 0) || 0;
-  const totalStates = statesStats?.stats?.reduce((acc, stat) => acc + stat.totalStates, 0) || 0;
-  const activeStates = statesStats?.stats?.reduce((acc, stat) => acc + stat.activeStates, 0) || 0;
-  const totalCities = citiesStats?.stats?.reduce((acc, stat) => acc + stat.totalCities, 0) || 0;
-  const activeCities = citiesStats?.stats?.reduce((acc, stat) => acc + stat.activeCities, 0) || 0;
+  // Calculate totals from stats
+  const totalCountries = countriesStats?.stats?.reduce((acc, stat) => acc + stat.count, 0) || 0;
+  const totalStates = statesStats?.stats?.reduce((acc, stat) => acc + stat.statesCount, 0) || 0;
+  const totalCities = citiesStats?.stats?.reduce((acc, stat) => acc + stat.citiesCount, 0) || 0;
 
   const geographySections = [
     {
@@ -40,7 +38,7 @@ export default function GeographyConfigPage() {
       description: 'Gestiona países, monedas, impuestos y configuraciones territoriales. Desde aquí podrás acceder a estados y ciudades.',
       icon: Globe,
       href: '/dashboard/config/geography/countries',
-      stats: `${totalCountries} países (${activeCountries} activos)`,
+      stats: `${totalCountries} países registrados`,
       color: 'bg-blue-500',
       features: ['Códigos ISO', 'Monedas', 'Zonas horarias', 'Tasas fiscales', 'Estados y ciudades']
     }
@@ -80,9 +78,11 @@ export default function GeographyConfigPage() {
             <Globe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalCountries}</div>
+            <div className="text-2xl font-bold">
+              {countriesLoading ? '...' : totalCountries}
+            </div>
             <p className="text-xs text-muted-foreground mt-2">
-              {activeCountries} países activos
+              {countriesLoading ? 'Cargando...' : 'países registrados'}
             </p>
           </CardContent>
         </Card>
@@ -93,9 +93,11 @@ export default function GeographyConfigPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalStates}</div>
+            <div className="text-2xl font-bold">
+              {statesLoading ? '...' : totalStates}
+            </div>
             <p className="text-xs text-muted-foreground mt-2">
-              {activeStates} estados activos
+              {statesLoading ? 'Cargando...' : 'estados/provincias registrados'}
             </p>
           </CardContent>
         </Card>
@@ -106,9 +108,11 @@ export default function GeographyConfigPage() {
             <Navigation className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalCities}</div>
+            <div className="text-2xl font-bold">
+              {citiesLoading ? '...' : totalCities}
+            </div>
             <p className="text-xs text-muted-foreground mt-2">
-              {activeCities} ciudades activas
+              {citiesLoading ? 'Cargando...' : 'ciudades registradas'}
             </p>
           </CardContent>
         </Card>
@@ -173,6 +177,102 @@ export default function GeographyConfigPage() {
             </Card>
           );
         })}
+      </div>
+
+      {/* Detailed Statistics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        {/* Countries by Continent */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Países por Continente
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {countriesLoading ? (
+              <div className="text-center py-4">Cargando...</div>
+            ) : countriesStats?.stats && countriesStats.stats.length > 0 ? (
+              <div className="space-y-3">
+                {countriesStats.stats
+                  .sort((a, b) => b.count - a.count)
+                  .slice(0, 5)
+                  .map((stat) => (
+                    <div key={stat.continent} className="flex justify-between items-center">
+                      <span className="text-sm font-medium">{stat.continent}</span>
+                      <Badge variant="secondary">{stat.count}</Badge>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-500">No hay datos disponibles</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* States by Country */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Estados por País
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {statesLoading ? (
+              <div className="text-center py-4">Cargando...</div>
+            ) : statesStats?.stats && statesStats.stats.length > 0 ? (
+              <div className="space-y-3">
+                {statesStats.stats
+                  .sort((a, b) => b.statesCount - a.statesCount)
+                  .slice(0, 5)
+                  .map((stat) => (
+                    <div key={stat.countryId} className="flex justify-between items-center">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium truncate">{stat.countryName}</span>
+                        <span className="text-xs text-gray-500 block">{stat.countryCode}</span>
+                      </div>
+                      <Badge variant="secondary">{stat.statesCount}</Badge>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-500">No hay datos disponibles</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Cities by State */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Navigation className="h-5 w-5" />
+              Ciudades por Estado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {citiesLoading ? (
+              <div className="text-center py-4">Cargando...</div>
+            ) : citiesStats?.stats && citiesStats.stats.length > 0 ? (
+              <div className="space-y-3">
+                {citiesStats.stats
+                  .sort((a, b) => b.citiesCount - a.citiesCount)
+                  .slice(0, 5)
+                  .map((stat) => (
+                    <div key={stat.stateId} className="flex justify-between items-center">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium truncate">{stat.stateName}</span>
+                        <span className="text-xs text-gray-500 block">{stat.countryName}</span>
+                      </div>
+                      <Badge variant="secondary">{stat.citiesCount}</Badge>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-500">No hay datos disponibles</div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}

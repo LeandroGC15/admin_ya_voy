@@ -166,8 +166,7 @@ export interface CitiesListResponse {
 export interface CountriesStatsByContinentResponse {
   stats: {
     continent: string;
-    totalCountries: number;
-    activeCountries: number;
+    count: number;
   }[];
 }
 
@@ -175,8 +174,8 @@ export interface StatesStatsByCountryResponse {
   stats: {
     countryId: number;
     countryName: string;
-    totalStates: number;
-    activeStates: number;
+    countryCode: string;
+    statesCount: number;
   }[];
 }
 
@@ -184,9 +183,10 @@ export interface CitiesStatsByStateResponse {
   stats: {
     stateId: number;
     stateName: string;
+    stateCode: string;
     countryName: string;
-    totalCities: number;
-    activeCities: number;
+    countryCode: string;
+    citiesCount: number;
   }[];
 }
 

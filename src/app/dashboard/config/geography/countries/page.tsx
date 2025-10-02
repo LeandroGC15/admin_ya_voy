@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Building2, Navigation } from 'lucide-react';
 import {
   Search,
   Plus,
@@ -18,7 +19,8 @@ import {
   CheckCircle,
   Users,
   DollarSign,
-  ArrowLeft
+  ArrowLeft,
+  Upload
 } from 'lucide-react';
 
 // Import our new components
@@ -27,11 +29,15 @@ import { CountriesCreateModal } from '@/features/config/components/geography';
 import { CountriesEditModal } from '@/features/config/components/geography';
 import { CountriesDeleteModal } from '@/features/config/components/geography';
 import { CountriesToggleModal } from '@/features/config/components/geography';
+import { CountriesBulkImportModal } from '@/features/config/components/geography';
 
 // Import hooks
 import {
   useCountries,
-  useCountriesStatsByContinent
+  useCountriesStatsByContinent,
+  useStatesStatsByCountry,
+  useCitiesStatsByState,
+  useBulkImportCountries
 } from '@/features/config/hooks/use-geography';
 
 // Import types
@@ -51,6 +57,7 @@ export default function CountriesPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [toggleModalOpen, setToggleModalOpen] = useState(false);
+  const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
 
   // API data
   const { data: countriesData, isLoading, error } = useCountries({
@@ -59,6 +66,8 @@ export default function CountriesPage() {
     limit: 10,
   });
   const { data: countriesStats } = useCountriesStatsByContinent();
+  const { data: statesStats, isLoading: statesStatsLoading } = useStatesStatsByCountry();
+  const { data: citiesStats, isLoading: citiesStatsLoading } = useCitiesStatsByState();
 
   // Handle search
   const handleSearch = (term: string) => {
@@ -97,6 +106,7 @@ export default function CountriesPage() {
     setEditModalOpen(false);
     setDeleteModalOpen(false);
     setToggleModalOpen(false);
+    setBulkImportModalOpen(false);
     setSelectedCountry(null);
   };
 
@@ -136,6 +146,14 @@ export default function CountriesPage() {
           >
             <Plus className="h-4 w-4" />
             Nuevo País
+          </Button>
+          <Button
+            onClick={() => setBulkImportModalOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Importar CSV
           </Button>
         </div>
       </div>
@@ -178,12 +196,12 @@ export default function CountriesPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {countriesStats.stats.reduce((acc, stat) => acc + (stat.totalCountries || 0), 0)}
+                    {countriesStats.stats.reduce((acc, stat) => acc + stat.count, 0)}
                   </div>
                   <div className="flex gap-2 mt-2">
                     <Badge variant="secondary" className="text-xs">
                       <CheckCircle className="h-3 w-3 mr-1" />
-                      {countriesStats.stats.reduce((acc, stat) => acc + (stat.activeCountries || 0), 0)} activos
+                      registrados
                     </Badge>
                   </div>
                 </CardContent>
@@ -211,7 +229,7 @@ export default function CountriesPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-green-600">
-                    {Math.max(...countriesStats.stats.map(stat => stat.totalCountries || 0))}
+                    {Math.max(...countriesStats.stats.map(stat => stat.count))}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
                     Máximo países por continente
@@ -272,26 +290,71 @@ export default function CountriesPage() {
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Países</CardTitle>
+                <Globe className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {countriesStats?.stats?.reduce((acc, stat) => acc + stat.count, 0) || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">países registrados</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Estados</CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {statesStats?.stats?.reduce((acc, stat) => acc + stat.statesCount, 0) || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">estados/provincias</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Ciudades</CardTitle>
+                <Navigation className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {citiesStats?.stats?.reduce((acc, stat) => acc + stat.citiesCount, 0) || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">ciudades registradas</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Detailed Analytics */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* Countries by Continent */}
             <Card>
               <CardHeader>
-                <CardTitle>Países por Continente</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  Países por Continente
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {countriesStats ? (
                   <div className="space-y-3">
-                    {countriesStats.stats.map((stat) => (
-                      <div key={stat.continent} className="flex justify-between items-center">
-                        <span className="capitalize font-medium">{stat.continent}</span>
-                        <div className="text-right">
-                          <div className="font-bold">{stat.totalCountries}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {stat.activeCountries} activos
-                          </div>
+                    {countriesStats.stats
+                      .sort((a, b) => b.count - a.count)
+                      .map((stat) => (
+                        <div key={stat.continent} className="flex justify-between items-center">
+                          <span className="capitalize font-medium">{stat.continent}</span>
+                          <Badge variant="secondary" className="font-bold">
+                            {stat.count}
+                          </Badge>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">Cargando datos...</p>
@@ -299,8 +362,73 @@ export default function CountriesPage() {
               </CardContent>
             </Card>
 
-            {/* Top Countries by Population */}
+            {/* States by Country */}
             <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Estados por País
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {statesStatsLoading ? (
+                  <div className="text-center py-4">Cargando...</div>
+                ) : statesStats?.stats && statesStats.stats.length > 0 ? (
+                  <div className="space-y-3">
+                    {statesStats.stats
+                      .sort((a, b) => b.statesCount - a.statesCount)
+                      .slice(0, 5)
+                      .map((stat) => (
+                        <div key={stat.countryId} className="flex justify-between items-center">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium truncate">{stat.countryName}</span>
+                            <span className="text-xs text-gray-500 block">{stat.countryCode}</span>
+                          </div>
+                          <Badge variant="secondary">{stat.statesCount}</Badge>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">No hay datos disponibles</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Cities by State */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Navigation className="h-5 w-5" />
+                  Ciudades por Estado
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {citiesStatsLoading ? (
+                  <div className="text-center py-4">Cargando...</div>
+                ) : citiesStats?.stats && citiesStats.stats.length > 0 ? (
+                  <div className="space-y-3">
+                    {citiesStats.stats
+                      .sort((a, b) => b.citiesCount - a.citiesCount)
+                      .slice(0, 5)
+                      .map((stat) => (
+                        <div key={stat.stateId} className="flex justify-between items-center">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium truncate">{stat.stateName}</span>
+                            <span className="text-xs text-gray-500 block">{stat.countryName}</span>
+                          </div>
+                          <Badge variant="secondary">{stat.citiesCount}</Badge>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">No hay datos disponibles</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Top Countries by Population */}
+          <Card>
               <CardHeader>
                 <CardTitle>Países por Población</CardTitle>
               </CardHeader>
@@ -328,7 +456,6 @@ export default function CountriesPage() {
                 )}
               </CardContent>
             </Card>
-          </div>
         </TabsContent>
       </Tabs>
 
@@ -357,6 +484,12 @@ export default function CountriesPage() {
         isOpen={toggleModalOpen}
         onClose={handleModalClose}
         country={selectedCountry}
+        onSuccess={handleSuccess}
+      />
+
+      <CountriesBulkImportModal
+        isOpen={bulkImportModalOpen}
+        onClose={handleModalClose}
         onSuccess={handleSuccess}
       />
     </div>

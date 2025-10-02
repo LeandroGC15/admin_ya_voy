@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useCountry, useStatesByCountry } from '@/features/config/hooks/use-geography';
+import { useCountry, useStatesByCountry, useCitiesStatsByState } from '@/features/config/hooks/use-geography';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Settings, AlertTriangle, Globe } from 'lucide-react';
+import { ArrowLeft, Loader2, Settings, AlertTriangle, Globe, Building2, Navigation, Users, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatesTable, StatesCreateModal, StatesEditModal, StatesDeleteModal, StatesToggleModal } from '@/features/config/components/geography';
@@ -21,6 +21,7 @@ export default function CountryDetailPage() {
 
   const { data: countryData, isLoading, error } = useCountry(countryIdNumber);
   const { data: statesData, isLoading: statesLoading } = useStatesByCountry(countryIdNumber);
+  const { data: citiesStats, isLoading: citiesStatsLoading } = useCitiesStatsByState();
 
   // State management
   const [selectedState, setSelectedState] = useState<State | null>(null);
@@ -188,6 +189,81 @@ export default function CountryDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Statistics Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Estados</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {statesData?.states?.length || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">estados registrados</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ciudades</CardTitle>
+            <Navigation className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {citiesStatsLoading ? '...' : citiesStats?.stats
+                ?.filter(stat => stat.countryCode === countryData?.isoCode2)
+                ?.reduce((acc, stat) => acc + stat.citiesCount, 0) || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">ciudades en total</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Estado</CardTitle>
+            <Globe className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              <Badge variant={countryData?.isActive ? "secondary" : "destructive"}>
+                {countryData?.isActive ? 'Activo' : 'Inactivo'}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">configuración actual</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top States by Cities */}
+      {citiesStats?.stats && citiesStats.stats.filter(stat => stat.countryCode === countryData?.isoCode2).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Navigation className="h-5 w-5" />
+              Estados con Más Ciudades
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {citiesStats.stats
+                .filter(stat => stat.countryCode === countryData?.isoCode2)
+                .sort((a, b) => b.citiesCount - a.citiesCount)
+                .slice(0, 5)
+                .map((stat) => (
+                  <div key={stat.stateId} className="flex justify-between items-center">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium truncate">{stat.stateName}</span>
+                      <span className="text-xs text-gray-500 block">{stat.stateCode}</span>
+                    </div>
+                    <Badge variant="secondary">{stat.citiesCount} ciudades</Badge>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* States Section */}
       <Card>

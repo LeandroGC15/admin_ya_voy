@@ -115,25 +115,35 @@ export function StatesCreateModal({ isOpen, onClose, onSuccess, defaultCountryId
 
           <div>
             <Label htmlFor="countryId">País *</Label>
-            <Select
-              value={form.watch('countryId')?.toString()}
-              onValueChange={(value) => form.setValue('countryId', parseInt(value))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar país" />
-              </SelectTrigger>
-              <SelectContent>
-                {countriesData?.countries?.map((country) => (
-                  <SelectItem key={country.id} value={country.id.toString()}>
-                    <div className="flex items-center gap-2">
-                      {country.flag && <span>{country.flag}</span>}
-                      <span>{country.name}</span>
-                      <span className="text-xs text-gray-500">({country.isoCode2})</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {defaultCountryId ? (
+              <div className="flex items-center gap-2 p-2 border rounded-md bg-gray-50">
+                {defaultCountry?.flag && <span>{defaultCountry.flag}</span>}
+                <span className="text-sm font-medium">{defaultCountry?.name}</span>
+                {defaultCountry?.isoCode2 && (
+                  <span className="text-xs text-gray-500">({defaultCountry.isoCode2})</span>
+                )}
+              </div>
+            ) : (
+              <Select
+                value={form.watch('countryId')?.toString()}
+                onValueChange={(value) => form.setValue('countryId', parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar país" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countriesData?.countries?.map((country) => (
+                    <SelectItem key={country.id} value={country.id.toString()}>
+                      <div className="flex items-center gap-2">
+                        {country.flag && <span>{country.flag}</span>}
+                        <span>{country.name}</span>
+                        <span className="text-xs text-gray-500">({country.isoCode2})</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {form.formState.errors.countryId && (
               <p className="text-sm text-red-500">{form.formState.errors.countryId.message}</p>
             )}

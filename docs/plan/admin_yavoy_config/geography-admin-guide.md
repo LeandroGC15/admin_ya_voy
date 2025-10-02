@@ -213,7 +213,7 @@ Esta guía explica cómo consumir los endpoints de gestión de geografía desde 
 
 **MÉTODO:** `GET /admin/geography/countries/stats/by-continent`
 
-**DESCRIPCIÓN:** Obtiene el conteo de países activos por continente.
+**DESCRIPCIÓN:** Obtiene estadísticas completas de países agrupados por continente basándose en todos los registros existentes.
 
 **RECIBE:**
 ```json
@@ -221,13 +221,15 @@ Esta guía explica cómo consumir los endpoints de gestión de geografía desde 
   "stats": [
     {
       "continent": "Europe",
-      "totalCountries": 44,
-      "activeCountries": 42
+      "count": 42
     },
     {
       "continent": "Asia",
-      "totalCountries": 48,
-      "activeCountries": 45
+      "count": 45
+    },
+    {
+      "continent": "North America",
+      "count": 23
     }
   ]
 }
@@ -347,7 +349,7 @@ Esta guía explica cómo consumir los endpoints de gestión de geografía desde 
 
 **MÉTODO:** `GET /admin/geography/states/stats/by-country`
 
-**DESCRIPCIÓN:** Obtiene el conteo de estados activos agrupados por país.
+**DESCRIPCIÓN:** Obtiene estadísticas completas de estados agrupados por país basándose en todos los registros existentes.
 
 **RECIBE:**
 ```json
@@ -356,8 +358,14 @@ Esta guía explica cómo consumir los endpoints de gestión de geografía desde 
     {
       "countryId": 1,
       "countryName": "United States",
-      "totalStates": 50,
-      "activeStates": 49
+      "countryCode": "US",
+      "statesCount": 50
+    },
+    {
+      "countryId": 2,
+      "countryName": "Mexico",
+      "countryCode": "MX",
+      "statesCount": 32
     }
   ]
 }
@@ -494,7 +502,7 @@ Esta guía explica cómo consumir los endpoints de gestión de geografía desde 
 
 **MÉTODO:** `GET /admin/geography/cities/stats/by-state`
 
-**DESCRIPCIÓN:** Obtiene el conteo de ciudades activas agrupadas por estado y país.
+**DESCRIPCIÓN:** Obtiene estadísticas completas de ciudades agrupadas por estado y país basándose en todos los registros existentes.
 
 **RECIBE:**
 ```json
@@ -503,9 +511,18 @@ Esta guía explica cómo consumir los endpoints de gestión de geografía desde 
     {
       "stateId": 1,
       "stateName": "California",
+      "stateCode": "CA",
       "countryName": "United States",
-      "totalCities": 58,
-      "activeCities": 57
+      "countryCode": "US",
+      "citiesCount": 58
+    },
+    {
+      "stateId": 2,
+      "stateName": "Texas",
+      "stateCode": "TX",
+      "countryName": "United States",
+      "countryCode": "US",
+      "citiesCount": 45
     }
   ]
 }
@@ -678,6 +695,11 @@ POST /admin/geography/cities
 **Estadísticas por continente:**
 ```json
 GET /admin/geography/countries/stats/by-continent
+```
+
+**Estados por país:**
+```json
+GET /admin/geography/states/stats/by-country
 ```
 
 **Ciudades por estado:**

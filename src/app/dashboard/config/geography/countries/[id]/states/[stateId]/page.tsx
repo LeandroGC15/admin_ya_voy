@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useCountry, useState as useStateHook, useCitiesByState } from '@/features/config/hooks/use-geography';
+import { useCountry, useState as useStateHook, useCitiesByState, useCitiesStatsByState } from '@/features/config/hooks/use-geography';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, AlertTriangle, MapPin } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, MapPin, Building2, Navigation, Globe, Users, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CitiesTable, CitiesCreateModal, CitiesEditModal, CitiesDeleteModal, CitiesToggleModal } from '@/features/config/components/geography';
@@ -23,6 +23,7 @@ export default function StateDetailPage() {
   const { data: countryData, isLoading: countryLoading } = useCountry(countryIdNumber);
   const { data: stateData, isLoading: stateLoading } = useStateHook(stateIdNumber);
   const { data: citiesData, isLoading: citiesLoading } = useCitiesByState(stateIdNumber);
+  const { data: citiesStats, isLoading: citiesStatsLoading } = useCitiesStatsByState();
 
   // State management
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
@@ -167,6 +168,55 @@ export default function StateDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Statistics Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ciudades</CardTitle>
+            <Navigation className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {citiesData?.length || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">ciudades registradas</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Estado</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              <Badge variant={stateData?.isActive ? "secondary" : "destructive"}>
+                {stateData?.isActive ? 'Activo' : 'Inactivo'}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">configuración actual</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ranking</CardTitle>
+            <Globe className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {citiesStatsLoading ? '...' : (() => {
+                const stateStat = citiesStats?.stats?.find(stat => stat.stateId === stateIdNumber);
+                const allStates = citiesStats?.stats?.sort((a, b) => b.citiesCount - a.citiesCount) || [];
+                const position = allStates.findIndex(stat => stat.stateId === stateIdNumber) + 1;
+                return position > 0 ? `#${position}` : '-';
+              })()}
+            </div>
+            <p className="text-xs text-muted-foreground">estados por ciudades</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Cities Section */}
       <Card>
         <CardHeader>
@@ -185,14 +235,13 @@ export default function StateDetailPage() {
             </div>
           ) : citiesData && citiesData.length > 0 ? (
             <CitiesTable
-              data={citiesData ? {
-                cities: citiesData,
-                total: citiesData.length,
-                page: 1,
-                limit: citiesData.length,
-                totalPages: 1
-              } : undefined}
+              data={citiesData}
               loading={citiesLoading}
+              parentState={stateData ? {
+                id: stateData.id,
+                name: stateData.name,
+                code: stateData.code
+              } : undefined}
               onCitySelect={handleCitySelect}
               onCityEdit={handleCityEdit}
               onCityDelete={handleCityDelete}

@@ -112,24 +112,31 @@ export function CitiesCreateModal({ isOpen, onClose, onSuccess, defaultStateId }
 
           <div className="col-span-2">
             <Label htmlFor="stateId">Estado *</Label>
-            <Select
-              value={form.watch('stateId')?.toString()}
-              onValueChange={(value) => form.setValue('stateId', parseInt(value))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar estado" />
-              </SelectTrigger>
-              <SelectContent>
-                {statesData?.states?.map((state) => (
-                  <SelectItem key={state.id} value={state.id.toString()}>
-                    <div className="flex items-center gap-2">
-                      <span>{state.name}</span>
-                      <span className="text-xs text-gray-500">({state.code}) - {state.country?.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {defaultStateId ? (
+              <div className="flex items-center gap-2 p-2 border rounded-md bg-gray-50">
+                <span className="text-sm font-medium">{defaultState?.name}</span>
+                <span className="text-xs text-gray-500">({defaultState?.code})</span>
+              </div>
+            ) : (
+              <Select
+                value={form.watch('stateId')?.toString()}
+                onValueChange={(value) => form.setValue('stateId', parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statesData?.states?.map((state) => (
+                    <SelectItem key={state.id} value={state.id.toString()}>
+                      <div className="flex items-center gap-2">
+                        <span>{state.name}</span>
+                        <span className="text-xs text-gray-500">({state.code}) - {state.country?.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {form.formState.errors.stateId && (
               <p className="text-sm text-red-500">{form.formState.errors.stateId.message}</p>
             )}

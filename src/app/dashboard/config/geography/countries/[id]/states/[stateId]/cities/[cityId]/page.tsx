@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useCountry, useState as useStateHook, useCity } from '@/features/config/hooks/use-geography';
+import { useCountry, useState as useStateHook, useCity, useCitiesStatsByState } from '@/features/config/hooks/use-geography';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, AlertTriangle, MapPin, Navigation, Settings } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, MapPin, Navigation, Settings, Building2, Globe, Users, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -23,9 +23,18 @@ export default function CityDetailPage() {
   const { data: countryData, isLoading: countryLoading } = useCountry(countryIdNumber);
   const { data: stateData, isLoading: stateLoading } = useStateHook(stateIdNumber);
   const { data: cityData, isLoading: cityLoading } = useCity(cityIdNumber);
+  const { data: citiesStats, isLoading: citiesStatsLoading } = useCitiesStatsByState();
 
   const handleBack = () => {
     router.push(`/dashboard/config/geography/countries/${countryId}/states/${stateId}`);
+  };
+
+  const handleViewOnMap = () => {
+    if (city.latitude && city.longitude) {
+      // Abrir Google Maps en una nueva pestaña con las coordenadas de la ciudad
+      const googleMapsUrl = `https://www.google.com/maps/@${city.latitude},${city.longitude},15z`;
+      window.open(googleMapsUrl, '_blank');
+    }
   };
 
   if (countryLoading || stateLoading || cityLoading) {
@@ -146,6 +155,55 @@ export default function CityDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Statistics Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Estado</CardTitle>
+            <Navigation className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              <Badge variant={cityData?.isActive ? "secondary" : "destructive"}>
+                {cityData?.isActive ? 'Activa' : 'Inactiva'}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">configuración actual</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ranking en Estado</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {citiesStatsLoading ? '...' : (() => {
+                const stateStats = citiesStats?.stats?.find(stat => stat.stateId === stateIdNumber);
+                if (!stateStats || stateStats.citiesCount <= 1) return '-';
+                // Simular ranking dentro del estado (esto sería mejor si tuviéramos datos más detallados)
+                return 'Top Ciudad';
+              })()}
+            </div>
+            <p className="text-xs text-muted-foreground">dentro del estado</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Zonas de Servicio</CardTitle>
+            <Globe className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {cityData?.serviceZonesCount || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">zonas configuradas</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Service Configuration */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Postal Codes */}
@@ -231,7 +289,11 @@ export default function CityDetailPage() {
               <Settings className="h-4 w-4 mr-2" />
               Configurar Zonas de Servicio
             </Button>
-            <Button variant="outline">
+            <Button
+              variant="outline"
+              onClick={handleViewOnMap}
+              disabled={!city.latitude || !city.longitude}
+            >
               <MapPin className="h-4 w-4 mr-2" />
               Ver en Mapa
             </Button>

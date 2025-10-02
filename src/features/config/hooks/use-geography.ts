@@ -162,6 +162,8 @@ export function useCountriesStatsByContinent() {
       const response = await api.get<CountriesStatsByContinentResponse>(
         ENDPOINTS.geography.countriesStatsByContinent
       );
+      // Si la respuesta ya tiene el wrapper data, retornarla directamente
+      // Si no, asumir que response.data ya fue extraído por el interceptor
       return response.data;
     },
     {
