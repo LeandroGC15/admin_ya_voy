@@ -2,17 +2,19 @@
 
 import React, { useState } from 'react';
 import { FormProvider, CrudSearchForm } from '@/components/forms';
-import { apiKeySearchFormConfig } from '../config/api-keys-form-config';
+import { createApiKeySearchFormConfig } from '../config/api-keys-form-config';
 import { useApiKeys } from '../hooks';
-import { ApiKey, ApiKeysQueryParams } from '../interfaces/config';
+import { ApiKeysQueryParams } from '../interfaces/config';
+import { ApiKeyListItem } from '../schemas/api-keys.schemas';
+import { X } from 'lucide-react';
 
 interface ApiKeysSearchFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectApiKeyForUpdate?: (apiKey: ApiKey) => void;
-  onSelectApiKeyForDelete?: (apiKey: ApiKey) => void;
-  onSelectApiKeyForToggle?: (apiKey: ApiKey) => void;
-  onSelectApiKeyForRotate?: (apiKey: ApiKey) => void;
+  onSelectApiKeyForUpdate?: (apiKey: ApiKeyListItem) => void;
+  onSelectApiKeyForDelete?: (apiKey: ApiKeyListItem) => void;
+  onSelectApiKeyForToggle?: (apiKey: ApiKeyListItem) => void;
+  onSelectApiKeyForRotate?: (apiKey: ApiKeyListItem) => void;
 }
 
 const ApiKeysSearchForm: React.FC<ApiKeysSearchFormProps> = ({
@@ -55,25 +57,29 @@ const ApiKeysSearchForm: React.FC<ApiKeysSearchFormProps> = ({
     return labels[environment] || environment;
   };
 
-  const getKeyTypeLabel = (keyType: string) => {
-    const labels: Record<string, string> = {
-      secret: 'Secreta',
-      public: 'Pública',
-      private_key: 'Clave Privada',
-      access_token: 'Token de Acceso',
-      refresh_token: 'Token de Refresh',
-      webhook_secret: 'Secreta de Webhook',
-    };
-    return labels[keyType] || keyType;
-  };
+
+  if (!isOpen) return null;
 
   return (
-    <FormProvider config={apiKeySearchFormConfig}>
-      <div className="p-6">
-        <CrudSearchForm
-          config={apiKeySearchFormConfig}
-          onSearch={handleSearch}
-        />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 bg-opacity-50">
+      <div className="w-full max-w-6xl bg-white rounded-lg shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b">
+          <h2 className="text-2xl font-semibold text-gray-900">Buscar API Keys</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <FormProvider config={createApiKeySearchFormConfig()}>
+          <div className="p-6">
+            <CrudSearchForm
+              config={createApiKeySearchFormConfig()}
+              onSearch={handleSearch}
+            />
 
         {/* Display search results */}
         {searchResults && (
@@ -82,7 +88,7 @@ const ApiKeysSearchForm: React.FC<ApiKeysSearchFormProps> = ({
               Resultados ({searchResults.keys?.length || 0} de {searchResults.total || 0})
             </h3>
             <div className="space-y-3">
-              {searchResults.keys?.map((apiKey: ApiKey) => (
+              {searchResults.keys?.map((apiKey: ApiKeyListItem) => (
                 <div key={apiKey.id} className="border rounded-lg p-4 bg-white shadow-sm">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
@@ -101,46 +107,24 @@ const ApiKeysSearchForm: React.FC<ApiKeysSearchFormProps> = ({
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {apiKey.description || 'Sin descripción'}
-                      </p>
-                      <div className="flex flex-wrap gap-2 text-xs">
+                      <div className="flex flex-wrap gap-2 text-xs mb-2">
                         <span className="bg-gray-100 px-2 py-1 rounded">
                           Servicio: {getServiceLabel(apiKey.service)}
                         </span>
                         <span className="bg-gray-100 px-2 py-1 rounded">
                           Ambiente: {getEnvironmentLabel(apiKey.environment)}
                         </span>
-                        <span className="bg-gray-100 px-2 py-1 rounded">
-                          Tipo: {getKeyTypeLabel(apiKey.keyType)}
-                        </span>
-                        <span className="bg-gray-100 px-2 py-1 rounded">
-                          Acceso: {apiKey.accessLevel}
-                        </span>
-                        {apiKey.usageCount > 0 && (
+                        {apiKey.usageCount !== undefined && apiKey.usageCount > 0 && (
                           <span className="bg-blue-100 px-2 py-1 rounded">
                             Uso: {apiKey.usageCount}
                           </span>
                         )}
                       </div>
-                      {apiKey.tags && apiKey.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {apiKey.tags.map((tag, index) => (
-                            <span key={index} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                              {tag}
-                            </span>
-                          ))}
+                      {apiKey.expiresAt && (
+                        <div className="text-xs text-gray-500">
+                          Expira: {new Date(apiKey.expiresAt).toLocaleDateString()}
                         </div>
                       )}
-                      <div className="text-xs text-gray-500 mt-2">
-                        Creado: {new Date(apiKey.createdAt).toLocaleDateString()}
-                        {apiKey.lastRotated && (
-                          <> • Última rotación: {new Date(apiKey.lastRotated).toLocaleDateString()}</>
-                        )}
-                        {apiKey.expiresAt && (
-                          <> • Expira: {new Date(apiKey.expiresAt).toLocaleDateString()}</>
-                        )}
-                      </div>
                     </div>
                     <div className="flex flex-col gap-2 ml-4">
                       <button
@@ -204,9 +188,11 @@ const ApiKeysSearchForm: React.FC<ApiKeysSearchFormProps> = ({
           </div>
         )}
 
-        {isLoading && <div className="mt-4 text-center">Buscando API keys...</div>}
+            {isLoading && <div className="mt-4 text-center">Buscando API keys...</div>}
+          </div>
+        </FormProvider>
       </div>
-    </FormProvider>
+    </div>
   );
 };
 

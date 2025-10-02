@@ -56,11 +56,31 @@ export const ENDPOINTS = {
 
   // Geography Management
   geography: {
+    // Countries
     countries: 'admin/geography/countries',
     countryById: (id: string | number) => `admin/geography/countries/${id}`,
+    countryToggleStatus: (id: string | number) => `admin/geography/countries/${id}/toggle-status`,
+    countriesStatsByContinent: 'admin/geography/countries/stats/by-continent',
+
+    // States
     states: 'admin/geography/states',
+    stateById: (id: string | number) => `admin/geography/states/${id}`,
+    statesByCountry: (countryId: string | number) => `admin/geography/states/by-country/${countryId}`,
+    stateToggleStatus: (id: string | number) => `admin/geography/states/${id}/toggle-status`,
+    statesStatsByCountry: 'admin/geography/states/stats/by-country',
+
+    // Cities
     cities: 'admin/geography/cities',
+    cityById: (id: string | number) => `admin/geography/cities/${id}`,
+    citiesByState: (stateId: string | number) => `admin/geography/cities/by-state/${stateId}`,
+    cityToggleStatus: (id: string | number) => `admin/geography/cities/${id}/toggle-status`,
+    citiesStatsByState: 'admin/geography/cities/stats/by-state',
+
+    // Service Zones
     serviceZones: 'admin/geography/service-zones',
+    serviceZoneById: (id: string | number) => `admin/geography/service-zones/${id}`,
+
+    // Bulk Import
     bulkImport: {
       countries: 'admin/geography/countries/bulk-import',
     },
