@@ -101,12 +101,57 @@ export interface CountriesListResponse {
   totalPages: number;
 }
 
+// State list item schema (optimized for states by country response)
+export const stateListItemSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  code: z.string(),
+  countryName: z.string(),
+  isActive: z.boolean(),
+  citiesCount: z.number().optional(),
+});
+
+// States by country response schema
+export const statesByCountryResponseSchema = z.object({
+  states: z.array(stateListItemSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number(),
+});
+
+// Full response with data wrapper
+export const statesByCountryApiResponseSchema = z.object({
+  data: statesByCountryResponseSchema,
+});
+
 export interface StatesListResponse {
   states: State[];
   total: number;
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface StateListItem {
+  id: number;
+  name: string;
+  code: string;
+  countryName: string;
+  isActive: boolean;
+  citiesCount?: number;
+}
+
+export interface StatesByCountryResponse {
+  states: StateListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface StatesByCountryApiResponse {
+  data: StatesByCountryResponse;
 }
 
 export interface CitiesListResponse {

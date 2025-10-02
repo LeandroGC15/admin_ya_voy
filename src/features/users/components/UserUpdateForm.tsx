@@ -6,7 +6,7 @@ import { type User } from '../schemas/user-schemas';
 
 interface UserUpdateFormProps {
   isOpen: boolean;
-  user?: User | null;
+  user: User | null;
   onClose: () => void;
   onUserUpdated: () => void;
 }

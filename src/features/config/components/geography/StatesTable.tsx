@@ -2,18 +2,18 @@
 
 import React from 'react';
 import { DataTable, ActionButtons } from '@/features/core/components';
-import { State, StatesListResponse } from '../../schemas/geography.schemas';
+import { StateListItem, StatesByCountryResponse } from '../../schemas/geography.schemas';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, AlertTriangle, CheckCircle, Users, DollarSign, Navigation } from 'lucide-react';
 
 interface StatesTableProps {
-  data: StatesListResponse | undefined;
+  data: StatesByCountryResponse | undefined;
   loading: boolean;
-  onStateSelect?: (state: State) => void;
-  onStateEdit?: (state: State) => void;
-  onStateDelete?: (state: State) => void;
-  onStateToggle?: (state: State) => void;
+  onStateSelect?: (state: StateListItem) => void;
+  onStateEdit?: (state: StateListItem) => void;
+  onStateDelete?: (state: StateListItem) => void;
+  onStateToggle?: (state: StateListItem) => void;
 }
 
 export function StatesTable({
@@ -26,16 +26,16 @@ export function StatesTable({
 }: StatesTableProps) {
   const columns = [
     {
-      key: 'id' as keyof State,
+      key: 'id' as keyof StateListItem,
       header: 'ID',
       render: (value: number) => (
         <span className="font-mono text-sm">{value}</span>
       ),
     },
     {
-      key: 'name' as keyof State,
+      key: 'name' as keyof StateListItem,
       header: 'Nombre',
-      render: (value: string, row: State) => (
+      render: (value: string, row: StateListItem) => (
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-gray-400" />
           <div>
@@ -46,50 +46,18 @@ export function StatesTable({
       ),
     },
     {
-      key: 'country' as keyof State,
+      key: 'countryName' as keyof StateListItem,
       header: 'País',
-      render: (value: State['country']) => (
-        <div className="flex items-center gap-2">
-          {value?.flag && <span className="text-sm">{value.flag}</span>}
-          <span className="text-sm">{value?.name}</span>
-          <Badge variant="outline" className="text-xs">
-            {value?.isoCode2}
-          </Badge>
-        </div>
+      render: (value: string) => (
+        <Badge variant="outline" className="text-sm">
+          {value}
+        </Badge>
       ),
     },
     {
-      key: 'pricingMultiplier' as keyof State,
-      header: 'Multiplicador',
-      render: (value: number | undefined) => (
-        value ? (
-          <div className="flex items-center gap-1">
-            <DollarSign className="h-3 w-3 text-gray-400" />
-            <span className="text-sm font-mono">{value}x</span>
-          </div>
-        ) : (
-          <span className="text-gray-400">-</span>
-        )
-      ),
-    },
-    {
-      key: 'serviceFee' as keyof State,
-      header: 'Tarifa Servicio',
-      render: (value: number | undefined) => (
-        value ? (
-          <div className="flex items-center gap-1">
-            <DollarSign className="h-3 w-3 text-gray-400" />
-            <span className="text-sm font-mono">${value}</span>
-          </div>
-        ) : (
-          <span className="text-gray-400">-</span>
-        )
-      ),
-    },
-    {
-      key: 'isActive' as keyof State,
+      key: 'isActive' as keyof StateListItem,
       header: 'Estado',
-      render: (value: boolean, row: State) => (
+      render: (value: boolean, row: StateListItem) => (
         <div className="flex items-center gap-2">
           <Badge variant={value ? "secondary" : "destructive"}>
             {value ? (
@@ -113,23 +81,9 @@ export function StatesTable({
         </div>
       ),
     },
-    {
-      key: 'population' as keyof State,
-      header: 'Población',
-      render: (value: number | undefined) => (
-        value ? (
-          <div className="flex items-center gap-1 text-sm">
-            <Users className="h-3 w-3 text-gray-400" />
-            {value.toLocaleString()}
-          </div>
-        ) : (
-          <span className="text-gray-400">-</span>
-        )
-      ),
-    },
   ];
 
-  const renderActions = (state: State) => (
+  const renderActions = (state: StateListItem) => (
     <div className="flex items-center gap-2">
       <Button
         variant="default"

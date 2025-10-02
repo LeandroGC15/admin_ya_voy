@@ -61,7 +61,7 @@ export function UserEditModal({ isOpen, onClose, user, onSuccess }: UserEditModa
     if (!user) return;
 
     updateUserMutation.mutate(
-      { id: user.id, data },
+      { userId: user.id.toString(), userData: data },
       {
         onSuccess: () => {
           onClose();

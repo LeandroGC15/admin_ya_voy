@@ -234,7 +234,7 @@ export default function VehicleDetailPage() {
       )}
 
       {/* Vehicle Images */}
-      {(vehicle.frontImageUrl || vehicle.sideImageUrl || vehicle.backImageUrl || vehicle.interiorImageUrl) && (
+      {(vehicle.frontImageUrl || vehicle.sideImageUrl || vehicle.backImageUrl) && (
         <Card>
           <CardHeader>
             <CardTitle>Imágenes del Vehículo</CardTitle>
@@ -271,77 +271,11 @@ export default function VehicleDetailPage() {
                   <p className="text-sm text-muted-foreground">Vista Trasera</p>
                 </div>
               )}
-              {vehicle.interiorImageUrl && (
-                <div className="text-center">
-                  <img
-                    src={vehicle.interiorImageUrl}
-                    alt="Interior del vehículo"
-                    className="w-full h-32 object-cover rounded-lg mb-2"
-                  />
-                  <p className="text-sm text-muted-foreground">Vista Interior</p>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Vehicle Documents */}
-      {vehicle.documents && vehicle.documents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Documentos del Vehículo ({vehicle.documents.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {vehicle.documents.map((document, index) => (
-                <div key={document.id || index} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold capitalize">{document.documentType.replace('_', ' ')}</h4>
-                    <Badge variant={document.verificationStatus === 'verified' ? 'default' : 'secondary'}>
-                      {document.verificationStatus === 'verified' ? 'Verificado' :
-                       document.verificationStatus === 'pending' ? 'Pendiente' :
-                       document.verificationStatus === 'rejected' ? 'Rechazado' : document.verificationStatus}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Tipo:</span>
-                      <span className="ml-2 font-medium capitalize">{document.documentType.replace('_', ' ')}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Subido:</span>
-                      <span className="ml-2 font-medium">
-                        {new Date(document.uploadedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Verificado:</span>
-                      <span className="ml-2 font-medium">
-                        {document.verifiedAt ? new Date(document.verifiedAt).toLocaleDateString() : 'No verificado'}
-                      </span>
-                    </div>
-                  </div>
-                  {document.documentUrl && (
-                    <div className="mt-2">
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={document.documentUrl} target="_blank" rel="noopener noreferrer">
-                          Ver Documento
-                        </a>
-                      </Button>
-                    </div>
-                  )}
-                  {document.rejectedReason && (
-                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                      <strong>Razón de rechazo:</strong> {document.rejectedReason}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { ArrowLeft, Loader2, Settings, AlertTriangle, Globe } from 'lucide-react
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatesTable, StatesCreateModal, StatesEditModal, StatesDeleteModal, StatesToggleModal } from '@/features/config/components/geography';
-import { State } from '@/features/config/schemas/geography.schemas';
+import { State, StateListItem } from '@/features/config/schemas/geography.schemas';
 
 export default function CountryDetailPage() {
   const params = useParams();
@@ -35,22 +35,47 @@ export default function CountryDetailPage() {
     router.push('/dashboard/config/geography/countries');
   };
 
-  const handleStateSelect = (state: State) => {
+  // Convert StateListItem to State with default values
+  const convertStateListItemToState = (stateListItem: StateListItem): State => ({
+    ...stateListItem,
+    countryId: countryIdNumber, // Use the country ID from params
+    latitude: undefined,
+    longitude: undefined,
+    timezone: undefined,
+    pricingMultiplier: undefined,
+    serviceFee: undefined,
+    capital: undefined,
+    population: undefined,
+    areaKm2: undefined,
+    createdAt: '',
+    updatedAt: '',
+    country: {
+      id: countryIdNumber,
+      name: stateListItem.countryName,
+      isoCode2: 'VE', // Default fallback
+      flag: undefined,
+    },
+  });
+
+  const handleStateSelect = (state: StateListItem) => {
     router.push(`/dashboard/config/geography/countries/${countryId}/states/${state.id}`);
   };
 
-  const handleStateEdit = (state: State) => {
-    setSelectedState(state);
+  const handleStateEdit = (state: StateListItem) => {
+    const fullState = convertStateListItemToState(state);
+    setSelectedState(fullState);
     setEditStateModalOpen(true);
   };
 
-  const handleStateDelete = (state: State) => {
-    setSelectedState(state);
+  const handleStateDelete = (state: StateListItem) => {
+    const fullState = convertStateListItemToState(state);
+    setSelectedState(fullState);
     setDeleteStateModalOpen(true);
   };
 
-  const handleStateToggle = (state: State) => {
-    setSelectedState(state);
+  const handleStateToggle = (state: StateListItem) => {
+    const fullState = convertStateListItemToState(state);
+    setSelectedState(fullState);
     setToggleStateModalOpen(true);
   };
 
@@ -180,15 +205,9 @@ export default function CountryDetailPage() {
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
               Cargando estados...
             </div>
-          ) : statesData && statesData.length > 0 ? (
+          ) : statesData && statesData.states.length > 0 ? (
             <StatesTable
-              data={statesData ? {
-                states: statesData,
-                total: statesData.length,
-                page: 1,
-                limit: statesData.length,
-                totalPages: 1
-              } : undefined}
+              data={statesData}
               loading={statesLoading}
               onStateSelect={handleStateSelect}
               onStateEdit={handleStateEdit}

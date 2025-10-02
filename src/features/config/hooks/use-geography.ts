@@ -5,6 +5,8 @@ import type {
   Country,
   State,
   City,
+  StateListItem,
+  StatesByCountryResponse,
   CountriesListResponse,
   StatesListResponse,
   CitiesListResponse,
@@ -227,8 +229,8 @@ export function useStates(params: SearchStatesInput = {}) {
 export function useStatesByCountry(countryId: number, activeOnly = false) {
   return useApiQuery(
     geographyKeys.statesByCountry(countryId, activeOnly),
-    async (): Promise<State[]> => {
-      const response = await api.get<State[]>(ENDPOINTS.geography.statesByCountry(countryId), {
+    async (): Promise<StatesByCountryResponse> => {
+      const response = await api.get<StatesByCountryResponse>(ENDPOINTS.geography.statesByCountry(countryId), {
         params: { activeOnly },
       });
       return response.data;
