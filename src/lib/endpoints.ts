@@ -94,11 +94,14 @@ export const ENDPOINTS = {
     validatePricing: 'admin/pricing/ride-tiers/validate-pricing',
     standardTiers: 'admin/pricing/ride-tiers/create-standard-tiers',
     bulkUpdateTiers: 'admin/pricing/ride-tiers/bulk-update',
+    rideTiersSummary: 'admin/pricing/ride-tiers/summary/overview',
     temporalRules: 'admin/pricing/temporal-rules',
     temporalRuleById: (id: string | number) => `admin/pricing/temporal-rules/${id}`,
     evaluateRules: 'admin/pricing/temporal-rules/evaluate',
     standardRules: 'admin/pricing/temporal-rules/create-standard-rules',
     bulkUpdateRules: 'admin/pricing/temporal-rules/bulk-update',
+    temporalRulesSummary: 'admin/pricing/temporal-rules/summary/overview',
+    simulatePricing: 'admin/pricing/temporal-rules/simulate-pricing',
   },
 
   // Configuration Management

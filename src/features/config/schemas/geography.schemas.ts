@@ -1,105 +1,109 @@
-// Geography Schemas
+// Geography Schemas with Zod
 import { z } from 'zod';
-import type { Polygon } from 'geojson';
 
-// GeoJSON type for boundaries
-type GeoJSONPolygon = Polygon;
-export interface Country {
-  id: number;
-  name: string;
-  isoCode2: string;
-  isoCode3?: string;
-  numericCode?: number;
-  phoneCode?: string;
-  currencyCode: string;
-  currencyName?: string;
-  currencySymbol?: string;
-  timezone: string;
-  continent: string;
-  region?: string;
-  subregion?: string;
-  vatRate?: number;
-  corporateTaxRate?: number;
-  incomeTaxRate?: number;
-  isActive: boolean;
-  requiresVerification?: boolean;
-  supportedLanguages?: string[];
-  flag?: string;
-  capital?: string;
-  population?: number;
-  areaKm2?: number;
-  createdAt: string;
-  updatedAt: string;
-  statesCount?: number;
-}
+// ========== BASE ENTITY SCHEMAS ==========
 
-export interface State {
-  id: number;
-  name: string;
-  code: string;
-  countryId: number;
-  latitude?: number;
-  longitude?: number;
-  timezone?: string;
-  isActive: boolean;
-  pricingMultiplier?: number;
-  serviceFee?: number;
-  capital?: string;
-  population?: number;
-  areaKm2?: number;
-  createdAt: string;
-  updatedAt: string;
-  country?: {
-    id: number;
-    name: string;
-    isoCode2: string;
-    flag?: string;
-  };
-  citiesCount?: number;
-}
+// Country schema
+export const countrySchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  isoCode2: z.string(),
+  isoCode3: z.string().optional(),
+  numericCode: z.number().optional(),
+  phoneCode: z.string().optional(),
+  currencyCode: z.string(),
+  currencyName: z.string().optional(),
+  currencySymbol: z.string().optional(),
+  timezone: z.string(),
+  continent: z.string(),
+  region: z.string().optional(),
+  subregion: z.string().optional(),
+  vatRate: z.number().optional(),
+  corporateTaxRate: z.number().optional(),
+  incomeTaxRate: z.number().optional(),
+  isActive: z.boolean(),
+  requiresVerification: z.boolean().optional(),
+  supportedLanguages: z.array(z.string()).optional(),
+  flag: z.string().optional(),
+  capital: z.string().optional(),
+  population: z.number().optional(),
+  areaKm2: z.number().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  statesCount: z.number().optional(),
+});
 
-export interface City {
-  id: number;
-  name: string;
-  stateId: number;
-  latitude: number;
-  longitude: number;
-  timezone?: string;
-  isActive: boolean;
-  pricingMultiplier?: number;
-  serviceFee?: number;
-  serviceRadius?: number;
-  population?: number;
-  areaKm2?: number;
-  elevation?: number;
-  postalCodes?: string[];
-  restrictedAreas?: string[];
-  premiumZones?: string[];
-  boundaries?: GeoJSONPolygon;
-  createdAt: string;
-  updatedAt: string;
-  state?: {
-    id: number;
-    name: string;
-    code: string;
-    country: {
-      id: number;
-      name: string;
-      isoCode2: string;
-      flag?: string;
-    };
-  };
-  serviceZonesCount?: number;
-}
+// State schema
+export const stateSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  code: z.string(),
+  countryId: z.number(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  timezone: z.string().optional(),
+  isActive: z.boolean(),
+  pricingMultiplier: z.number().optional(),
+  serviceFee: z.number().optional(),
+  capital: z.string().optional(),
+  population: z.number().optional(),
+  areaKm2: z.number().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  country: z.object({
+    id: z.number(),
+    name: z.string(),
+    isoCode2: z.string(),
+    flag: z.string().optional(),
+  }).optional(),
+  citiesCount: z.number().optional(),
+});
 
-// List Response Types
-export interface CountriesListResponse {
-  countries: Country[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// City schema
+export const citySchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  stateId: z.number(),
+  latitude: z.number(),
+  longitude: z.number(),
+  timezone: z.string().optional(),
+  isActive: z.boolean(),
+  pricingMultiplier: z.number().optional(),
+  serviceFee: z.number().optional(),
+  serviceRadius: z.number().optional(),
+  population: z.number().optional(),
+  areaKm2: z.number().optional(),
+  elevation: z.number().optional(),
+  postalCodes: z.array(z.string()).optional(),
+  restrictedAreas: z.array(z.string()).optional(),
+  premiumZones: z.array(z.string()).optional(),
+  boundaries: z.any().optional(), // GeoJSON Polygon
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  state: z.object({
+    id: z.number(),
+    name: z.string(),
+    code: z.string(),
+    country: z.object({
+      id: z.number(),
+      name: z.string(),
+      isoCode2: z.string(),
+      flag: z.string().optional(),
+    }),
+  }).optional(),
+  serviceZonesCount: z.number().optional(),
+});
+
+// ========== LIST RESPONSE SCHEMAS ==========
+
+// Countries list response schema
+export const countriesListResponseSchema = z.object({
+  countries: z.array(countrySchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number(),
+});
 
 // State list item schema (optimized for states by country response)
 export const stateListItemSchema = z.object({
@@ -125,72 +129,59 @@ export const statesByCountryApiResponseSchema = z.object({
   data: statesByCountryResponseSchema,
 });
 
-export interface StatesListResponse {
-  states: State[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// States list response schema
+export const statesListResponseSchema = z.object({
+  states: z.array(stateSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number(),
+});
 
-export interface StateListItem {
-  id: number;
-  name: string;
-  code: string;
-  countryName: string;
-  isActive: boolean;
-  citiesCount?: number;
-}
+// Cities list response schema
+export const citiesListResponseSchema = z.object({
+  cities: z.array(citySchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number(),
+});
 
-export interface StatesByCountryResponse {
-  states: StateListItem[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// ========== STATISTICS RESPONSE SCHEMAS ==========
 
-export interface StatesByCountryApiResponse {
-  data: StatesByCountryResponse;
-}
+// Countries stats by continent response schema
+export const countriesStatsByContinentResponseSchema = z.object({
+  stats: z.array(z.object({
+    continent: z.string(),
+    count: z.number(),
+  })),
+});
 
-export interface CitiesListResponse {
-  cities: City[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// States stats by country response schema
+export const statesStatsByCountryResponseSchema = z.object({
+  stats: z.array(z.object({
+    countryId: z.number(),
+    countryName: z.string(),
+    countryCode: z.string(),
+    statesCount: z.number(),
+  })),
+});
 
-// Statistics Response Types
-export interface CountriesStatsByContinentResponse {
-  stats: {
-    continent: string;
-    count: number;
-  }[];
-}
+// Cities stats by state response schema
+export const citiesStatsByStateResponseSchema = z.object({
+  stats: z.array(z.object({
+    stateId: z.number(),
+    stateName: z.string(),
+    stateCode: z.string(),
+    countryName: z.string(),
+    countryCode: z.string(),
+    citiesCount: z.number(),
+  })),
+});
 
-export interface StatesStatsByCountryResponse {
-  stats: {
-    countryId: number;
-    countryName: string;
-    countryCode: string;
-    statesCount: number;
-  }[];
-}
+// ========== VALIDATION SCHEMAS ==========
 
-export interface CitiesStatsByStateResponse {
-  stats: {
-    stateId: number;
-    stateName: string;
-    stateCode: string;
-    countryName: string;
-    countryCode: string;
-    citiesCount: number;
-  }[];
-}
-
-// Validation Schemas
+// Create country schema with validation
 export const createCountrySchema = z.object({
   name: z.string().min(2, 'Nombre debe tener al menos 2 caracteres').max(100),
   isoCode2: z.string().length(2, 'Código ISO 2 debe tener exactamente 2 caracteres').toUpperCase(),
@@ -207,7 +198,7 @@ export const createCountrySchema = z.object({
   vatRate: z.number().min(0).max(100).optional(),
   corporateTaxRate: z.number().min(0).max(100).optional(),
   incomeTaxRate: z.number().min(0).max(100).optional(),
-  isActive: z.boolean().optional(),
+  isActive: z.boolean().default(true),
   requiresVerification: z.boolean().optional(),
   supportedLanguages: z.array(z.string()).optional(),
   flag: z.string().max(10).optional(),
@@ -216,28 +207,10 @@ export const createCountrySchema = z.object({
   areaKm2: z.number().min(0).optional(),
 });
 
-export const updateCountrySchema = z.object({
-  name: z.string().min(2).max(100).optional(),
-  isoCode3: z.string().length(3).toUpperCase().optional(),
-  numericCode: z.number().int().min(1).max(999).optional(),
-  phoneCode: z.string().max(10).optional(),
-  currencyName: z.string().max(100).optional(),
-  currencySymbol: z.string().max(10).optional(),
-  timezone: z.string().min(1).optional(),
-  region: z.string().max(100).optional(),
-  subregion: z.string().max(100).optional(),
-  vatRate: z.number().min(0).max(100).optional(),
-  corporateTaxRate: z.number().min(0).max(100).optional(),
-  incomeTaxRate: z.number().min(0).max(100).optional(),
-  isActive: z.boolean().optional(),
-  requiresVerification: z.boolean().optional(),
-  supportedLanguages: z.array(z.string()).optional(),
-  flag: z.string().max(10).optional(),
-  capital: z.string().max(100).optional(),
-  population: z.number().int().min(0).optional(),
-  areaKm2: z.number().min(0).optional(),
-});
+// Update country schema (all fields optional)
+export const updateCountrySchema = createCountrySchema.partial();
 
+// Create state schema with validation
 export const createStateSchema = z.object({
   name: z.string().min(2, 'Nombre debe tener al menos 2 caracteres').max(100),
   code: z.string().min(1, 'Código es requerido').max(10),
@@ -245,7 +218,7 @@ export const createStateSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   timezone: z.string().max(50).optional(),
-  isActive: z.boolean().optional(),
+  isActive: z.boolean().default(true),
   pricingMultiplier: z.number().min(0.1).max(10).optional(),
   serviceFee: z.number().min(0).optional(),
   capital: z.string().max(100).optional(),
@@ -253,28 +226,17 @@ export const createStateSchema = z.object({
   areaKm2: z.number().min(0).optional(),
 });
 
-export const updateStateSchema = z.object({
-  name: z.string().min(2).max(100).optional(),
-  code: z.string().min(1).max(10).optional(),
-  countryId: z.number().int().positive().optional(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
-  timezone: z.string().max(50).optional(),
-  isActive: z.boolean().optional(),
-  pricingMultiplier: z.number().min(0.1).max(10).optional(),
-  serviceFee: z.number().min(0).optional(),
-  capital: z.string().max(100).optional(),
-  population: z.number().int().min(0).optional(),
-  areaKm2: z.number().min(0).optional(),
-});
+// Update state schema (all fields optional)
+export const updateStateSchema = createStateSchema.partial();
 
+// Create city schema with validation
 export const createCitySchema = z.object({
   name: z.string().min(2, 'Nombre debe tener al menos 2 caracteres').max(100),
   stateId: z.number().int().positive('Estado es requerido'),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   timezone: z.string().max(50).optional(),
-  isActive: z.boolean().optional(),
+  isActive: z.boolean().default(true),
   pricingMultiplier: z.number().min(0.1).max(10).optional(),
   serviceFee: z.number().min(0).optional(),
   serviceRadius: z.number().min(0).optional(),
@@ -287,139 +249,99 @@ export const createCitySchema = z.object({
   boundaries: z.any().optional(), // GeoJSON Polygon
 });
 
-export const updateCitySchema = z.object({
-  name: z.string().min(2).max(100).optional(),
-  stateId: z.number().int().positive().optional(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
-  timezone: z.string().max(50).optional(),
+// Update city schema (all fields optional)
+export const updateCitySchema = createCitySchema.partial();
+
+// ========== SEARCH/FILTER SCHEMAS ==========
+
+// Search countries schema
+export const searchCountriesSchema = z.object({
+  page: z.number().min(1).default(1).optional(),
+  limit: z.number().min(1).max(100).default(20).optional(),
+  continent: z.string().optional(),
   isActive: z.boolean().optional(),
-  pricingMultiplier: z.number().min(0.1).max(10).optional(),
-  serviceFee: z.number().min(0).optional(),
-  serviceRadius: z.number().min(0).optional(),
-  population: z.number().int().min(0).optional(),
-  areaKm2: z.number().min(0).optional(),
-  elevation: z.number().optional(),
-  postalCodes: z.array(z.string()).optional(),
-  restrictedAreas: z.array(z.string()).optional(),
-  premiumZones: z.array(z.string()).optional(),
-  boundaries: z.any().optional(), // GeoJSON Polygon
+  search: z.string().max(100).optional().or(z.literal('')),
+  sortBy: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
-// Input Types for Mutations
-export interface CreateCountryInput {
-  name: string;
-  isoCode2: string;
-  isoCode3?: string;
-  numericCode?: number;
-  phoneCode?: string;
-  currencyCode: string;
-  currencyName?: string;
-  currencySymbol?: string;
-  timezone: string;
-  continent: string;
-  region?: string;
-  subregion?: string;
-  vatRate?: number;
-  corporateTaxRate?: number;
-  incomeTaxRate?: number;
-  isActive?: boolean;
-  requiresVerification?: boolean;
-  supportedLanguages?: string[];
-  flag?: string;
-  capital?: string;
-  population?: number;
-  areaKm2?: number;
-}
+// Search states schema
+export const searchStatesSchema = z.object({
+  page: z.number().min(1).default(1).optional(),
+  limit: z.number().min(1).max(100).default(20).optional(),
+  countryId: z.number().positive().optional(),
+  isActive: z.boolean().optional(),
+  search: z.string().max(100).optional().or(z.literal('')),
+  sortBy: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+});
 
-export type UpdateCountryInput = Partial<CreateCountryInput>;
+// Search cities schema
+export const searchCitiesSchema = z.object({
+  page: z.number().min(1).default(1).optional(),
+  limit: z.number().min(1).max(100).default(20).optional(),
+  stateId: z.number().positive().optional(),
+  countryId: z.number().positive().optional(),
+  isActive: z.boolean().optional(),
+  search: z.string().max(100).optional().or(z.literal('')),
+  sortBy: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+});
 
-export interface CreateStateInput {
-  name: string;
-  code: string;
-  countryId: number;
-  latitude?: number;
-  longitude?: number;
-  timezone?: string;
-  isActive?: boolean;
-  pricingMultiplier?: number;
-  serviceFee?: number;
-  capital?: string;
-  population?: number;
-  areaKm2?: number;
-}
+// ========== BULK IMPORT SCHEMA ==========
 
-export type UpdateStateInput = Partial<CreateStateInput>;
+// Bulk import response schema
+export const bulkImportResponseSchema = z.object({
+  totalProcessed: z.number(),
+  successful: z.number(),
+  failed: z.number(),
+  skipped: z.number(),
+  errors: z.array(z.object({
+    row: z.number(),
+    field: z.string(),
+    value: z.string(),
+    error: z.string(),
+  })),
+  skippedRecords: z.array(z.object({
+    row: z.number(),
+    reason: z.string(),
+    data: z.record(z.unknown()),
+  })),
+  duration: z.number(),
+});
 
-export interface CreateCityInput {
-  name: string;
-  stateId: number;
-  latitude: number;
-  longitude: number;
-  timezone?: string;
-  isActive?: boolean;
-  pricingMultiplier?: number;
-  serviceFee?: number;
-  serviceRadius?: number;
-  population?: number;
-  areaKm2?: number;
-  elevation?: number;
-  postalCodes?: string[];
-  restrictedAreas?: string[];
-  premiumZones?: string[];
-  boundaries?: GeoJSONPolygon;
-}
+// ========== TYPE EXPORTS ==========
 
-export type UpdateCityInput = Partial<CreateCityInput>;
+// Entity types
+export type Country = z.infer<typeof countrySchema>;
+export type State = z.infer<typeof stateSchema>;
+export type City = z.infer<typeof citySchema>;
 
-// Search/Filter Input Types
-export interface SearchCountriesInput {
-  page?: number;
-  limit?: number;
-  continent?: string;
-  isActive?: boolean;
-  search?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
+// Response types
+export type CountriesListResponse = z.infer<typeof countriesListResponseSchema>;
+export type StateListItem = z.infer<typeof stateListItemSchema>;
+export type StatesByCountryResponse = z.infer<typeof statesByCountryResponseSchema>;
+export type StatesByCountryApiResponse = z.infer<typeof statesByCountryApiResponseSchema>;
+export type StatesListResponse = z.infer<typeof statesListResponseSchema>;
+export type CitiesListResponse = z.infer<typeof citiesListResponseSchema>;
 
-export interface SearchStatesInput {
-  page?: number;
-  limit?: number;
-  countryId?: number;
-  isActive?: boolean;
-  search?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
+// Statistics types
+export type CountriesStatsByContinentResponse = z.infer<typeof countriesStatsByContinentResponseSchema>;
+export type StatesStatsByCountryResponse = z.infer<typeof statesStatsByCountryResponseSchema>;
+export type CitiesStatsByStateResponse = z.infer<typeof citiesStatsByStateResponseSchema>;
 
-export interface SearchCitiesInput {
-  page?: number;
-  limit?: number;
-  stateId?: number;
-  countryId?: number;
-  isActive?: boolean;
-  search?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
+// Input types for mutations
+export type CreateCountryInput = z.infer<typeof createCountrySchema>;
+export type UpdateCountryInput = z.infer<typeof updateCountrySchema>;
+export type CreateStateInput = z.infer<typeof createStateSchema>;
+export type UpdateStateInput = z.infer<typeof updateStateSchema>;
+export type CreateCityInput = z.infer<typeof createCitySchema>;
+export type UpdateCityInput = z.infer<typeof updateCitySchema>;
 
-// Bulk Import Response Types
-export interface BulkImportResponse {
-  totalProcessed: number;
-  successful: number;
-  failed: number;
-  skipped: number;
-  errors: {
-    row: number;
-    field: string;
-    value: string;
-    error: string;
-  }[];
-  skippedRecords: {
-    row: number;
-    reason: string;
-    data: Record<string, unknown>;
-  }[];
-  duration: number;
-}
+// Search/Filter input types
+export type SearchCountriesInput = z.infer<typeof searchCountriesSchema>;
+export type SearchStatesInput = z.infer<typeof searchStatesSchema>;
+export type SearchCitiesInput = z.infer<typeof searchCitiesSchema>;
+
+// Bulk import types
+export type BulkImportResponse = z.infer<typeof bulkImportResponseSchema>;

@@ -7,6 +7,7 @@ import type {
   City,
   StateListItem,
   StatesByCountryResponse,
+  StatesByCountryApiResponse,
   CountriesListResponse,
   StatesListResponse,
   CitiesListResponse,
