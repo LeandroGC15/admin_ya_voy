@@ -2,28 +2,26 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useCountry, useState as useStateHook, useCitiesByState, useCitiesStatsByState } from '@/features/config/hooks/use-geography';
+import { useState as useStateHook, useCitiesByState, useCountries } from '@/features/config/hooks/use-geography';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, AlertTriangle, MapPin, Building2, Navigation, Globe, Users, DollarSign } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, MapPin, Navigation, Settings, Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CitiesTable, CitiesCreateModal, CitiesEditModal, CitiesDeleteModal, CitiesToggleModal } from '@/features/config/components/geography';
-import { City } from '@/features/config/schemas/geography.schemas';
+import { CitiesTable } from '@/features/config/components/geography';
+import { CitiesCreateModal, CitiesEditModal, CitiesDeleteModal, CitiesToggleModal } from '@/features/config/components/geography';
+import { City, CitiesListResponse } from '@/features/config/schemas/geography.schemas';
 
 export default function StateDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const countryId = params.id as string;
-  const stateId = params.stateId as string;
+  const stateId = params.id as string;
 
-  // Convertir strings a numbers para los hooks
-  const countryIdNumber = parseInt(countryId, 10);
+  // Convertir string a number para el hook
   const stateIdNumber = parseInt(stateId, 10);
 
-  const { data: countryData, isLoading: countryLoading } = useCountry(countryIdNumber);
   const { data: stateData, isLoading: stateLoading } = useStateHook(stateIdNumber);
   const { data: citiesData, isLoading: citiesLoading } = useCitiesByState(stateIdNumber);
-  const { data: citiesStats, isLoading: citiesStatsLoading } = useCitiesStatsByState();
+  const { data: countriesData } = useCountries({ limit: 100, isActive: true });
 
   // State management
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
@@ -35,11 +33,16 @@ export default function StateDetailPage() {
   const [toggleCityModalOpen, setToggleCityModalOpen] = useState(false);
 
   const handleBack = () => {
-    router.push(`/dashboard/config/geography/countries/${countryId}`);
+    // Volver al país del estado
+    if (stateData?.countryId) {
+      router.push(`/dashboard/config/geography/countries/${stateData.countryId}`);
+    } else {
+      router.push('/dashboard/config/geography/countries');
+    }
   };
 
   const handleCitySelect = (city: City) => {
-    router.push(`/dashboard/config/geography/countries/${countryId}/states/${stateId}/cities/${city.id}`);
+    router.push(`/dashboard/config/geography/countries/${stateData?.countryId}/states/${stateId}/cities/${city.id}`);
   };
 
   const handleCityEdit = (city: City) => {
@@ -72,7 +75,7 @@ export default function StateDetailPage() {
     // Data will be refreshed automatically by React Query
   };
 
-  if (countryLoading || stateLoading) {
+  if (stateLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -81,7 +84,7 @@ export default function StateDetailPage() {
     );
   }
 
-  if (!countryData || !stateData) {
+  if (!stateData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
@@ -99,8 +102,8 @@ export default function StateDetailPage() {
     );
   }
 
-  const country = countryData;
   const state = stateData;
+  const country = countriesData?.countries?.find(c => c.id === state.countryId);
 
   return (
     <div className="space-y-6">
@@ -112,11 +115,11 @@ export default function StateDetailPage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <MapPin className="h-8 w-8" />
+            <Building2 className="h-8 w-8" />
             {state.name}
           </h1>
           <p className="text-gray-600 mt-1">
-            Estado de {country.name} - Gestiona este estado y sus ciudades
+            Estado de {country?.name || 'País desconocido'} - Gestiona este estado y sus ciudades
           </p>
         </div>
       </div>
@@ -138,7 +141,10 @@ export default function StateDetailPage() {
             </div>
             <div>
               <span className="font-medium">País:</span>
-              <p className="mt-1">{country.name}</p>
+              <p className="mt-1 flex items-center gap-2">
+                {country?.flag && <span>{country.flag}</span>}
+                {country?.name || 'No disponible'}
+              </p>
             </div>
             <div>
               <span className="font-medium">Estado:</span>
@@ -149,8 +155,18 @@ export default function StateDetailPage() {
               </p>
             </div>
             <div>
-              <span className="font-medium">Código:</span>
-              <p className="mt-1 font-mono">{state.code}</p>
+              <span className="font-medium">Coordenadas:</span>
+              <p className="mt-1 font-mono">
+                {state.latitude ? Number(state.latitude).toFixed(4) : 'N/A'}, {state.longitude ? Number(state.longitude).toFixed(4) : 'N/A'}
+              </p>
+            </div>
+            <div>
+              <span className="font-medium">Zona Horaria:</span>
+              <p className="mt-1">{state.timezone || 'No especificada'}</p>
+            </div>
+            <div>
+              <span className="font-medium">Capital:</span>
+              <p className="mt-1">{state.capital || 'No especificada'}</p>
             </div>
             <div>
               <span className="font-medium">Población:</span>
@@ -161,61 +177,20 @@ export default function StateDetailPage() {
               <p className="mt-1">{state.areaKm2 ? `${state.areaKm2.toLocaleString()} km²` : 'No especificada'}</p>
             </div>
             <div>
-              <span className="font-medium">Capital:</span>
-              <p className="mt-1">{state.capital || 'No especificada'}</p>
+              <span className="font-medium">Multiplicador:</span>
+              <p className="mt-1">{state.pricingMultiplier ? `${state.pricingMultiplier}x` : 'No definido'}</p>
+            </div>
+            <div>
+              <span className="font-medium">Tarifa Servicio:</span>
+              <p className="mt-1">{state.serviceFee ? `$${state.serviceFee}` : 'No definida'}</p>
+            </div>
+            <div>
+              <span className="font-medium">Ciudades:</span>
+              <p className="mt-1">{state.citiesCount || 0}</p>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Statistics Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ciudades</CardTitle>
-            <Navigation className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {citiesData?.length || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">ciudades registradas</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Estado</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              <Badge variant={stateData?.isActive ? "secondary" : "destructive"}>
-                {stateData?.isActive ? 'Activo' : 'Inactivo'}
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">configuración actual</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ranking</CardTitle>
-            <Globe className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {citiesStatsLoading ? '...' : (() => {
-                const stateStat = citiesStats?.stats?.find(stat => stat.stateId === stateIdNumber);
-                const allStates = citiesStats?.stats?.sort((a, b) => b.citiesCount - a.citiesCount) || [];
-                const position = allStates.findIndex(stat => stat.stateId === stateIdNumber) + 1;
-                return position > 0 ? `#${position}` : '-';
-              })()}
-            </div>
-            <p className="text-xs text-muted-foreground">estados por ciudades</p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Cities Section */}
       <Card>
@@ -235,13 +210,14 @@ export default function StateDetailPage() {
             </div>
           ) : citiesData && citiesData.length > 0 ? (
             <CitiesTable
-              data={citiesData}
-              loading={citiesLoading}
-              parentState={stateData ? {
-                id: stateData.id,
-                name: stateData.name,
-                code: stateData.code
+              data={citiesData ? {
+                cities: citiesData,
+                total: citiesData.length,
+                page: 1,
+                limit: citiesData.length,
+                totalPages: 1
               } : undefined}
+              loading={citiesLoading}
               onCitySelect={handleCitySelect}
               onCityEdit={handleCityEdit}
               onCityDelete={handleCityDelete}

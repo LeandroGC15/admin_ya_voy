@@ -13,7 +13,8 @@ interface UserDeleteFormProps {
   userId?: string;
   userName?: string;
   onClose: () => void;
-  onUserDeleted: () => void;
+  onUserDeleted: (reason: string) => void;
+  mode?: 'delete'; // Only soft delete mode for deactivation
 }
 
 const UserDeleteForm: React.FC<UserDeleteFormProps> = ({
@@ -21,7 +22,8 @@ const UserDeleteForm: React.FC<UserDeleteFormProps> = ({
   userId,
   userName,
   onClose,
-  onUserDeleted
+  onUserDeleted,
+  mode = 'delete'
 }) => {
   const deleteUserMutation = useDeleteUser();
   const [reason, setReason] = React.useState('');
@@ -30,18 +32,23 @@ const UserDeleteForm: React.FC<UserDeleteFormProps> = ({
   useEffect(() => {
     if (isOpen) {
       setReason('');
+      setCurrentReason('');
     }
   }, [isOpen]);
 
-  // Handle successful deletion
+  // Track the reason used for the current mutation
+  const [currentReason, setCurrentReason] = React.useState('');
+
+  // Handle successful action - simplified to avoid double execution
   useEffect(() => {
     if (deleteUserMutation.isSuccess) {
-      onUserDeleted();
+      onUserDeleted(currentReason);
       onClose();
+      setCurrentReason(''); // Reset for next use
     }
-  }, [deleteUserMutation.isSuccess, onUserDeleted, onClose]);
+  }, [deleteUserMutation.isSuccess, onUserDeleted, onClose, currentReason]);
 
-  const handleConfirmDelete = () => {
+  const handleConfirmAction = () => {
     if (!reason.trim()) {
       alert('Por favor ingrese un motivo de desactivación');
       return;
@@ -52,13 +59,22 @@ const UserDeleteForm: React.FC<UserDeleteFormProps> = ({
       return;
     }
 
+    // Prevent double execution
+    if (deleteUserMutation.isPending) {
+      return;
+    }
+
+    const trimmedReason = reason.trim();
+    setCurrentReason(trimmedReason); // Capture reason for success handler
+
     deleteUserMutation.mutate(
-      { userId, reason: reason.trim() },
+      { userId, reason: trimmedReason },
       {
         onSuccess: () => {
           // Success handled by useEffect
         },
         onError: (error: any) => {
+          setCurrentReason(''); // Reset on error
           alert(`Error al desactivar usuario: ${error.message || 'Error desconocido'}`);
         }
       }
@@ -78,10 +94,13 @@ const UserDeleteForm: React.FC<UserDeleteFormProps> = ({
           </Button>
           <Button
             variant="destructive"
-            onClick={handleConfirmDelete}
+            onClick={handleConfirmAction}
             disabled={!reason.trim() || deleteUserMutation.isPending}
           >
-            {deleteUserMutation.isPending ? 'Desactivando...' : 'Confirmar Desactivación'}
+            {deleteUserMutation.isPending
+              ? 'Desactivando...'
+              : 'Confirmar Desactivación'
+            }
           </Button>
         </>
       }

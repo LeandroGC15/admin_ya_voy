@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { DataTable, Modal, CreateButton, ActionButtons } from '@/features/core/components';
+import { DataTable, Modal, CreateButton } from '@/features/core/components';
 import UserDeleteForm from '@/features/users/components/UserDeleteForm';
-import UserRestoreForm from '@/features/users/components/UserRestoreForm';
+import { UserRestoreModal } from '@/features/users/components/UserRestoreModal';
 import UserUpdateForm from '@/features/users/components/UserUpdateForm';
 import { useUsers, useCreateUser, useDeleteUser, useRestoreUser } from '@/features/users/hooks';
 import { invalidateQueries } from '@/lib/api/react-query-client';
@@ -15,15 +15,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Edit, UserCheck, UserX } from 'lucide-react';
 
 const UsersPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [showActivateModal, setShowActivateModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchParams, setSearchParams] = useState<SearchUsersInput>({});
+
+  // Track which users are being processed (for button loading states)
+  const [deactivatingUserId, setDeactivatingUserId] = useState<string | null>(null);
+  const [activatingUserId, setActivatingUserId] = useState<string | null>(null);
 
   // React Hook Form for create user
   const createForm = useForm<CreateUserInput>({
@@ -70,7 +75,7 @@ const UsersPage: React.FC = () => {
       onSuccess: () => {
         setShowCreateModal(false);
         createForm.reset();
-        invalidateQueries(['users']);
+        invalidateQueries(['users', 'list']);
       },
       onError: (error: any) => {
         console.error('Error creating user:', error);
@@ -85,30 +90,33 @@ const UsersPage: React.FC = () => {
   };
 
 
-  const handleDelete = (user: User) => {
-    console.log('handleDelete called with user:', user);
-    // Mostrar modal de desactivación en lugar de confirmación simple
+  const handleDeactivate = (user: User) => {
+    // Mostrar modal de desactivación (soft delete)
     setSelectedUser(user);
-    setShowDeleteModal(true);
-    console.log('Modal state set to true');
+    setShowDeactivateModal(true);
   };
 
-  const handleConfirmDelete = (reason: string) => {
+  const handleConfirmDeactivate = (reason: string) => {
     if (!selectedUser) return;
 
-    // Ejecutar desactivación (soft delete) si el usuario confirma
+    const userId = selectedUser.id.toString();
+    setDeactivatingUserId(userId); // Mark this user as being deactivated
+
+    // Ejecutar desactivación (soft delete)
     deleteUserMutation.mutate(
-      { userId: selectedUser.id.toString(), reason },
+      { userId, reason },
       {
         onSuccess: () => {
           // Refrescar tabla y mostrar mensaje de éxito
-          invalidateQueries(['users']);
-          setShowDeleteModal(false);
+          invalidateQueries(['users', 'list']);
+          setShowDeactivateModal(false);
           setSelectedUser(null);
-          alert('Usuario desactivado exitosamente. El usuario puede ser reactivado posteriormente.');
+          setDeactivatingUserId(null); // Clear loading state
+          alert(`Usuario ${selectedUser.name} desactivado exitosamente. El usuario puede ser activado posteriormente.`);
         },
         onError: (error: any) => {
-          console.error('Error deleting user:', error);
+          console.error('Error deactivating user:', error);
+          setDeactivatingUserId(null); // Clear loading state on error
           // Mensaje de error único y específico
           const status = error?.response?.status;
           let message = 'Error desconocido al desactivar usuario';
@@ -122,39 +130,44 @@ const UsersPage: React.FC = () => {
     );
   };
 
-  const handleRestore = (user: User) => {
-    // Mostrar modal de restauración
+  const handleActivate = (user: User) => {
+    // Mostrar modal de activación
     setSelectedUser(user);
-    setShowRestoreModal(true);
+    setShowActivateModal(true);
   };
 
-  const handleConfirmRestore = (reason?: string) => {
+  const handleConfirmActivate = (reason?: string) => {
     if (!selectedUser) return;
 
-    // Ejecutar restauración si el usuario confirma
+    const userId = selectedUser.id.toString();
+    setActivatingUserId(userId); // Mark this user as being activated
+
+    // Ejecutar activación (restaurar usuario soft deleted)
     restoreUserMutation.mutate(
-      { userId: selectedUser.id.toString(), reason },
+      { userId, reason },
       {
         onSuccess: () => {
           // Refrescar tabla y mostrar mensaje de éxito
-          invalidateQueries(['users']);
-          setShowRestoreModal(false);
+          invalidateQueries(['users', 'list']);
+          setShowActivateModal(false);
           setSelectedUser(null);
-          alert('Usuario restaurado exitosamente.');
+          setActivatingUserId(null); // Clear loading state
+          alert(`Usuario ${selectedUser.name} activado exitosamente.`);
         },
         onError: (error: any) => {
-          console.error('Error restoring user:', error);
-          // Mensaje de error único y específico
+          console.error('Error activating user:', error);
+          setActivatingUserId(null); // Clear loading state on error
           const status = error?.response?.status;
-          let message = 'Error desconocido al restaurar usuario';
+          let message = 'Error desconocido al activar usuario';
           if (status === 404) message = 'Usuario no encontrado o no está desactivado';
-          else if (status === 403) message = 'No tienes permisos para restaurar este usuario';
+          else if (status === 403) message = 'No tienes permisos para activar este usuario';
           else if (error?.response?.data?.message) message = error.response.data.message;
-          alert(`Error al restaurar usuario: ${message}`);
+          alert(`Error al activar usuario: ${message}`);
         },
       }
     );
   };
+
 
   const handleSearch = (searchTerm: string) => {
     setSearchParams({ ...searchParams, search: searchTerm });
@@ -199,15 +212,18 @@ const UsersPage: React.FC = () => {
     {
       key: 'isActive' as keyof User,
       header: 'Estado',
-      render: (value: boolean) => (
-        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-          value
-            ? 'bg-green-100 text-green-800'
-            : 'bg-red-100 text-red-800'
-        }`}>
-          {value ? 'Activo' : 'Inactivo'}
-        </span>
-      ),
+      render: (value: boolean, user: User) => {
+        const isDeactivated = !!user.deletedAt;
+        return (
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+            isDeactivated
+              ? 'bg-red-100 text-red-800'
+              : 'bg-green-100 text-green-800'
+          }`}>
+            {isDeactivated ? 'Desactivado' : 'Activo'}
+          </span>
+        );
+      },
     },
     {
       key: 'createdAt' as keyof User,
@@ -217,23 +233,58 @@ const UsersPage: React.FC = () => {
   ];
 
   const renderActions = (user: User) => {
-    const isSoftDeleted = !!user.deletedAt;
+    const isDeactivated = !!user.deletedAt; // Soft deleted
+    const isActive = !user.deletedAt; // Active (not soft deleted)
 
     return (
-      <div className="flex gap-2">
-        <ActionButtons
-          onEdit={() => handleEdit(user)}
-          onDelete={isSoftDeleted ? () => handleRestore(user) : () => handleDelete(user)}
-          canEdit={!isSoftDeleted} // No permitir editar usuarios soft deleted
-          canDelete={true}
-          canView={false}
-          loading={deleteUserMutation.isPending || restoreUserMutation.isPending}
-          deleteText={isSoftDeleted ? "Restaurar" : "Desactivar"}
-          deleteLoadingText={isSoftDeleted ? "Restaurando..." : "Desactivando..."}
-        />
-        {isSoftDeleted && (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+      <div className="flex gap-2 items-center">
+        {/* Edit Button - Only for active users */}
+        {isActive && (
+          <Button
+            onClick={() => handleEdit(user)}
+            disabled={createUserMutation.isPending || !!deactivatingUserId}
+            variant="outline"
+            size="sm"
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
+        )}
+
+        {/* Status Action Button */}
+        {isDeactivated ? (
+          // Deactivated - Activate Button
+          <Button
+            onClick={() => handleActivate(user)}
+            disabled={activatingUserId === user.id.toString()}
+            variant="default"
+            size="sm"
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <UserCheck className="h-4 w-4 mr-2" />
+            {activatingUserId === user.id.toString() ? "Activando..." : "Activar"}
+          </Button>
+        ) : (
+          // Active - Deactivate Button
+          <Button
+            onClick={() => handleDeactivate(user)}
+            disabled={deactivatingUserId === user.id.toString()}
+            variant="destructive"
+            size="sm"
+          >
+            <UserX className="h-4 w-4 mr-2" />
+            {deactivatingUserId === user.id.toString() ? "Desactivando..." : "Desactivar"}
+          </Button>
+        )}
+
+        {/* Status Badge */}
+        {isDeactivated ? (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
             Desactivado
+          </span>
+        ) : (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            Activo
           </span>
         )}
       </div>
@@ -422,38 +473,36 @@ const UsersPage: React.FC = () => {
         }}
       />
 
-      {/* Delete Modal */}
-      {(() => {
-        console.log('Rendering Delete Modal:', { showDeleteModal, selectedUser });
-        return null;
-      })()}
+      {/* Deactivate Modal */}
       <UserDeleteForm
-        isOpen={showDeleteModal}
+        isOpen={showDeactivateModal}
         userId={selectedUser?.id.toString()}
         userName={selectedUser?.name}
         onClose={() => {
-          console.log('Modal onClose called');
-          setShowDeleteModal(false);
+          setShowDeactivateModal(false);
           setSelectedUser(null);
         }}
-        onUserDeleted={() => {
-          console.log('onUserDeleted called');
-          // This is handled by the mutation onSuccess callback
-        }}
+        onUserDeleted={handleConfirmDeactivate}
+        mode="delete"
       />
 
-      {/* Restore Modal */}
-      <UserRestoreForm
-        isOpen={showRestoreModal}
-        userId={selectedUser?.id.toString()}
-        userName={selectedUser?.name}
+      {/* Activate Modal */}
+      <UserRestoreModal
+        isOpen={showActivateModal}
         onClose={() => {
-          setShowRestoreModal(false);
+          setShowActivateModal(false);
           setSelectedUser(null);
         }}
-        onUserRestored={() => {
-          // This is handled by the mutation onSuccess callback
+        user={selectedUser}
+        onSuccess={() => {
+          invalidateQueries(['users', 'list']);
+          setShowActivateModal(false);
+          setSelectedUser(null);
         }}
+        title="Activar Usuario"
+        actionLabel="Activar"
+        onConfirm={handleConfirmActivate}
+        requireReason={false} // Razón opcional para activación
       />
     </div>
   );

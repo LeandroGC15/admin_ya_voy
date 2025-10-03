@@ -12,16 +12,17 @@ import type {
 // Fetch users hook
 export function useUsers(params: SearchUsersInput = {}) {
   return useApiQuery(
-    ['users', 'list', params],
+    ['users', 'list', { ...params, includeSoftDeleted: true }],
     async (): Promise<UserListResponse> => {
       try {
         const response = await api.get<UserListResponse>(ENDPOINTS.users.base, {
-          params: { 
+          params: {
             page: params.page || 1,
             limit: params.limit || 10,
             search: params.search,
             isActive: params.isActive,
             userType: params.userType,
+            includeSoftDeleted: true, // Always include soft deleted users for admin management
           },
         });
         if (!response || !response.data) {
@@ -232,6 +233,33 @@ export function useSearchUsersByEmail() {
       onError: (error: any) => {
         console.error('Search users mutation error:', error);
         alert(`Error al buscar usuarios: ${error.message || 'Error desconocido'}`);
+      },
+    }
+  );
+}
+
+// Update user status hook - uses admin API endpoint (suspend/activate user)
+export function useUpdateUserStatus() {
+  return useApiMutation(
+    async ({ userId, isActive, reason }: { userId: string; isActive: boolean; reason?: string }): Promise<void> => {
+      // Validate userId is numeric before making request
+      if (!userId || isNaN(Number(userId))) {
+        throw new Error('ID de usuario inválido');
+      }
+
+      // Send PUT request to status endpoint
+      await api.put(ENDPOINTS.users.status(userId), {
+        isActive,
+        reason: reason?.trim() || (isActive ? 'Activación administrativa' : 'Suspensión administrativa')
+      });
+    },
+    {
+      onSuccess: () => {
+        // Success handling is done by the caller (page component)
+      },
+      onError: (error: any) => {
+        // Centralized error logging; UI handled by caller
+        console.error('Update user status mutation error:', error);
       },
     }
   );

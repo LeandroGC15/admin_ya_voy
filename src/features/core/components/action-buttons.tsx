@@ -45,14 +45,17 @@ export function DeleteButton({
   disabled,
   loading,
   text = 'Eliminar',
-  loadingText = 'Eliminando...'
-}: Omit<ActionButtonProps, 'variant'> & { text?: string; loadingText?: string }) {
+  loadingText = 'Eliminando...',
+  variant = 'destructive',
+  className
+}: Omit<ActionButtonProps, 'variant'> & { text?: string; loadingText?: string; variant?: ActionButtonProps['variant']; className?: string }) {
   return (
     <Button
       onClick={onClick}
       disabled={disabled || loading}
-      variant="destructive"
+      variant={variant}
       size="sm"
+      className={className}
     >
       <Trash2 className="h-4 w-4 mr-2" />
       {loading ? loadingText : text}
@@ -97,6 +100,8 @@ export function ActionButtons({
   loading = false,
   deleteText = 'Eliminar',
   deleteLoadingText = 'Eliminando...',
+  deleteVariant = 'destructive',
+  deleteClassName,
 }: {
   onEdit?: () => void;
   onDelete?: () => void;
@@ -107,6 +112,8 @@ export function ActionButtons({
   loading?: boolean;
   deleteText?: string;
   deleteLoadingText?: string;
+  deleteVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  deleteClassName?: string;
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -123,6 +130,8 @@ export function ActionButtons({
           loading={loading}
           text={deleteText}
           loadingText={deleteLoadingText}
+          variant={deleteVariant}
+          className={deleteClassName}
         />
       )}
     </div>
