@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,9 +16,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, UserCheck, UserX } from 'lucide-react';
+import { Edit, UserCheck, UserX, Eye } from 'lucide-react';
 
 const UsersPage: React.FC = () => {
+  const router = useRouter();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
@@ -87,6 +89,10 @@ const UsersPage: React.FC = () => {
   const handleEdit = (user: User) => {
     setSelectedUser(user);
     setShowEditModal(true);
+  };
+
+  const handleView = (user: User) => {
+    router.push(`/dashboard/users/${user.id}`);
   };
 
 
@@ -238,6 +244,15 @@ const UsersPage: React.FC = () => {
 
     return (
       <div className="flex gap-2 items-center">
+        {/* View Details Button */}
+        <Button
+          onClick={() => handleView(user)}
+          variant="outline"
+          size="sm"
+        >
+          <Eye className="h-4 w-4 mr-0"/>
+        </Button>
+
         {/* Edit Button - Only for active users */}
         {isActive && (
           <Button
