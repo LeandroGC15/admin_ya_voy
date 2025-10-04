@@ -3,6 +3,7 @@
  * Todas las rutas de la API se definen aquí para evitar duplicación y facilitar mantenimiento
  */
 
+
 export const ENDPOINTS = {
   // Authentication
   auth: {
@@ -172,6 +173,17 @@ export const ENDPOINTS = {
     templates: 'admin/notifications/templates',
     templateById: (id: string | number) => `admin/notifications/templates/${id}`,
     analytics: 'admin/notifications/analytics',
+  },
+
+  // Exchange Rates
+  exchangeRates: {
+    latest: 'exchange-rates/latest',
+    history: 'exchange-rates/history',
+    stats: 'exchange-rates/stats',
+    testFetch: 'exchange-rates/test-fetch',
+    update: 'exchange-rates/update',
+    reset: 'exchange-rates/reset',
+    health: 'exchange-rates/health',
   },
 
   // Legacy API endpoints (used in older components)

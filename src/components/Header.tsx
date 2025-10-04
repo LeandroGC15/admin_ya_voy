@@ -2,9 +2,13 @@
 
 import { ThemeToggle } from "./ui/theme-toggle";
 import { Input } from "./ui/input";
-import { Bell, Menu, Search } from "lucide-react";
+import { Bell, Menu, Search, DollarSign, Loader2, Info } from "lucide-react";
+import { useLatestExchangeRate } from "@/features/exchange-rates";
+import { useState } from "react";
 
 const Header = () => {
+  const { data: exchangeRate, isLoading, error } = useLatestExchangeRate();
+
   return (
     <header className="sticky top-0 z-30 flex h-16 flex-shrink-0 items-center justify-between border-b border-border bg-card/80 px-4 md:px-6 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       {/* Left side: mobile menu + search (desktop) */}
@@ -33,6 +37,53 @@ const Header = () => {
         </button>
 
         <ThemeToggle />
+
+        {/* USD Rate */}
+        <div
+          className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 shadow-sm cursor-help hover:bg-muted/50 transition-colors relative group"
+          title={
+            exchangeRate && exchangeRate.rate
+              ? `Precio del dólar: ${exchangeRate.rate.toFixed(2)} VES\nFuente: ${exchangeRate.casa || 'N/A'}\nActualizado: ${new Date(exchangeRate.fechaActualizacion || exchangeRate.createdAt).toLocaleString()}`
+              : 'Precio del dólar no disponible'
+          }
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-xs font-medium text-muted-foreground">USD</span>
+                <span className="text-sm font-bold text-foreground">Cargando...</span>
+              </div>
+            </>
+          ) : error ? (
+            <>
+              <DollarSign className="h-4 w-4 text-red-500" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-xs font-medium text-muted-foreground">USD</span>
+                <span className="text-sm font-bold text-red-500">Error</span>
+              </div>
+            </>
+          ) : exchangeRate && exchangeRate.rate ? (
+            <>
+              <DollarSign className="h-4 w-4 text-green-600" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-xs font-medium text-muted-foreground">USD</span>
+                <span className="text-sm font-bold text-foreground">
+                  ${exchangeRate.rate.toFixed(2)}
+                </span>
+              </div>
+              <Info className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </>
+          ) : (
+            <>
+              <DollarSign className="h-4 w-4 text-yellow-500" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-xs font-medium text-muted-foreground">USD</span>
+                <span className="text-sm font-bold text-yellow-500">N/A</span>
+              </div>
+            </>
+          )}
+        </div>
 
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-muted" />
