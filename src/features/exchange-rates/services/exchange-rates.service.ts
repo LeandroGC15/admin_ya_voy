@@ -2,34 +2,42 @@ import { api } from '@/lib/api/api-client';
 import { ENDPOINTS } from '@/lib/endpoints';
 import type {
   ExchangeRateData,
-  ExchangeRateResponse,
-  ExchangeRateHistoryResponse,
+  ExchangeRateHistoryData,
   ExchangeRateStatsResponse,
-  ExchangeRateTestFetchResponse,
-  ExchangeRateUpdateResponse,
-  ExchangeRateResetResponse,
-  ExchangeRateHealthResponse,
+  ExchangeRateTestFetchData,
+  ExchangeRateResetData,
+  ExchangeRateHealthData,
 } from '../interfaces/exchange-rates';
 
 /**
  * Fetches the latest exchange rate from the API
+ * Uses the standard api-client which automatically extracts the data field from ApiResponse<T>
  */
 export const fetchLatestExchangeRate = async (): Promise<ExchangeRateData> => {
   try {
-    const response = await api.get<ExchangeRateResponse>(ENDPOINTS.exchangeRates.latest);
-    return response.data;
+    // Use the api-client which returns AxiosResponse<T> where T is the extracted data
+    const response = await api.get<ExchangeRateData>(ENDPOINTS.exchangeRates.latest);
+    const data = response.data; // The interceptor extracts the data field automatically
+
+    // Basic validation
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid data structure received from API');
+    }
+
+    return data;
   } catch (error) {
-    console.error('Error fetching latest exchange rate:', error);
+    console.error('❌ Error fetching latest exchange rate:', error);
     throw error;
   }
 };
 
 /**
  * Fetches exchange rate history with optional limit
+ * Uses the standard api-client which automatically extracts the data field from ApiResponse<T>
  */
-export const fetchExchangeRateHistory = async (limit: number = 50): Promise<ExchangeRateData[]> => {
+export const fetchExchangeRateHistory = async (limit: number = 50): Promise<ExchangeRateHistoryData> => {
   try {
-    const response = await api.get<ExchangeRateHistoryResponse>(ENDPOINTS.exchangeRates.history, {
+    const response = await api.get<ExchangeRateHistoryData>(ENDPOINTS.exchangeRates.history, {
       params: { limit },
     });
     return response.data;
@@ -41,10 +49,11 @@ export const fetchExchangeRateHistory = async (limit: number = 50): Promise<Exch
 
 /**
  * Fetches exchange rate statistics for a given period
+ * Uses the standard api-client which automatically extracts the data field from ApiResponse<T>
  */
 export const fetchExchangeRateStats = async (days: number = 7): Promise<ExchangeRateStatsResponse['data']> => {
   try {
-    const response = await api.get<ExchangeRateStatsResponse>(ENDPOINTS.exchangeRates.stats, {
+    const response = await api.get<ExchangeRateStatsResponse['data']>(ENDPOINTS.exchangeRates.stats, {
       params: { days },
     });
     return response.data;
@@ -56,10 +65,11 @@ export const fetchExchangeRateStats = async (days: number = 7): Promise<Exchange
 
 /**
  * Tests the API connection by fetching directly from the external API
+ * Uses the standard api-client which automatically extracts the data field from ApiResponse<T>
  */
-export const testExchangeRateFetch = async (): Promise<ExchangeRateTestFetchResponse['data']> => {
+export const testExchangeRateFetch = async (): Promise<ExchangeRateTestFetchData> => {
   try {
-    const response = await api.get<ExchangeRateTestFetchResponse>(ENDPOINTS.exchangeRates.testFetch);
+    const response = await api.get<ExchangeRateTestFetchData>(ENDPOINTS.exchangeRates.testFetch);
     return response.data;
   } catch (error) {
     console.error('Error testing exchange rate fetch:', error);
@@ -69,10 +79,11 @@ export const testExchangeRateFetch = async (): Promise<ExchangeRateTestFetchResp
 
 /**
  * Manually updates the exchange rate from the external API
+ * Uses the standard api-client which automatically extracts the data field from ApiResponse<T>
  */
 export const updateExchangeRate = async (): Promise<ExchangeRateData> => {
   try {
-    const response = await api.post<ExchangeRateUpdateResponse>(ENDPOINTS.exchangeRates.update);
+    const response = await api.post<ExchangeRateData>(ENDPOINTS.exchangeRates.update);
     return response.data;
   } catch (error) {
     console.error('Error updating exchange rate:', error);
@@ -82,17 +93,12 @@ export const updateExchangeRate = async (): Promise<ExchangeRateData> => {
 
 /**
  * Resets the exchange rate data (clears DB and fetches fresh data)
+ * Uses the standard api-client which automatically extracts the data field from ApiResponse<T>
  */
-export const resetExchangeRates = async (): Promise<{
-  deletedRecords: number;
-  newData: ExchangeRateData;
-}> => {
+export const resetExchangeRates = async (): Promise<ExchangeRateResetData> => {
   try {
-    const response = await api.post<ExchangeRateResetResponse>(ENDPOINTS.exchangeRates.reset);
-    return {
-      deletedRecords: response.data.deletedRecords,
-      newData: response.data.newData,
-    };
+    const response = await api.post<ExchangeRateResetData>(ENDPOINTS.exchangeRates.reset);
+    return response.data;
   } catch (error) {
     console.error('Error resetting exchange rates:', error);
     throw error;
@@ -101,21 +107,19 @@ export const resetExchangeRates = async (): Promise<{
 
 /**
  * Checks the health status of the exchange rates system
+ * Uses the standard api-client which automatically extracts the data field from ApiResponse<T>
+ * For health endpoint, if the API returns an error response, we handle it gracefully
  */
-export const checkExchangeRateHealth = async (): Promise<{
-  status: 'healthy' | 'unhealthy';
-  lastUpdate?: string;
-  apiUrl: string;
-}> => {
+export const checkExchangeRateHealth = async (): Promise<ExchangeRateHealthData> => {
   try {
-    const response = await api.get<ExchangeRateHealthResponse>(ENDPOINTS.exchangeRates.health);
-    return {
-      status: response.data.status,
-      lastUpdate: response.data.lastUpdate,
-      apiUrl: response.data.apiUrl,
-    };
+    const response = await api.get<ExchangeRateHealthData>(ENDPOINTS.exchangeRates.health);
+    return response.data;
   } catch (error) {
     console.error('Error checking exchange rate health:', error);
-    throw error;
+    // For health checks, we return a default unhealthy status on error
+    return {
+      status: 'unhealthy',
+      apiUrl: 'unknown',
+    };
   }
 };

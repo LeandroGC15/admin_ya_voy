@@ -12,71 +12,39 @@ export interface ExchangeRateData {
   updatedAt: string;
 }
 
-export interface ExchangeRateResponse {
-  success: boolean;
-  data: ExchangeRateData;
-  timestamp: string;
-}
-
-export interface ExchangeRateHistoryResponse {
-  success: boolean;
-  data: ExchangeRateData[];
-  count: number;
-  timestamp: string;
-}
-
-export interface ExchangeRateStatsResponse {
-  success: boolean;
-  data: {
-    period: string;
-    count: number;
-    latest: number;
-    minimum: number;
-    maximum: number;
-    average: number;
-    variation: number;
-    trend: 'up' | 'down' | 'stable';
-    data: ExchangeRateData[];
-  };
-  timestamp: string;
-}
-
-export interface ExchangeRateTestFetchResponse {
-  success: boolean;
-  message: string;
-  data: {
-    currency: string;
-    rate: number;
-    compra?: number | null;
-    venta?: number | null;
-    source: string;
-    casa?: string;
-    fechaActualizacion?: string;
-  };
-  timestamp: string;
-}
-
-export interface ExchangeRateUpdateResponse {
-  success: boolean;
-  data: ExchangeRateData;
-  message: string;
-  timestamp: string;
-}
-
-export interface ExchangeRateResetResponse {
-  success: boolean;
-  message: string;
-  deletedRecords: number;
-  newData: ExchangeRateData;
-  timestamp: string;
-}
-
-export interface ExchangeRateHealthResponse {
-  success: boolean;
+// Health data structure (what API client returns after processing)
+export interface ExchangeRateHealthData {
   status: 'healthy' | 'unhealthy';
   lastUpdate?: string;
   apiUrl: string;
-  timestamp: string;
+}
+
+// Reset data structure (what API client returns after processing)
+export interface ExchangeRateResetData {
+  deletedRecords: number;
+  newData: ExchangeRateData;
+}
+
+// Test fetch data structure (what API client returns after processing)
+export interface ExchangeRateTestFetchData {
+  currency: string;
+  rate: number;
+  compra?: number | null;
+  venta?: number | null;
+  source: string;
+  casa?: string;
+  fechaActualizacion?: string;
+}
+
+// History data structure (what API client returns after processing)
+export interface ExchangeRateHistoryData {
+  data: ExchangeRateData[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
 }
 
 // Error interfaces

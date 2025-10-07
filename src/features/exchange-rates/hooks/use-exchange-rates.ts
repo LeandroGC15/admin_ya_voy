@@ -8,7 +8,13 @@ import {
   resetExchangeRates,
   checkExchangeRateHealth,
 } from '../services/exchange-rates.service';
-import type { ExchangeRateData } from '../interfaces/exchange-rates';
+import type {
+  ExchangeRateData,
+  ExchangeRateHistoryData,
+  ExchangeRateTestFetchData,
+  ExchangeRateResetData,
+  ExchangeRateHealthData
+} from '../interfaces/exchange-rates';
 
 // Hook para obtener el precio más reciente del dólar
 export function useLatestExchangeRate() {
@@ -22,7 +28,7 @@ export function useLatestExchangeRate() {
         }
         return data;
       } catch (error: any) {
-        console.error('Error in useLatestExchangeRate:', error);
+        console.error('❌ Error in useLatestExchangeRate:', error);
         throw error;
       }
     },
@@ -41,10 +47,10 @@ export function useLatestExchangeRate() {
 export function useExchangeRateHistory(limit: number = 50) {
   return useApiQuery(
     ['exchange-rates', 'history', limit],
-    async (): Promise<ExchangeRateData[]> => {
+    async (): Promise<ExchangeRateHistoryData> => {
       try {
         const data = await fetchExchangeRateHistory(limit);
-        return data || [];
+        return data;
       } catch (error: any) {
         console.error('Error in useExchangeRateHistory:', error);
         throw error;
@@ -86,7 +92,7 @@ export function useExchangeRateStats(days: number = 7) {
 // Hook para probar el fetch directo
 export function useTestExchangeRateFetch() {
   return useApiMutation(
-    async (): Promise<any> => {
+    async (): Promise<ExchangeRateTestFetchData> => {
       try {
         const data = await testExchangeRateFetch();
         return data;
@@ -134,7 +140,7 @@ export function useUpdateExchangeRate() {
 // Hook para resetear datos
 export function useResetExchangeRates() {
   return useApiMutation(
-    async (): Promise<{ deletedRecords: number; newData: ExchangeRateData }> => {
+    async (): Promise<ExchangeRateResetData> => {
       try {
         const data = await resetExchangeRates();
         return data;
@@ -160,7 +166,7 @@ export function useResetExchangeRates() {
 export function useExchangeRateHealth() {
   return useApiQuery(
     ['exchange-rates', 'health'],
-    async (): Promise<any> => {
+    async (): Promise<ExchangeRateHealthData> => {
       try {
         const data = await checkExchangeRateHealth();
         return data;
@@ -168,7 +174,7 @@ export function useExchangeRateHealth() {
         console.error('Error in useExchangeRateHealth:', error);
         return {
           status: 'unhealthy',
-          error: error.message,
+          apiUrl: 'unknown',
         };
       }
     },
