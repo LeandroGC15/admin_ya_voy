@@ -23,6 +23,7 @@ export interface ApiQueryOptions {
   enabled?: boolean;
   refetchOnWindowFocus?: boolean;
   refetchOnMount?: boolean;
+  refetchInterval?: number | false;
   staleTime?: number;
   cacheTime?: number;
 }
@@ -45,6 +46,7 @@ export function useApiQuery<TData = unknown>(
     enabled: options.enabled !== false,
     refetchOnWindowFocus: options.refetchOnWindowFocus ?? true,
     refetchOnMount: options.refetchOnMount ?? true,
+    refetchInterval: options.refetchInterval,
     staleTime: options.staleTime ?? 5 * 60 * 1000,
     ...options,
   });

@@ -11,6 +11,7 @@ import {
 import type {
   ExchangeRateData,
   ExchangeRateHistoryData,
+  ExchangeRateStatsData,
   ExchangeRateTestFetchData,
   ExchangeRateResetData,
   ExchangeRateHealthData
@@ -32,6 +33,7 @@ export function useLatestExchangeRate() {
         throw error;
       }
     },
+    
     {
       enabled: true,
       // Actualizar cada 5 minutos
@@ -70,7 +72,7 @@ export function useExchangeRateHistory(limit: number = 50) {
 export function useExchangeRateStats(days: number = 7) {
   return useApiQuery(
     ['exchange-rates', 'stats', days],
-    async (): Promise<any> => {
+    async (): Promise<ExchangeRateStatsData> => {
       try {
         const data = await fetchExchangeRateStats(days);
         return data;

@@ -3,7 +3,7 @@ import { ENDPOINTS } from '@/lib/endpoints';
 import type {
   ExchangeRateData,
   ExchangeRateHistoryData,
-  ExchangeRateStatsResponse,
+  ExchangeRateStatsData,
   ExchangeRateTestFetchData,
   ExchangeRateResetData,
   ExchangeRateHealthData,
@@ -51,9 +51,9 @@ export const fetchExchangeRateHistory = async (limit: number = 50): Promise<Exch
  * Fetches exchange rate statistics for a given period
  * Uses the standard api-client which automatically extracts the data field from ApiResponse<T>
  */
-export const fetchExchangeRateStats = async (days: number = 7): Promise<ExchangeRateStatsResponse['data']> => {
+export const fetchExchangeRateStats = async (days: number = 7): Promise<ExchangeRateStatsData> => {
   try {
-    const response = await api.get<ExchangeRateStatsResponse['data']>(ENDPOINTS.exchangeRates.stats, {
+    const response = await api.get<ExchangeRateStatsData>(ENDPOINTS.exchangeRates.stats, {
       params: { days },
     });
     return response.data;
