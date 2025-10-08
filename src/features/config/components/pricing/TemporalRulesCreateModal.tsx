@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Calendar, MapPin, Users, AlertCircle } from 'lucide-react';
 import { invalidateQueries } from '@/lib/api/react-query-client';
+import { prepareCreateTemporalRuleData } from './utils';
 
 interface TemporalRulesCreateModalProps {
   isOpen: boolean;
@@ -66,7 +67,7 @@ const dayOptions = [
 ];
 
 export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: TemporalRulesCreateModalProps) {
-  const [selectedRuleType, setSelectedRuleType] = useState<string>('');
+  const [selectedRuleTypes, setSelectedRuleTypes] = useState<string[]>([]);
 
   const form = useForm<CreateTemporalPricingRuleInput>({
     resolver: zodResolver(createTemporalPricingRuleSchema),
@@ -81,7 +82,7 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
       specificDates: [],
       dateRanges: [],
       isActive: true,
-      priority: 1,
+      priority: 10,
       countryId: undefined,
       stateId: undefined,
       cityId: undefined,
@@ -96,27 +97,55 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
   const { data: states } = useStatesByCountry(form.watch('countryId') || 0, true);
   const { data: cities } = useCitiesByState(form.watch('stateId') || 0, true);
 
+  const watchedRuleType = form.watch('ruleType');
   const watchedCountryId = form.watch('countryId');
   const watchedStateId = form.watch('stateId');
-  const watchedRuleType = form.watch('ruleType');
 
-  const handleRuleTypeSelect = (ruleType: string) => {
-    setSelectedRuleType(ruleType);
-    form.setValue('ruleType', ruleType as any);
+  const handleRuleTypeToggle = (ruleType: string, checked: boolean) => {
+    const newSelectedTypes = checked
+      ? [...selectedRuleTypes, ruleType]
+      : selectedRuleTypes.filter(type => type !== ruleType);
 
-    // Reset conditional fields when changing rule type
-    form.setValue('startTime', '');
-    form.setValue('endTime', '');
-    form.setValue('daysOfWeek', []);
-    form.setValue('specificDates', []);
-    form.setValue('dateRanges', []);
+    setSelectedRuleTypes(newSelectedTypes);
+
+    // Set a default ruleType for the form (first selected or time_range)
+    const primaryRuleType = newSelectedTypes.length > 0 ? newSelectedTypes[0] : 'time_range';
+    form.setValue('ruleType', primaryRuleType as any);
+
+    // Reset conditional fields only if unchecking the last type
+    if (!checked && newSelectedTypes.length === 0) {
+      form.setValue('startTime', '');
+      form.setValue('endTime', '');
+      form.setValue('daysOfWeek', []);
+      form.setValue('specificDates', []);
+      form.setValue('dateRanges', []);
+    }
   };
 
   const handleSubmit = (data: CreateTemporalPricingRuleInput) => {
-    createTemporalRuleMutation.mutate(data, {
+    // Preparar datos usando la función utilitaria
+    const createData = prepareCreateTemporalRuleData(data);
+
+    createTemporalRuleMutation.mutate(createData, {
       onSuccess: () => {
-        form.reset();
-        setSelectedRuleType('');
+        form.reset({
+          name: '',
+          description: '',
+          ruleType: 'time_range',
+          multiplier: 1.5,
+          startTime: '',
+          endTime: '',
+          daysOfWeek: [],
+          specificDates: [],
+          dateRanges: [],
+          isActive: true,
+          priority: 10,
+          countryId: undefined,
+          stateId: undefined,
+          cityId: undefined,
+          zoneId: undefined,
+        });
+        setSelectedRuleTypes([]);
         onClose();
         invalidateQueries(['pricing']);
         onSuccess?.();
@@ -131,6 +160,7 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
       isOpen={isOpen}
       onClose={onClose}
       title="Crear Nueva Regla Temporal"
+      size="xl"
       footer={
         <>
           <Button variant="outline" onClick={onClose}>
@@ -169,7 +199,7 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
                 id="multiplier"
                 type="number"
                 step="0.1"
-                min="1.0"
+                min="0.1"
                 max="10.0"
                 {...form.register('multiplier', { valueAsNumber: true })}
                 placeholder="1.5"
@@ -222,34 +252,41 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
 
         {/* Rule Type Selection */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Tipo de Regla</h3>
+          <h3 className="text-lg font-semibold">Condiciones de la Regla</h3>
+          <p className="text-sm text-gray-600">
+            Selecciona una o más condiciones que deben cumplirse para aplicar esta regla de pricing.
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3">
             {ruleTypeOptions.map((type) => {
               const Icon = type.icon;
-              const isSelected = watchedRuleType === type.value;
+              const isSelected = selectedRuleTypes.includes(type.value);
               return (
-                <Card
-                  key={type.value}
-                  className={`cursor-pointer transition-all ${
-                    isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'
-                  }`}
-                  onClick={() => handleRuleTypeSelect(type.value)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Icon className={`h-6 w-6 mt-1 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
-                      <div className="flex-1">
-                        <h4 className="font-medium">{type.label}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{type.description}</p>
-                        <p className="text-xs text-gray-500 mt-2 italic">Ej: {type.example}</p>
-                      </div>
+                <div key={type.value} className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
+                  <Checkbox
+                    id={`rule-type-${type.value}`}
+                    checked={isSelected}
+                    onCheckedChange={(checked) => handleRuleTypeToggle(type.value, checked as boolean)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-5 w-5 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
+                      <Label htmlFor={`rule-type-${type.value}`} className="font-medium cursor-pointer">
+                        {type.label}
+                      </Label>
                     </div>
-                  </CardContent>
-                </Card>
+                    <p className="text-sm text-gray-600 mt-1">{type.description}</p>
+                    <p className="text-xs text-gray-500 mt-1 italic">Ej: {type.example}</p>
+                  </div>
+                </div>
               );
             })}
           </div>
+
+          {selectedRuleTypes.length === 0 && (
+            <p className="text-sm text-red-600">Debes seleccionar al menos una condición</p>
+          )}
 
           {form.formState.errors.ruleType && (
             <p className="text-sm text-red-600">{form.formState.errors.ruleType.message}</p>
@@ -257,45 +294,52 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
         </div>
 
         {/* Rule Configuration */}
-        {watchedRuleType && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              {selectedRuleTypeData?.icon && <selectedRuleTypeData.icon className="h-5 w-5" />}
-              Configuración de {selectedRuleTypeData?.label}
-            </h3>
+        {selectedRuleTypes.length > 0 && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold">Configuración de Condiciones</h3>
 
             {/* Time Range Configuration */}
-            {watchedRuleType === 'time_range' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="startTime">Hora de Inicio *</Label>
-                  <Input
-                    id="startTime"
-                    type="time"
-                    {...form.register('startTime')}
-                  />
-                  {form.formState.errors.startTime && (
-                    <p className="text-sm text-red-600">{form.formState.errors.startTime.message}</p>
-                  )}
-                </div>
+            {selectedRuleTypes.includes('time_range') && (
+              <div className="space-y-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  Configuración de Rango Horario
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startTime">Hora de Inicio *</Label>
+                    <Input
+                      id="startTime"
+                      type="time"
+                      {...form.register('startTime')}
+                    />
+                    {form.formState.errors.startTime && (
+                      <p className="text-sm text-red-600">{form.formState.errors.startTime.message}</p>
+                    )}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="endTime">Hora de Fin *</Label>
-                  <Input
-                    id="endTime"
-                    type="time"
-                    {...form.register('endTime')}
-                  />
-                  {form.formState.errors.endTime && (
-                    <p className="text-sm text-red-600">{form.formState.errors.endTime.message}</p>
-                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="endTime">Hora de Fin *</Label>
+                    <Input
+                      id="endTime"
+                      type="time"
+                      {...form.register('endTime')}
+                    />
+                    {form.formState.errors.endTime && (
+                      <p className="text-sm text-red-600">{form.formState.errors.endTime.message}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Day of Week Configuration */}
-            {watchedRuleType === 'day_of_week' && (
-              <div className="space-y-4">
+            {selectedRuleTypes.includes('day_of_week') && (
+              <div className="space-y-4 p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-green-600" />
+                  Configuración de Días de la Semana
+                </h4>
                 <Label>Días de la Semana *</Label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {dayOptions.map((day) => (
@@ -318,34 +362,48 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
             )}
 
             {/* Date Specific Configuration */}
-            {watchedRuleType === 'date_specific' && (
-              <div className="space-y-2">
-                <Label htmlFor="specificDates">Fechas Específicas *</Label>
-                <Input
-                  id="specificDates"
-                  type="text"
-                {...form.register('specificDates', {
-                  setValueAs: (value: string) => {
-                    if (!value) return [];
-                    return value.split(',')
-                      .map((date: string) => date.trim())
-                      .filter((date: string) => date.length > 0);
-                  }
-                })}
-                  placeholder="2024-12-25, 2025-01-01, 2025-05-01"
-                />
-                <p className="text-xs text-gray-500">
-                  Separar fechas con comas (formato: YYYY-MM-DD)
-                </p>
-                {form.formState.errors.specificDates && (
-                  <p className="text-sm text-red-600">{form.formState.errors.specificDates.message}</p>
-                )}
+            {selectedRuleTypes.includes('date_specific') && (
+              <div className="space-y-4 p-4 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-purple-600" />
+                  Configuración de Fechas Específicas
+                </h4>
+                <div className="space-y-2">
+                  <Label htmlFor="specificDates">Fechas Específicas *</Label>
+                  <Input
+                    id="specificDates"
+                    type="text"
+                  {...form.register('specificDates', {
+                    setValueAs: (value: any) => {
+                      // Handle array values (from form initialization)
+                      if (Array.isArray(value)) return value;
+
+                      // Handle string values (from user input)
+                      if (!value || typeof value !== 'string') return [];
+                      return value.split(',')
+                        .map((date: string) => date.trim())
+                        .filter((date: string) => date.length > 0);
+                    }
+                  })}
+                    placeholder="2024-12-25, 2025-01-01, 2025-05-01"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Separar fechas con comas (formato: YYYY-MM-DD)
+                  </p>
+                  {form.formState.errors.specificDates && (
+                    <p className="text-sm text-red-600">{form.formState.errors.specificDates.message}</p>
+                  )}
+                </div>
               </div>
             )}
 
             {/* Seasonal Configuration */}
-            {watchedRuleType === 'seasonal' && (
-              <div className="space-y-4">
+            {selectedRuleTypes.includes('seasonal') && (
+              <div className="space-y-4 p-4 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-orange-600" />
+                  Configuración de Temporada
+                </h4>
                 <Label>Rangos de Fechas *</Label>
                 <div className="space-y-2">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -390,6 +448,9 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
         {/* Geographic Scope */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Alcance Geográfico</h3>
+          <p className="text-sm text-gray-600">
+            Define el alcance geográfico de esta regla. Si no se especifica, la regla aplicará globalmente.
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
@@ -415,6 +476,9 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
                   ))}
                 </SelectContent>
               </Select>
+              {form.formState.errors.countryId && (
+                <p className="text-sm text-red-600">{form.formState.errors.countryId.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -440,6 +504,9 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
                   ))}
                 </SelectContent>
               </Select>
+              {form.formState.errors.stateId && (
+                <p className="text-sm text-red-600">{form.formState.errors.stateId.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -464,6 +531,9 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
                   ))}
                 </SelectContent>
               </Select>
+              {form.formState.errors.cityId && (
+                <p className="text-sm text-red-600">{form.formState.errors.cityId.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -474,6 +544,9 @@ export function TemporalRulesCreateModal({ isOpen, onClose, onSuccess }: Tempora
                 {...form.register('zoneId', { valueAsNumber: true })}
                 placeholder="ID de zona"
               />
+              {form.formState.errors.zoneId && (
+                <p className="text-sm text-red-600">{form.formState.errors.zoneId.message}</p>
+              )}
             </div>
           </div>
         </div>

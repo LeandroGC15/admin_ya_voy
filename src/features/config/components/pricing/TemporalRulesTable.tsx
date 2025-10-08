@@ -187,14 +187,16 @@ export function TemporalRulesTable({
       header: 'Alcance',
       render: (value: number | undefined, row: TemporalPricingRule) => (
         <div className="text-xs text-gray-500">
-          {value ? (
+          {row.countryId || row.stateId || row.cityId || row.zoneId ? (
             <div className="flex items-center gap-1">
               <MapPin className="h-3 w-3" />
               <span>
-                {row.countryId && `País: ${row.countryId}`}
-                {row.stateId && `, Estado: ${row.stateId}`}
-                {row.cityId && `, Ciudad: ${row.cityId}`}
-                {row.zoneId && `, Zona: ${row.zoneId}`}
+                {[
+                  row.countryId && `País: ${row.countryId}`,
+                  row.stateId && `Estado: ${row.stateId}`,
+                  row.cityId && `Ciudad: ${row.cityId}`,
+                  row.zoneId && `Zona: ${row.zoneId}`
+                ].filter(Boolean).join(', ')}
               </span>
             </div>
           ) : (

@@ -9,10 +9,11 @@ export interface RideTier {
   description?: string;
   baseFare: number;
   perMinuteRate: number;
-  perMileRate: number;
+  perKmRate: number;
   minimumFare: number;
   maximumFare: number;
   bookingFee: number;
+  imageUrl?: string;
   isActive: boolean;
   countryId?: number;
   stateId?: number;
@@ -30,7 +31,7 @@ export interface CreateRideTierRequest {
   description?: string;
   baseFare: number;
   perMinuteRate: number;
-  perMileRate: number;
+  perKmRate: number;
   minimumFare: number;
   maximumFare: number;
   bookingFee: number;
@@ -48,7 +49,7 @@ export interface UpdateRideTierRequest {
   description?: string;
   baseFare?: number;
   perMinuteRate?: number;
-  perMileRate?: number;
+  perKmRate?: number;
   minimumFare?: number;
   maximumFare?: number;
   bookingFee?: number;
@@ -99,7 +100,7 @@ export interface PricingCalculationResult {
     name: string;
     baseFare: number;
     perMinuteRate: number;
-    perMileRate: number;
+    perKmRate: number;
   };
   distance: number;
   duration: number;
@@ -125,7 +126,7 @@ export interface ValidatePricingRequest {
     name: string;
     baseFare: number;
     perMinuteRate: number;
-    perMileRate: number;
+    perKmRate: number;
     minimumFare: number;
     maximumFare: number;
   };
@@ -244,7 +245,7 @@ export interface BulkUpdateTiersRequest {
   tierIds: number[];
   adjustmentType: 'percentage' | 'fixed';
   adjustmentValue: number;
-  field: 'baseFare' | 'perMinuteRate' | 'perMileRate' | 'bookingFee';
+  field: 'baseFare' | 'perMinuteRate' | 'perKmRate' | 'bookingFee';
 }
 
 export interface BulkUpdateRulesRequest {

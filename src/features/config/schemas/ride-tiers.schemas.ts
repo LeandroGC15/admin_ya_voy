@@ -6,28 +6,26 @@ import { z } from 'zod';
 export const rideTierSchema = z.object({
   id: z.number(),
   name: z.string(),
-  description: z.string().nullable().optional(),
   baseFare: z.number(),           // Base fare in cents
+  minimunFare: z.number(),        // Minimum fare in cents (corrected spelling from guide)
   perMinuteRate: z.number(),      // Rate per minute in cents
-  perMileRate: z.number(),        // Rate per mile in cents
-  minimumFare: z.number().nullable().optional(),       // Minimum fare in cents
-  maximumFare: z.number().nullable().optional(),       // Maximum fare in cents
-  bookingFee: z.number().nullable().optional(),        // Booking fee in cents
+  perKmRate: z.number(),          // Rate per kilometer in cents
+  imageUrl: z.string().optional(), // Image URL for the tier
   tierMultiplier: z.number(),     // Base multiplier (default: 1.0)
   surgeMultiplier: z.number(),    // Surge pricing multiplier
   demandMultiplier: z.number(),   // Demand-based multiplier
-  luxuryMultiplier: z.number().nullable().optional(),  // Luxury service multiplier
-  comfortMultiplier: z.number().nullable().optional(), // Comfort features multiplier
+  luxuryMultiplier: z.number().optional(),  // Luxury service multiplier
+  comfortMultiplier: z.number().optional(), // Comfort features multiplier
   minPassengers: z.number(),      // Minimum passengers
   maxPassengers: z.number(),      // Maximum passengers
   isActive: z.boolean(),
   priority: z.number(),
-  countryId: z.number().nullable().optional(),
-  stateId: z.number().nullable().optional(),
-  cityId: z.number().nullable().optional(),
-  serviceZoneId: z.number().nullable().optional(),
-  features: z.array(z.string()).optional(),        // Array of feature strings
-  restrictions: z.array(z.string()).optional(),    // Array of restriction strings
+  ridesCount: z.number().optional(), // Number of rides using this tier
+  vehicleTypes: z.array(z.object({
+    id: z.number(),
+    name: z.string(),
+    displayName: z.string()
+  })).optional(), // Vehicle types associated with this tier
   createdAt: z.string(),          // ISO date string
   updatedAt: z.string(),          // ISO date string
 });
@@ -43,56 +41,46 @@ export const rideTiersListResponseSchema = z.object({
 
 // ========== CREATE/UPDATE DTO SCHEMAS ==========
 
-// Create ride tier schema with validation
+// Create ride tier schema with validation (strictly following the endpoint guide)
 export const createRideTierSchema = z.object({
   name: z.string()
-    .min(2, 'El nombre debe tener al menos 2 caracteres')
+    .min(3, 'El nombre debe tener al menos 3 caracteres')
     .max(50, 'El nombre no puede tener más de 50 caracteres'),
-  description: z.string()
-    .max(500, 'La descripción no puede tener más de 500 caracteres')
-    .optional()
-    .or(z.literal('')),
   baseFare: z.number()
-    .min(0, 'La tarifa base no puede ser negativa')
+    .min(50, 'La tarifa base debe ser al menos 50 centavos')
     .max(10000, 'La tarifa base no puede ser mayor a 10000 centavos'),
-  perMinuteRate: z.number()
-    .min(0, 'La tarifa por minuto no puede ser negativa')
-    .max(500, 'La tarifa por minuto no puede ser mayor a 500 centavos'),
-  perMileRate: z.number()
-    .min(0, 'La tarifa por milla no puede ser negativa')
-    .max(1000, 'La tarifa por milla no puede ser mayor a 1000 centavos'),
-  minimumFare: z.number()
+  minimunFare: z.number()
     .min(0, 'La tarifa mínima no puede ser negativa')
-    .max(5000, 'La tarifa mínima no puede ser mayor a 5000 centavos')
-    .optional(),
-  maximumFare: z.number()
-    .min(1000, 'La tarifa máxima debe ser al menos 1000 centavos')
-    .max(100000, 'La tarifa máxima no puede ser mayor a 100000 centavos')
-    .optional(),
-  bookingFee: z.number()
-    .min(0, 'La tarifa de reserva no puede ser negativa')
-    .max(2000, 'La tarifa de reserva no puede ser mayor a 2000 centavos')
+    .max(10000, 'La tarifa mínima no puede ser mayor a 10000 centavos'),
+  perMinuteRate: z.number()
+    .min(5, 'La tarifa por minuto debe ser al menos 5 centavos')
+    .max(200, 'La tarifa por minuto no puede ser mayor a 200 centavos'),
+  perKmRate: z.number()
+    .min(20, 'La tarifa por kilómetro debe ser al menos 20 centavos')
+    .max(500, 'La tarifa por kilómetro no puede ser mayor a 500 centavos'),
+  imageUrl: z.string()
+    .url('La URL de imagen debe ser válida')
     .optional(),
   tierMultiplier: z.number()
-    .min(0.5, 'El multiplicador debe ser al menos 0.5')
-    .max(5.0, 'El multiplicador no puede ser mayor a 5.0')
+    .min(0.1, 'El multiplicador debe ser al menos 0.1')
+    .max(10.0, 'El multiplicador no puede ser mayor a 10.0')
     .default(1.0),
   surgeMultiplier: z.number()
-    .min(1.0, 'El multiplicador de demanda debe ser al menos 1.0')
-    .max(10.0, 'El multiplicador de demanda no puede ser mayor a 10.0')
+    .min(0.1, 'El multiplicador de surge debe ser al menos 0.1')
+    .max(10.0, 'El multiplicador de surge no puede ser mayor a 10.0')
     .default(1.0),
   demandMultiplier: z.number()
-    .min(1.0, 'El multiplicador de demanda debe ser al menos 1.0')
-    .max(5.0, 'El multiplicador de demanda no puede ser mayor a 5.0')
+    .min(0.1, 'El multiplicador de demanda debe ser al menos 0.1')
+    .max(10.0, 'El multiplicador de demanda no puede ser mayor a 10.0')
     .default(1.0),
   luxuryMultiplier: z.number()
     .min(1.0, 'El multiplicador de lujo debe ser al menos 1.0')
-    .max(3.0, 'El multiplicador de lujo no puede ser mayor a 3.0')
-    .optional(),
+    .max(5.0, 'El multiplicador de lujo no puede ser mayor a 5.0')
+    .default(1.0),
   comfortMultiplier: z.number()
     .min(1.0, 'El multiplicador de confort debe ser al menos 1.0')
-    .max(2.0, 'El multiplicador de confort no puede ser mayor a 2.0')
-    .optional(),
+    .max(5.0, 'El multiplicador de confort no puede ser mayor a 5.0')
+    .default(1.0),
   minPassengers: z.number()
     .min(1, 'Debe haber al menos 1 pasajero mínimo')
     .max(8, 'No puede haber más de 8 pasajeros mínimos')
@@ -105,17 +93,75 @@ export const createRideTierSchema = z.object({
   priority: z.number()
     .min(1, 'La prioridad debe ser al menos 1')
     .max(100, 'La prioridad no puede ser mayor a 100')
-    .default(1),
-  countryId: z.number().positive().optional(),
-  stateId: z.number().positive().optional(),
-  cityId: z.number().positive().optional(),
-  serviceZoneId: z.number().positive().optional(),
-  features: z.array(z.string().max(100)).optional(),
-  restrictions: z.array(z.string().max(100)).optional(),
+    .default(5),
+  vehicleTypeIds: z.array(z.number().positive())
+    .optional(),
+}).refine((data) => data.minimunFare <= data.baseFare, {
+  message: "La tarifa mínima no puede ser mayor que la tarifa base",
+  path: ["minimunFare"]
 });
 
-// Update ride tier schema (all fields optional)
-export const updateRideTierSchema = createRideTierSchema.partial();
+// Update ride tier schema (all fields optional except the refine validation)
+export const updateRideTierSchema = z.object({
+  name: z.string()
+    .min(3, 'El nombre debe tener al menos 3 caracteres')
+    .max(50, 'El nombre no puede tener más de 50 caracteres')
+    .optional(),
+  baseFare: z.number()
+    .min(50, 'La tarifa base debe ser al menos 50 centavos')
+    .max(10000, 'La tarifa base no puede ser mayor a 10000 centavos')
+    .optional(),
+  minimunFare: z.number()
+    .min(0, 'La tarifa mínima no puede ser negativa')
+    .max(10000, 'La tarifa mínima no puede ser mayor a 10000 centavos')
+    .optional(),
+  perMinuteRate: z.number()
+    .min(5, 'La tarifa por minuto debe ser al menos 5 centavos')
+    .max(200, 'La tarifa por minuto no puede ser mayor a 200 centavos')
+    .optional(),
+  perKmRate: z.number()
+    .min(20, 'La tarifa por kilómetro debe ser al menos 20 centavos')
+    .max(500, 'La tarifa por kilómetro no puede ser mayor a 500 centavos')
+    .optional(),
+  imageUrl: z.string()
+    .url('La URL de imagen debe ser válida')
+    .optional(),
+  tierMultiplier: z.number()
+    .min(0.1, 'El multiplicador debe ser al menos 0.1')
+    .max(10.0, 'El multiplicador no puede ser mayor a 10.0')
+    .optional(),
+  surgeMultiplier: z.number()
+    .min(0.1, 'El multiplicador de surge debe ser al menos 0.1')
+    .max(10.0, 'El multiplicador de surge no puede ser mayor a 10.0')
+    .optional(),
+  demandMultiplier: z.number()
+    .min(0.1, 'El multiplicador de demanda debe ser al menos 0.1')
+    .max(10.0, 'El multiplicador de demanda no puede ser mayor a 10.0')
+    .optional(),
+  luxuryMultiplier: z.number()
+    .min(1.0, 'El multiplicador de lujo debe ser al menos 1.0')
+    .max(5.0, 'El multiplicador de lujo no puede ser mayor a 5.0')
+    .optional(),
+  comfortMultiplier: z.number()
+    .min(1.0, 'El multiplicador de confort debe ser al menos 1.0')
+    .max(5.0, 'El multiplicador de confort no puede ser mayor a 5.0')
+    .optional(),
+  minPassengers: z.number()
+    .min(1, 'Debe haber al menos 1 pasajero mínimo')
+    .max(8, 'No puede haber más de 8 pasajeros mínimos')
+    .optional(),
+  maxPassengers: z.number()
+    .min(1, 'Debe haber al menos 1 pasajero máximo')
+    .max(8, 'No puede haber más de 8 pasajeros máximos')
+    .optional(),
+  isActive: z.boolean().optional(),
+  priority: z.number()
+    .min(1, 'La prioridad debe ser al menos 1')
+    .max(100, 'La prioridad no puede ser mayor a 100')
+    .optional(),
+  vehicleTypeIds: z.array(z.number().positive())
+    .optional(),
+});
 
 // ========== QUERY SCHEMAS ==========
 
@@ -123,28 +169,28 @@ export const updateRideTierSchema = createRideTierSchema.partial();
 export const rideTiersQueryParamsSchema = z.object({
   page: z.number().min(1).default(1).optional(),
   limit: z.number().min(1).max(100).default(20).optional(),
+  search: z.string().max(100).optional().or(z.literal('')),
+  isActive: z.boolean().optional(),
+  sortBy: z.enum(['name', 'baseFare', 'priority', 'createdAt']).optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
   countryId: z.number().positive().optional(),
   stateId: z.number().positive().optional(),
   cityId: z.number().positive().optional(),
   serviceZoneId: z.number().positive().optional(),
-  isActive: z.boolean().optional(),
-  search: z.string().max(100).optional().or(z.literal('')),
-  sortBy: z.enum(['name', 'baseFare', 'priority', 'createdAt']).optional(),
-  sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
 // ========== CALCULATION SCHEMAS ==========
 
-// Pricing calculation input schema
+// Pricing calculation input schema (following endpoint guide)
 export const pricingCalculationSchema = z.object({
   tierId: z.number().positive(),
-  distance: z.number().min(0.1), // Changed from distanceMiles to distance
-  duration: z.number().min(1),   // Changed from durationMinutes to duration
+  distance: z.number().min(0.1), // Distance in kilometers
+  duration: z.number().min(1),   // Duration in minutes
   countryId: z.number().positive().optional(),
   stateId: z.number().positive().optional(),
   cityId: z.number().positive().optional(),
-  zoneId: z.number().positive().optional(), // Changed from serviceZoneId to zoneId
-  surgeMultiplier: z.number().min(0.5).max(10).optional().default(1.0), // Updated constraints
+  zoneId: z.number().positive().optional(),
+  surgeMultiplier: z.number().min(0.5).max(10).optional().default(1.0),
 });
 
 // Pricing calculation result schema - Updated to match backend DTO
@@ -153,13 +199,14 @@ export const pricingCalculationResultSchema = z.object({
     id: z.number(),
     name: z.string(),
     baseFare: z.number(),
+    minimunFare: z.number(),
     perMinuteRate: z.number(),
-    perMileRate: z.number(),
+    perKmRate: z.number(),
     tierMultiplier: z.number(),
     surgeMultiplier: z.number(),
     demandMultiplier: z.number(),
-    luxuryMultiplier: z.number(),
-    comfortMultiplier: z.number(),
+    luxuryMultiplier: z.number().optional(),
+    comfortMultiplier: z.number().optional(),
   }),
   basePricing: z.object({
     baseFare: z.number(),
@@ -204,10 +251,8 @@ export const pricingValidationSchema = z.object({
     name: z.string().optional(),
     baseFare: z.number().optional(),
     perMinuteRate: z.number().optional(),
-    perMileRate: z.number().optional(),
-    minimumFare: z.number().optional(),
-    maximumFare: z.number().optional(),
-    bookingFee: z.number().optional(),
+    perKmRate: z.number().optional(),
+    minimunFare: z.number().optional(),
   }),
   compareWithTierId: z.number().positive().optional(),
 });
@@ -236,7 +281,7 @@ export const pricingValidationResultSchema = z.object({
       name: z.string(),
       baseFare: z.number(),
       perMinuteRate: z.number(),
-      perMileRate: z.number(),
+      perKmRate: z.number(),
     }),
     differences: z.array(z.object({
       field: z.string(),
@@ -265,16 +310,9 @@ export const standardTiersResponseSchema = z.object({
 // Bulk ride tier update schema
 export const bulkRideTierUpdateSchema = z.object({
   tierIds: z.array(z.number().positive()),
-  adjustmentType: z.enum(['percentage', 'absolute', 'multiplier']),
+  adjustmentType: z.enum(['percentage', 'absolute']),
   adjustmentValue: z.number(),
-  field: z.enum(['baseFare', 'perMinuteRate', 'perMileRate', 'bookingFee', 'tierMultiplier', 'surgeMultiplier', 'demandMultiplier']),
-  condition: z.object({
-    countryId: z.number().positive().optional(),
-    stateId: z.number().positive().optional(),
-    cityId: z.number().positive().optional(),
-    serviceZoneId: z.number().positive().optional(),
-    isActive: z.boolean().optional(),
-  }).optional(),
+  field: z.enum(['baseFare', 'perMinuteRate', 'perKmRate', 'tierMultiplier', 'surgeMultiplier', 'demandMultiplier']),
 });
 
 // Bulk tier update response schema
@@ -322,6 +360,25 @@ export const pricingSummaryResponseSchema = z.object({
   }),
 });
 
+// ========== VEHICLE TYPES SCHEMA ==========
+
+// Vehicle type schema
+export const vehicleTypeSchema = z.object({
+  id: z.number(),
+  name: z.string(),          // e.g., "motorcycle", "car", "truck"
+  displayName: z.string(),   // e.g., "Moto", "Carro", "Camión"
+  icon: z.string(),          // e.g., "🏍️", "🚗", "🚚"
+  isActive: z.boolean(),
+});
+
+// Vehicle types response schema
+export const vehicleTypesResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.array(vehicleTypeSchema),
+  count: z.number(),
+  message: z.string(),
+});
+
 // ========== TYPES ==========
 
 export type RideTier = z.infer<typeof rideTierSchema>;
@@ -337,3 +394,5 @@ export type StandardTiersResponse = z.infer<typeof standardTiersResponseSchema>;
 export type BulkRideTierUpdateInput = z.infer<typeof bulkRideTierUpdateSchema>;
 export type BulkTierUpdateResponse = z.infer<typeof bulkTierUpdateResponseSchema>;
 export type PricingSummaryResponse = z.infer<typeof pricingSummaryResponseSchema>;
+export type VehicleType = z.infer<typeof vehicleTypeSchema>;
+export type VehicleTypesResponse = z.infer<typeof vehicleTypesResponseSchema>;

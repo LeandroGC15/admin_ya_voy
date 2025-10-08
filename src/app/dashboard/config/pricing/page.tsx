@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,10 +14,12 @@ import {
   RideTiersCreateModal,
   RideTiersEditModal,
   RideTiersDeleteModal,
+  RideTiersToggleModal,
   TemporalRulesTable,
   TemporalRulesCreateModal,
   TemporalRulesEditModal,
   TemporalRulesDeleteModal,
+  TemporalRulesToggleModal,
   PricingCalculator,
   PricingSummary,
   type RideTier,
@@ -34,6 +37,8 @@ import {
 } from '@/features/config/hooks';
 
 export default function PricingConfigPage() {
+  const router = useRouter();
+
   // Estado para filtros y búsqueda
   const [rideTiersFilters, setRideTiersFilters] = useState({
     page: 1,
@@ -56,10 +61,12 @@ export default function PricingConfigPage() {
   const [isCreateTierModalOpen, setIsCreateTierModalOpen] = useState(false);
   const [isEditTierModalOpen, setIsEditTierModalOpen] = useState(false);
   const [isDeleteTierModalOpen, setIsDeleteTierModalOpen] = useState(false);
+  const [isToggleTierModalOpen, setIsToggleTierModalOpen] = useState(false);
 
   const [isCreateTemporalRuleModalOpen, setIsCreateTemporalRuleModalOpen] = useState(false);
   const [isEditTemporalRuleModalOpen, setIsEditTemporalRuleModalOpen] = useState(false);
   const [isDeleteTemporalRuleModalOpen, setIsDeleteTemporalRuleModalOpen] = useState(false);
+  const [isToggleTemporalRuleModalOpen, setIsToggleTemporalRuleModalOpen] = useState(false);
 
   // Queries para datos
   const { data: rideTiersData, isLoading: isLoadingRideTiers } = useRideTiers(rideTiersFilters);
@@ -86,17 +93,13 @@ export default function PricingConfigPage() {
     setIsDeleteTierModalOpen(true);
   };
 
-  const handleToggleTier = async (tier: RideTier) => {
-    try {
-      await updateRideTierMutation.mutateAsync({
-        id: tier.id,
-        data: { isActive: !tier.isActive }
-      });
-      // Refrescar datos automáticamente gracias a React Query
-    } catch (error) {
-      console.error('Error toggling tier:', error);
-      // Aquí podríamos mostrar un toast de error
-    }
+  const handleViewTier = (tierId: number) => {
+    router.push(`/dashboard/config/pricing/${tierId}`);
+  };
+
+  const handleToggleTier = (tier: RideTier) => {
+    setSelectedTier(tier);
+    setIsToggleTierModalOpen(true);
   };
 
   // Handlers para acciones de Temporal Rules
@@ -114,17 +117,13 @@ export default function PricingConfigPage() {
     setIsDeleteTemporalRuleModalOpen(true);
   };
 
-  const handleToggleTemporalRule = async (rule: TemporalPricingRule) => {
-    try {
-      await updateTemporalRuleMutation.mutateAsync({
-        id: rule.id,
-        data: { isActive: !rule.isActive }
-      });
-      // Refrescar datos automáticamente gracias a React Query
-    } catch (error) {
-      console.error('Error toggling temporal rule:', error);
-      // Aquí podríamos mostrar un toast de error
-    }
+  const handleToggleTemporalRule = (rule: TemporalPricingRule) => {
+    setSelectedTemporalRule(rule);
+    setIsToggleTemporalRuleModalOpen(true);
+  };
+
+  const handleViewTemporalRuleDetails = (rule: TemporalPricingRule) => {
+    router.push(`/dashboard/config/pricing/temporal-rules/${rule.id}`);
   };
 
   // Handlers para cerrar modales
@@ -132,9 +131,11 @@ export default function PricingConfigPage() {
     setIsCreateTierModalOpen(false);
     setIsEditTierModalOpen(false);
     setIsDeleteTierModalOpen(false);
+    setIsToggleTierModalOpen(false);
     setIsCreateTemporalRuleModalOpen(false);
     setIsEditTemporalRuleModalOpen(false);
     setIsDeleteTemporalRuleModalOpen(false);
+    setIsToggleTemporalRuleModalOpen(false);
     setSelectedTier(null);
     setSelectedTemporalRule(null);
   };
@@ -208,7 +209,7 @@ export default function PricingConfigPage() {
               <RideTiersTable
                 data={rideTiersData}
                 loading={isLoadingRideTiers}
-                onTierSelect={() => {}} // Para futuras funcionalidades
+                onTierView={handleViewTier}
                 onTierEdit={handleEditTier}
                 onTierDelete={handleDeleteTier}
                 onTierToggle={handleToggleTier}
@@ -241,7 +242,7 @@ export default function PricingConfigPage() {
               <TemporalRulesTable
                 data={temporalRulesData}
                 loading={isLoadingTemporalRules}
-                onRuleSelect={() => {}} // Para futuras funcionalidades
+                onRuleSelect={handleViewTemporalRuleDetails}
                 onRuleEdit={handleEditTemporalRule}
                 onRuleDelete={handleDeleteTemporalRule}
                 onRuleToggle={handleToggleTemporalRule}
@@ -286,6 +287,13 @@ export default function PricingConfigPage() {
         onSuccess={handleOperationSuccess}
       />
 
+      <RideTiersToggleModal
+        tier={selectedTier}
+        isOpen={isToggleTierModalOpen}
+        onClose={handleCloseModals}
+        onSuccess={handleOperationSuccess}
+      />
+
       {/* Modales de Temporal Rules */}
       <TemporalRulesCreateModal
         isOpen={isCreateTemporalRuleModalOpen}
@@ -303,6 +311,13 @@ export default function PricingConfigPage() {
       <TemporalRulesDeleteModal
         rule={selectedTemporalRule}
         isOpen={isDeleteTemporalRuleModalOpen}
+        onClose={handleCloseModals}
+        onSuccess={handleOperationSuccess}
+      />
+
+      <TemporalRulesToggleModal
+        rule={selectedTemporalRule}
+        isOpen={isToggleTemporalRuleModalOpen}
         onClose={handleCloseModals}
         onSuccess={handleOperationSuccess}
       />

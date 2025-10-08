@@ -51,7 +51,7 @@ const baseTemporalPricingRuleSchema = z.object({
     errorMap: () => ({ message: 'Tipo de regla inválido' })
   }),
   multiplier: z.number()
-    .min(1.0, 'El multiplicador debe ser al menos 1.0')
+    .min(0.1, 'El multiplicador debe ser al menos 0.1')
     .max(10.0, 'El multiplicador no puede ser mayor a 10.0'),
   startTime: z.string()
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM)')
@@ -78,26 +78,39 @@ const baseTemporalPricingRuleSchema = z.object({
 
 // Create temporal pricing rule schema with validation
 export const createTemporalPricingRuleSchema = baseTemporalPricingRuleSchema.refine((data) => {
-  // Validation based on rule type
-  switch (data.ruleType) {
-    case 'time_range':
-      return data.startTime && data.endTime;
-    case 'day_of_week':
-      return data.daysOfWeek && data.daysOfWeek.length > 0;
-    case 'date_specific':
-      return data.specificDates && data.specificDates.length > 0;
-    case 'seasonal':
-      return data.dateRanges && data.dateRanges.length > 0;
-    default:
-      return false;
-  }
+  // Validation: at least one condition must be configured
+  const hasTimeRange = data.startTime && data.endTime;
+  const hasDaysOfWeek = data.daysOfWeek && data.daysOfWeek.length > 0;
+  const hasSpecificDates = data.specificDates && data.specificDates.length > 0;
+  const hasDateRanges = data.dateRanges && data.dateRanges.length > 0;
+
+  return hasTimeRange || hasDaysOfWeek || hasSpecificDates || hasDateRanges;
 }, {
-  message: 'Los campos requeridos dependen del tipo de regla',
+  message: 'Debe configurar al menos una condición (rango horario, días de la semana, fechas específicas o temporada)',
   path: ['ruleType'],
 });
 
-// Update temporal pricing rule schema (all fields optional)
-export const updateTemporalPricingRuleSchema = baseTemporalPricingRuleSchema.partial();
+// Update temporal pricing rule schema (ruleType required, other fields optional)
+export const updateTemporalPricingRuleSchema = z.object({
+  name: z.string().optional(),
+  description: z.string().optional(),
+  ruleType: z.enum(['time_range', 'day_of_week', 'date_specific', 'seasonal']),
+  multiplier: z.number().min(0.1).max(10.0).optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  daysOfWeek: z.array(z.number()).optional(),
+  specificDates: z.array(z.string()).optional(),
+  dateRanges: z.array(z.object({
+    start: z.string(),
+    end: z.string(),
+  })).optional(),
+  isActive: z.boolean().optional(),
+  countryId: z.number().optional(),
+  stateId: z.number().optional(),
+  cityId: z.number().optional(),
+  zoneId: z.number().optional(),
+  priority: z.number().min(1).max(100).optional(),
+});
 
 // ========== QUERY SCHEMAS ==========
 
@@ -155,7 +168,7 @@ export const createStandardTemporalRulesSchema = z.object({
   cityId: z.number().positive().optional(),
   rules: z.array(z.object({
     type: z.enum(['morning_peak', 'evening_peak', 'night_surcharge', 'weekend_surcharge', 'holiday_surcharge']),
-    multiplier: z.number().min(1.0).max(10.0),
+    multiplier: z.number().min(0.1).max(10.0),
     customConfig: z.object({
       startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
       endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
@@ -180,7 +193,7 @@ export const standardTemporalRulesResponseSchema = z.object({
 export const bulkTemporalRuleUpdateSchema = z.object({
   ruleIds: z.array(z.number().positive()),
   updates: z.object({
-    multiplier: z.number().min(1.0).max(10.0).optional(),
+    multiplier: z.number().min(0.1).max(10.0).optional(),
     isActive: z.boolean().optional(),
     priority: z.number().min(1).max(100).optional(),
     countryId: z.number().positive().optional(),

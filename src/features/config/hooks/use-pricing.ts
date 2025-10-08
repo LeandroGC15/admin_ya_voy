@@ -3,7 +3,7 @@ import { api } from '@/lib/api/api-client';
 import { ENDPOINTS } from '@/lib/endpoints';
 import type {
   // Ride Tiers
-  RideTier,
+  RideTier as PricingRideTier,
   RideTiersListResponse,
   RideTiersQueryParams,
   CreateRideTierInput,
@@ -16,6 +16,8 @@ import type {
   BulkRideTierUpdateInput,
   BulkTierUpdateResponse,
   PricingSummaryResponse,
+  VehicleType,
+  VehicleTypesResponse,
   // Temporal Rules
   TemporalPricingRule,
   TemporalPricingRulesListResponse,
@@ -40,6 +42,7 @@ export const pricingKeys = {
   rideTiersList: (params: RideTiersQueryParams) => [...pricingKeys.rideTiers(), 'list', params] as const,
   rideTierDetail: (id: number) => [...pricingKeys.rideTiers(), 'detail', id] as const,
   rideTiersSummary: () => [...pricingKeys.rideTiers(), 'summary'] as const,
+  vehicleTypes: () => [...pricingKeys.rideTiers(), 'vehicleTypes'] as const,
   temporalRules: () => [...pricingKeys.all, 'temporalRules'] as const,
   temporalRulesList: (params: TemporalRulesQueryParams) => [...pricingKeys.temporalRules(), 'list', params] as const,
   temporalRuleDetail: (id: number) => [...pricingKeys.temporalRules(), 'detail', id] as const,
@@ -84,8 +87,8 @@ export function useRideTiers(params: RideTiersQueryParams = {}) {
 // Create ride tier
 export function useCreateRideTier() {
   return useApiMutation(
-    async (data: CreateRideTierInput): Promise<RideTier> => {
-      const response = await api.post<RideTier>(ENDPOINTS.pricing.rideTiers, data);
+    async (data: CreateRideTierInput): Promise<PricingRideTier> => {
+      const response = await api.post<PricingRideTier>(ENDPOINTS.pricing.rideTiers, data);
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
       }
@@ -103,8 +106,8 @@ export function useCreateRideTier() {
 export function useRideTier(id: number) {
   return useApiQuery(
     pricingKeys.rideTierDetail(id),
-    async (): Promise<RideTier> => {
-      const response = await api.get<RideTier>(ENDPOINTS.pricing.rideTierById(id));
+    async (): Promise<PricingRideTier> => {
+      const response = await api.get<PricingRideTier>(ENDPOINTS.pricing.rideTierById(id));
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
       }
@@ -119,8 +122,8 @@ export function useRideTier(id: number) {
 // Update ride tier
 export function useUpdateRideTier() {
   return useApiMutation(
-    async ({ id, data }: { id: number; data: UpdateRideTierInput }): Promise<RideTier> => {
-      const response = await api.patch<RideTier>(ENDPOINTS.pricing.rideTierById(id), data);
+    async ({ id, data }: { id: number; data: UpdateRideTierInput }): Promise<PricingRideTier> => {
+      const response = await api.patch<PricingRideTier>(ENDPOINTS.pricing.rideTierById(id), data);
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
       }
@@ -139,6 +142,24 @@ export function useDeleteRideTier() {
   return useApiMutation(
     async (id: number): Promise<void> => {
       await api.delete<void>(ENDPOINTS.pricing.rideTierById(id));
+    },
+    {
+      onSuccess: () => {
+        invalidateQueries(['pricing']);
+      },
+    }
+  );
+}
+
+// Toggle ride tier status
+export function useToggleRideTierStatus() {
+  return useApiMutation(
+    async ({ id }: { id: number }): Promise<PricingRideTier> => {
+      const response = await api.patch<PricingRideTier>(ENDPOINTS.pricing.rideTierToggleStatus(id));
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      return response.data;
     },
     {
       onSuccess: () => {
@@ -319,6 +340,24 @@ export function useDeleteTemporalRule() {
   );
 }
 
+// Toggle temporal rule status
+export function useToggleTemporalRuleStatus() {
+  return useApiMutation(
+    async ({ id }: { id: number }): Promise<TemporalPricingRule> => {
+      const response = await api.patch<TemporalPricingRule>(ENDPOINTS.pricing.temporalRuleToggleStatus(id));
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      return response.data;
+    },
+    {
+      onSuccess: () => {
+        invalidateQueries(['pricing']);
+      },
+    }
+  );
+}
+
 // Evaluate temporal rules for a date/time
 export function useEvaluateTemporalRules() {
   return useApiMutation(
@@ -385,6 +424,23 @@ export function useRideTiersSummary() {
     pricingKeys.rideTiersSummary(),
     async (): Promise<PricingSummaryResponse> => {
       const response = await api.get<PricingSummaryResponse>(ENDPOINTS.pricing.rideTiersSummary);
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      return response.data;
+    },
+    {
+      enabled: true,
+    }
+  );
+}
+
+// Get vehicle types
+export function useVehicleTypes() {
+  return useApiQuery(
+    pricingKeys.vehicleTypes(),
+    async (): Promise<VehicleTypesResponse> => {
+      const response = await api.post<VehicleTypesResponse>(ENDPOINTS.pricing.vehicleTypes);
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
       }

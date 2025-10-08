@@ -171,7 +171,7 @@ export interface ServiceZone {
   coordinates: Coordinate[];
   isActive: boolean;
   baseFare: number;
-  perMileRate: number;
+  perKmRate: number;
   perMinuteRate: number;
   minimumFare: number;
   bookingFee: number;
@@ -185,7 +185,7 @@ export interface CreateServiceZoneRequest {
   coordinates: Coordinate[];
   isActive: boolean;
   baseFare: number;
-  perMileRate: number;
+  perKmRate: number;
   perMinuteRate: number;
   minimumFare: number;
   bookingFee: number;

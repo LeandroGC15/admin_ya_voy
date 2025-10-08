@@ -25,6 +25,8 @@ export type {
   BulkRideTierUpdateInput as BulkRideTierUpdateDto,
   BulkTierUpdateResponse,
   PricingSummaryResponse,
+  VehicleType,
+  VehicleTypesResponse,
 } from './ride-tiers.schemas';
 
 // Temporal Rules legacy aliases

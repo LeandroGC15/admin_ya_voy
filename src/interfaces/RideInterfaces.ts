@@ -49,7 +49,7 @@ export interface RideTier {
   name: string;
   baseFare: number;
   perMinuteRate: number;
-  perMileRate: number;
+  perKmRate: number;
 }
 
 export interface RideRating {

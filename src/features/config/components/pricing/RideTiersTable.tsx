@@ -10,7 +10,7 @@ import { Car, DollarSign, AlertTriangle, CheckCircle, Users, MapPin } from 'luci
 interface RideTiersTableProps {
   data: RideTiersListResponse | undefined;
   loading: boolean;
-  onTierSelect?: (tier: RideTier) => void;
+  onTierView?: (tierId: number) => void;
   onTierEdit?: (tier: RideTier) => void;
   onTierDelete?: (tier: RideTier) => void;
   onTierToggle?: (tier: RideTier) => void;
@@ -19,7 +19,7 @@ interface RideTiersTableProps {
 export function RideTiersTable({
   data,
   loading,
-  onTierSelect,
+  onTierView,
   onTierEdit,
   onTierDelete,
   onTierToggle,
@@ -55,11 +55,6 @@ export function RideTiersTable({
           <Car className="h-4 w-4 text-gray-400" />
           <div>
             <div className="font-medium">{value}</div>
-            {row.description && (
-              <div className="text-sm text-gray-500 truncate max-w-xs">
-                {row.description}
-              </div>
-            )}
           </div>
         </div>
       ),
@@ -82,8 +77,8 @@ export function RideTiersTable({
       ),
     },
     {
-      key: 'perMileRate' as keyof RideTier,
-      header: 'Por Milla',
+      key: 'perKmRate' as keyof RideTier,
+      header: 'Por Kilómetro',
       render: (value: number) => (
         <span className="text-sm">{formatCurrency(value)}</span>
       ),
@@ -133,18 +128,10 @@ export function RideTiersTable({
       header: 'Alcance',
       render: (value: number | undefined, row: RideTier) => (
         <div className="text-xs text-gray-500">
-          {value ? (
-            <div className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              <span>
-                {row.countryId && `País: ${row.countryId}`}
-                {row.stateId && `, Estado: ${row.stateId}`}
-                {row.cityId && `, Ciudad: ${row.cityId}`}
-              </span>
-            </div>
-          ) : (
+          <div className="flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
             <span>Global</span>
-          )}
+          </div>
         </div>
       ),
     },
@@ -155,10 +142,10 @@ export function RideTiersTable({
       <Button
         variant="default"
         size="sm"
-        onClick={() => onTierSelect?.(tier)}
+        onClick={() => onTierView?.(tier.id)}
         className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white"
       >
-        Gestionar
+        Ver Detalles
       </Button>
       <Button
         variant="outline"
