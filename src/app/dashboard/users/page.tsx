@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Edit, UserCheck, UserX, Eye } from 'lucide-react';
+import { toast } from 'sonner';
 
 const UsersPage: React.FC = () => {
   const router = useRouter();
@@ -118,7 +119,7 @@ const UsersPage: React.FC = () => {
           setShowDeactivateModal(false);
           setSelectedUser(null);
           setDeactivatingUserId(null); // Clear loading state
-          alert(`Usuario ${selectedUser.name} desactivado exitosamente. El usuario puede ser activado posteriormente.`);
+          toast.success(`Usuario ${selectedUser.name} desactivado exitosamente. El usuario puede ser activado posteriormente.`);
         },
         onError: (error: any) => {
           console.error('Error deactivating user:', error);
@@ -130,7 +131,7 @@ const UsersPage: React.FC = () => {
           else if (status === 403) message = 'No tienes permisos para desactivar este usuario';
           else if (status === 409) message = 'No se puede desactivar el usuario porque tiene viajes o pedidos activos';
           else if (error?.response?.data?.message) message = error.response.data.message;
-          alert(`Error al desactivar usuario: ${message}`);
+          toast.error(`Error al desactivar usuario: ${message}`);
         },
       }
     );
@@ -158,7 +159,7 @@ const UsersPage: React.FC = () => {
           setShowActivateModal(false);
           setSelectedUser(null);
           setActivatingUserId(null); // Clear loading state
-          alert(`Usuario ${selectedUser.name} activado exitosamente.`);
+          toast.success(`Usuario ${selectedUser.name} activado exitosamente.`);
         },
         onError: (error: any) => {
           console.error('Error activating user:', error);
@@ -168,7 +169,7 @@ const UsersPage: React.FC = () => {
           if (status === 404) message = 'Usuario no encontrado o no está desactivado';
           else if (status === 403) message = 'No tienes permisos para activar este usuario';
           else if (error?.response?.data?.message) message = error.response.data.message;
-          alert(`Error al activar usuario: ${message}`);
+          toast.error(`Error al activar usuario: ${message}`);
         },
       }
     );

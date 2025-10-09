@@ -35,7 +35,12 @@ export default async function RootLayout({
           <SessionProvider session={session}>
             <QueryProvider>
               {children}
-              <Toaster />
+              <Toaster
+                position="top-center"
+                expand={true}
+                richColors
+                closeButton
+              />
             </QueryProvider>
           </SessionProvider>
         </ThemeProvider>

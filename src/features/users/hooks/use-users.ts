@@ -1,6 +1,7 @@
 import { useApiQuery, useApiMutation } from '@/lib/api/react-query-client';
 import { api } from '@/lib/api/api-client';
 import { ENDPOINTS } from '@/lib/endpoints';
+import { toast } from 'sonner';
 import type {
   User,
   CreateUserInput,
@@ -85,11 +86,11 @@ export function useCreateUser() {
           }
         }
 
-        alert('Usuario creado exitosamente');
+        toast.success('Usuario creado exitosamente');
         return newUser;
       } catch (error: any) {
         console.error('Error creating user:', error);
-        alert(`Error al crear usuario: ${error.message || 'Error desconocido'}`);
+        toast.error(`Error al crear usuario: ${error.message || 'Error desconocido'}`);
         throw error;
       }
     },
@@ -100,7 +101,7 @@ export function useCreateUser() {
       },
       onError: (error: any) => {
         console.error('Create user mutation error:', error);
-        alert(`Error al crear usuario: ${error.message || 'Error desconocido'}`);
+        toast.error(`Error al crear usuario: ${error.message || 'Error desconocido'}`);
       },
     }
   );
@@ -130,14 +131,14 @@ export function useUpdateUser() {
         }
 
         const response = await api.put<User>(endpoint, payload);
-        alert('Usuario actualizado exitosamente');
+        toast.success('Usuario actualizado exitosamente');
         if (!response || !response.data) {
           throw new Error('Invalid API response: no data received');
         }
         return response.data;
       } catch (error: any) {
         console.error('Error updating user:', error);
-        alert(`Error al actualizar usuario: ${error.message || 'Error desconocido'}`);
+        toast.error(`Error al actualizar usuario: ${error.message || 'Error desconocido'}`);
         throw error;
       }
     },
@@ -148,7 +149,7 @@ export function useUpdateUser() {
       },
       onError: (error: any) => {
         console.error('Update user mutation error:', error);
-        alert(`Error al actualizar usuario: ${error.message || 'Error desconocido'}`);
+        toast.error(`Error al actualizar usuario: ${error.message || 'Error desconocido'}`);
       },
     }
   );
@@ -225,14 +226,14 @@ export function useSearchUsersByEmail() {
         return response.data;
       } catch (error: any) {
         console.error('Error searching users by email:', error);
-        alert(`Error al buscar usuarios: ${error.message || 'Error desconocido'}`);
+        toast.error(`Error al buscar usuarios: ${error.message || 'Error desconocido'}`);
         throw error;
       }
     },
     {
       onError: (error: any) => {
         console.error('Search users mutation error:', error);
-        alert(`Error al buscar usuarios: ${error.message || 'Error desconocido'}`);
+        toast.error(`Error al buscar usuarios: ${error.message || 'Error desconocido'}`);
       },
     }
   );
@@ -278,7 +279,7 @@ export function useUser(userId: string) {
         return response.data;
       } catch (error: any) {
         console.error('Error fetching user:', error);
-        alert(`Error al cargar usuario: ${error.message || 'Error desconocido'}`);
+        toast.error(`Error al cargar usuario: ${error.message || 'Error desconocido'}`);
         throw error;
       }
     },

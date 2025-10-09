@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RotateCcw, AlertTriangle, User as UserIcon, Mail, Phone, Calendar, MapPin } from 'lucide-react';
 import { invalidateQueries } from '@/lib/api/react-query-client';
+import { toast } from 'sonner';
 
 interface UserRestoreModalProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ export function UserRestoreModal({
 
   const handleAction = () => {
     if (requireReason && !reason.trim()) {
-      alert(`Por favor ingrese un motivo de ${title.includes('Activar') ? 'activación' : 'restauración'}`);
+      toast.error(`Por favor ingrese un motivo de ${title.includes('Activar') ? 'activación' : 'restauración'}`);
       return;
     }
 

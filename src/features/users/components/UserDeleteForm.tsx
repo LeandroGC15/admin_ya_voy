@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AlertTriangle, UserX } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface UserDeleteFormProps {
   isOpen: boolean;
@@ -50,12 +51,12 @@ const UserDeleteForm: React.FC<UserDeleteFormProps> = ({
 
   const handleConfirmAction = () => {
     if (!reason.trim()) {
-      alert('Por favor ingrese un motivo de desactivación');
+      toast.error('Por favor ingrese un motivo de desactivación');
       return;
     }
 
     if (!userId) {
-      alert('Error: ID de usuario no disponible');
+      toast.error('Error: ID de usuario no disponible');
       return;
     }
 
@@ -75,7 +76,7 @@ const UserDeleteForm: React.FC<UserDeleteFormProps> = ({
         },
         onError: (error: any) => {
           setCurrentReason(''); // Reset on error
-          alert(`Error al desactivar usuario: ${error.message || 'Error desconocido'}`);
+          toast.error(`Error al desactivar usuario: ${error.message || 'Error desconocido'}`);
         }
       }
     );
