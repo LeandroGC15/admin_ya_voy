@@ -305,7 +305,7 @@ export function PricingSummary() {
       </Card>
 
       {/* Combined Insights */}
-      {(rideTiersSummary && rideTiersSummary.summary && temporalRulesSummary && temporalRulesSummary.summary) && (
+      {(rideTiersSummary?.summary && temporalRulesSummary?.summary) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

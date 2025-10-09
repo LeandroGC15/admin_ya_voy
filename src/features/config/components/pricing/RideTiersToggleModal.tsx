@@ -3,14 +3,14 @@
 import React from 'react';
 import { Modal } from '@/features/core/components';
 import { useToggleRideTierStatus } from '../../hooks/use-pricing';
-import { RideTier } from '../../schemas/pricing.schemas';
+import { RideTier, RideTierListItem } from '../../schemas/pricing.schemas';
 import { Button } from '@/components/ui/button';
 import { Power, PowerOff, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
 interface RideTiersToggleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  tier: RideTier | null;
+  tier: RideTier | RideTierListItem | null;
   onSuccess?: () => void;
 }
 

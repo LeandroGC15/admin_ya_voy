@@ -440,7 +440,7 @@ export function useVehicleTypes() {
   return useApiQuery(
     pricingKeys.vehicleTypes(),
     async (): Promise<VehicleTypesResponse> => {
-      const response = await api.post<VehicleTypesResponse>(ENDPOINTS.pricing.vehicleTypes);
+      const response = await api.get<VehicleTypesResponse>(ENDPOINTS.pricing.vehicleTypes);
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
       }

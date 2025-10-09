@@ -123,38 +123,6 @@ export function TemporalRulesTable({
       ),
     },
     {
-      key: 'startTime' as keyof TemporalPricingRule,
-      header: 'Configuración',
-      render: (value: string | undefined, row: TemporalPricingRule) => (
-        <div className="text-xs text-gray-600 max-w-xs">
-          {row.ruleType === 'time_range' && (
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {formatTimeRange(value ?? undefined, row.endTime ?? undefined)}
-            </div>
-          )}
-          {row.ruleType === 'day_of_week' && (
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              {formatDaysOfWeek(row.daysOfWeek ?? undefined)}
-            </div>
-          )}
-          {row.ruleType === 'date_specific' && (
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              {formatSpecificDates(row.specificDates ?? undefined)}
-            </div>
-          )}
-          {row.ruleType === 'seasonal' && (
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              Rango de fechas
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
       key: 'priority' as keyof TemporalPricingRule,
       header: 'Prioridad',
       render: (value: number) => (
@@ -183,11 +151,16 @@ export function TemporalRulesTable({
       ),
     },
     {
-      key: 'countryId' as keyof TemporalPricingRule,
+      key: 'scope' as keyof TemporalPricingRule,
       header: 'Alcance',
-      render: (value: number | undefined, row: TemporalPricingRule) => (
+      render: (value: string | undefined, row: TemporalPricingRule) => (
         <div className="text-xs text-gray-500">
-          {row.countryId || row.stateId || row.cityId || row.zoneId ? (
+          {value ? (
+            <div className="flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              <span>{value}</span>
+            </div>
+          ) : row.countryId || row.stateId || row.cityId || row.zoneId ? (
             <div className="flex items-center gap-1">
               <MapPin className="h-3 w-3" />
               <span>

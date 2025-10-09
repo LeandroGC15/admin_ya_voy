@@ -13,6 +13,7 @@ export * from './temporal-rules.schemas';
 // Ride Tiers legacy aliases
 export type {
   RideTier,
+  RideTierListItem,
   RideTiersListResponse,
   CreateRideTierInput as CreateRideTierDto,
   UpdateRideTierInput as UpdateRideTierDto,
@@ -46,6 +47,97 @@ export type {
   PricingSimulationInput,
   PricingSimulationResult,
 } from './temporal-rules.schemas';
+
+// New simulation DTOs types
+export type SimulatePricingBasePricingDto = {
+  baseFare: number;
+  distanceCost: number;
+  timeCost: number;
+  subtotal: number;
+  tierAdjustedTotal: number;
+};
+
+export type SimulatePricingRegionalMultipliersDto = {
+  countryMultiplier: number;
+  stateMultiplier: number;
+  cityMultiplier: number;
+  zoneMultiplier: number;
+  totalMultiplier: number;
+};
+
+export type SimulatePricingDynamicPricingDto = {
+  surgeMultiplier: number;
+  demandMultiplier: number;
+  totalDynamicMultiplier: number;
+};
+
+export type SimulatePricingTemporalPricingDto = {
+  temporalMultiplier: number;
+  temporalAdjustedTotal: number;
+  temporalAdjustments: number;
+};
+
+export type SimulatePricingFinalPricingDto = {
+  baseAmount: number;
+  regionalAdjustments: number;
+  dynamicAdjustments: number;
+  serviceFees: number;
+  taxes: number;
+  temporalAdjustedTotal: number;
+  temporalAdjustments: number;
+  totalAmountWithTemporal: number;
+};
+
+export type SimulatePricingMetadataDto = {
+  currency: string;
+  distanceUnit: string;
+  calculationTimestamp: string;
+  appliedRules: string[];
+  simulationMode: 'automatic_evaluation' | 'manual_rules';
+};
+
+export type SimulatePricingTierDto = {
+  id: number;
+  name: string;
+  baseFare: number;
+  minimumFare?: number;
+  perMinuteRate: number;
+  perKmRate: number;
+  tierMultiplier: number;
+  surgeMultiplier: number;
+  demandMultiplier: number;
+  luxuryMultiplier: number;
+  comfortMultiplier: number;
+};
+
+export type SimulatePricingScopeDto = {
+  country?: string;
+  state?: string;
+  city?: string;
+  zone?: string;
+};
+
+export type SimulatePricingTemporalEvaluationDto = {
+  evaluatedAt: string;
+  dayOfWeek: number;
+  time: string;
+  applicableRules: Array<{
+    id: number;
+    name: string;
+    ruleType: string;
+    multiplier: number;
+    priority: number;
+  }>;
+  appliedRule?: {
+    id: number;
+    name: string;
+    ruleType: string;
+    multiplier: number;
+    priority: number;
+  };
+  combinedMultiplier: number;
+  scope: SimulatePricingScopeDto;
+};
 
 // ========== ERROR RESPONSE ==========
 

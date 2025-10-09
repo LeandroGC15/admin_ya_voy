@@ -12,7 +12,7 @@ interface PriceExamplesProps {
   tierMultiplier?: number;
   surgeMultiplier?: number;
   demandMultiplier?: number;
-  minimunFare?: number;
+  minimumFare?: number;
 }
 
 interface PriceCalculation {
@@ -37,7 +37,7 @@ export function PriceExamples({
   tierMultiplier = 1.0,
   surgeMultiplier = 1.0,
   demandMultiplier = 1.0,
-  minimunFare,
+  minimumFare,
 }: PriceExamplesProps) {
   const formatCurrency = (amount: number) => {
     return `$${(amount / 100).toFixed(2)}`;
@@ -62,7 +62,7 @@ export function PriceExamples({
 
     // Aplicar límite de tarifa mínima
     let finalPrice = withMultipliers;
-    const minFare = Number(minimunFare);
+    const minFare = Number(minimumFare);
 
     let isMinimumFare = false;
 
@@ -162,7 +162,7 @@ export function PriceExamples({
               </div>
 
               {/* Mostrar indicadores de límites */}
-              {(example.breakdown.isMinimumFare || example.breakdown.isMaximumFare) && (
+              {example.breakdown.isMinimumFare && (
                 <div className="mt-2">
                   <Badge
                     variant={example.breakdown.isMinimumFare ? "secondary" : "destructive"}
@@ -186,7 +186,7 @@ export function PriceExamples({
         <div className="mt-3 text-xs text-muted-foreground">
           <p>
             Los precios incluyen todos los multiplicadores aplicados.
-            {minimunFare ? ` Tarifa mínima garantizada: ${formatCurrency(minimunFare)}.` : ''}
+            {minimumFare ? ` Tarifa mínima garantizada: ${formatCurrency(minimumFare)}.` : ''}
           </p>
         </div>
       </CardContent>

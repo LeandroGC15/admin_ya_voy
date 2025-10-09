@@ -23,6 +23,7 @@ export const temporalPricingRuleSchema = z.object({
   cityId: z.number().nullable().optional(),
   zoneId: z.number().nullable().optional(),
   priority: z.number(),             // Rule priority (higher = applied first)
+  scope: z.string().optional(),      // Geographic scope description (e.g., "País: Venezuela")
   createdAt: z.string(),            // ISO date string
   updatedAt: z.string(),            // ISO date string
 });
@@ -248,41 +249,125 @@ export const pricingSimulationSchema = z.object({
   distance: z.number().min(0),
   duration: z.number().min(0),
   dateTime: z.string(), // ISO date string
+  ruleIds: z.array(z.number().positive()).optional(), // Manual mode: specific rules to apply
   countryId: z.number().positive().optional(),
   stateId: z.number().positive().optional(),
   cityId: z.number().positive().optional(),
   zoneId: z.number().positive().optional(),
 });
 
-// Pricing simulation result schema
+// ========== SIMULATION RESPONSE DTOs ==========
+
+// SimulatePricingBasePricingDto - Base pricing breakdown
+export const simulatePricingBasePricingSchema = z.object({
+  baseFare: z.number(), // Base fare in cents
+  distanceCost: z.number(), // Distance cost in cents
+  timeCost: z.number(), // Time cost in cents
+  subtotal: z.number(), // Subtotal before adjustments in cents
+  tierAdjustedTotal: z.number(), // After tier multiplier in cents
+});
+
+// SimulatePricingRegionalMultipliersDto - Geographic multipliers
+export const simulatePricingRegionalMultipliersSchema = z.object({
+  countryMultiplier: z.number(),
+  stateMultiplier: z.number(),
+  cityMultiplier: z.number(),
+  zoneMultiplier: z.number(),
+  totalMultiplier: z.number(),
+});
+
+// SimulatePricingDynamicPricingDto - Dynamic pricing multipliers
+export const simulatePricingDynamicPricingSchema = z.object({
+  surgeMultiplier: z.number(),
+  demandMultiplier: z.number(),
+  totalDynamicMultiplier: z.number(),
+});
+
+// SimulatePricingTemporalPricingDto - Temporal pricing application
+export const simulatePricingTemporalPricingSchema = z.object({
+  temporalMultiplier: z.number(),
+  temporalAdjustedTotal: z.number(), // Total after temporal adjustment in cents
+  temporalAdjustments: z.number(), // Amount added by temporal pricing in cents
+});
+
+// SimulatePricingFinalPricingDto - Final pricing calculation
+export const simulatePricingFinalPricingSchema = z.object({
+  baseAmount: z.number(), // Base amount after regional adjustments in cents
+  regionalAdjustments: z.number(), // Regional adjustments amount in cents
+  dynamicAdjustments: z.number(), // Dynamic adjustments amount in cents
+  serviceFees: z.number(), // Service fees in cents
+  taxes: z.number(), // Taxes in cents
+  temporalAdjustedTotal: z.number(), // Total with temporal adjustments in cents
+  temporalAdjustments: z.number(), // Temporal adjustments amount in cents
+  totalAmountWithTemporal: z.number(), // Final total with temporal pricing in cents
+});
+
+// SimulatePricingMetadataDto - Additional calculation information
+export const simulatePricingMetadataSchema = z.object({
+  currency: z.string(), // Currency code (e.g., "USD")
+  distanceUnit: z.string(), // Distance unit (e.g., "kilometers")
+  calculationTimestamp: z.string(), // ISO date string
+  appliedRules: z.array(z.string()), // List of applied rule descriptions
+  simulationMode: z.enum(['automatic_evaluation', 'manual_rules']), // Mode used for simulation
+});
+
+// SimulatePricingTierDto - Tier information used in calculation
+export const simulatePricingTierSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  baseFare: z.number(),
+  minimumFare: z.number().optional(),
+  perMinuteRate: z.number(),
+  perKmRate: z.number(),
+  tierMultiplier: z.number(),
+  surgeMultiplier: z.number(),
+  demandMultiplier: z.number(),
+  luxuryMultiplier: z.number(),
+  comfortMultiplier: z.number(),
+});
+
+// SimulatePricingScopeDto - Geographic scope of evaluation
+export const simulatePricingScopeSchema = z.object({
+  country: z.string().optional(),
+  state: z.string().optional(),
+  city: z.string().optional(),
+  zone: z.string().optional(),
+});
+
+// SimulatePricingTemporalEvaluationDto - Complete temporal evaluation
+export const simulatePricingTemporalEvaluationSchema = z.object({
+  evaluatedAt: z.string(),
+  dayOfWeek: z.number(),
+  time: z.string(),
+  applicableRules: z.array(z.object({
+    id: z.number(),
+    name: z.string(),
+    ruleType: z.string(),
+    multiplier: z.number(),
+    priority: z.number(),
+  })),
+  appliedRule: z.object({
+    id: z.number(),
+    name: z.string(),
+    ruleType: z.string(),
+    multiplier: z.number(),
+    priority: z.number(),
+  }).optional(),
+  combinedMultiplier: z.number(),
+  scope: simulatePricingScopeSchema,
+});
+
+// SimulatePricingResponseDto - Main simulation response
 export const pricingSimulationResultSchema = z.object({
-  temporalEvaluation: z.object({
-    evaluatedAt: z.string(),
-    dayOfWeek: z.number(),
-    time: z.string(),
-    applicableRules: z.array(z.object({
-      id: z.number(),
-      name: z.string(),
-      ruleType: z.string(),
-      multiplier: z.number(),
-      priority: z.number(),
-    })),
-    appliedRule: z.object({
-      id: z.number(),
-      name: z.string(),
-      ruleType: z.string(),
-      multiplier: z.number(),
-      priority: z.number(),
-    }).optional(),
-    combinedMultiplier: z.number(),
-    scope: z.object({
-      country: z.string().optional(),
-      state: z.string().optional(),
-      city: z.string().optional(),
-      zone: z.string().optional(),
-    }),
-  }),
-  note: z.string(),
+  temporalEvaluation: simulatePricingTemporalEvaluationSchema,
+  basePricing: simulatePricingBasePricingSchema,
+  regionalMultipliers: simulatePricingRegionalMultipliersSchema,
+  dynamicPricing: simulatePricingDynamicPricingSchema,
+  temporalPricing: simulatePricingTemporalPricingSchema,
+  finalPricing: simulatePricingFinalPricingSchema,
+  metadata: simulatePricingMetadataSchema,
+  tier: simulatePricingTierSchema,
+  scope: simulatePricingScopeSchema,
 });
 
 // ========== TYPES ==========

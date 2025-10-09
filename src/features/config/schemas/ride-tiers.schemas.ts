@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 // ========== RIDE TIERS SCHEMAS ==========
 
-// Base ride tier schema
+// Base ride tier schema (full data for individual endpoints)
 export const rideTierSchema = z.object({
   id: z.number(),
   name: z.string(),
   baseFare: z.number(),           // Base fare in cents
-  minimunFare: z.number(),        // Minimum fare in cents (corrected spelling from guide)
+  minimumFare: z.number(),        // Minimum fare in cents
   perMinuteRate: z.number(),      // Rate per minute in cents
   perKmRate: z.number(),          // Rate per kilometer in cents
   imageUrl: z.string().optional(), // Image URL for the tier
@@ -30,9 +30,24 @@ export const rideTierSchema = z.object({
   updatedAt: z.string(),          // ISO date string
 });
 
-// Ride tiers list response schema
+// Reduced ride tier schema for list endpoints (performance optimization)
+export const rideTierListItemSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  baseFare: z.number(),           // Base fare in cents
+  minimumFare: z.number(),        // Minimum fare in cents
+  perMinuteRate: z.number(),      // Rate per minute in cents
+  // perKmRate is not included in reduced list format
+  minPassengers: z.number(),      // Minimum passengers
+  maxPassengers: z.number(),      // Maximum passengers
+  priority: z.number(),
+  isActive: z.boolean(),
+  // Other fields are not included in reduced list format
+});
+
+// Ride tiers list response schema (uses reduced schema for performance)
 export const rideTiersListResponseSchema = z.object({
-  tiers: z.array(rideTierSchema),
+  tiers: z.array(rideTierListItemSchema),
   total: z.number(),
   page: z.number(),
   limit: z.number(),
@@ -49,7 +64,7 @@ export const createRideTierSchema = z.object({
   baseFare: z.number()
     .min(50, 'La tarifa base debe ser al menos 50 centavos')
     .max(10000, 'La tarifa base no puede ser mayor a 10000 centavos'),
-  minimunFare: z.number()
+  minimumFare: z.number()
     .min(0, 'La tarifa mínima no puede ser negativa')
     .max(10000, 'La tarifa mínima no puede ser mayor a 10000 centavos'),
   perMinuteRate: z.number()
@@ -96,9 +111,9 @@ export const createRideTierSchema = z.object({
     .default(5),
   vehicleTypeIds: z.array(z.number().positive())
     .optional(),
-}).refine((data) => data.minimunFare <= data.baseFare, {
+}).refine((data) => data.minimumFare <= data.baseFare, {
   message: "La tarifa mínima no puede ser mayor que la tarifa base",
-  path: ["minimunFare"]
+  path: ["minimumFare"]
 });
 
 // Update ride tier schema (all fields optional except the refine validation)
@@ -111,7 +126,7 @@ export const updateRideTierSchema = z.object({
     .min(50, 'La tarifa base debe ser al menos 50 centavos')
     .max(10000, 'La tarifa base no puede ser mayor a 10000 centavos')
     .optional(),
-  minimunFare: z.number()
+  minimumFare: z.number()
     .min(0, 'La tarifa mínima no puede ser negativa')
     .max(10000, 'La tarifa mínima no puede ser mayor a 10000 centavos')
     .optional(),
@@ -199,7 +214,7 @@ export const pricingCalculationResultSchema = z.object({
     id: z.number(),
     name: z.string(),
     baseFare: z.number(),
-    minimunFare: z.number(),
+    minimumFare: z.number(),
     perMinuteRate: z.number(),
     perKmRate: z.number(),
     tierMultiplier: z.number(),
@@ -252,7 +267,7 @@ export const pricingValidationSchema = z.object({
     baseFare: z.number().optional(),
     perMinuteRate: z.number().optional(),
     perKmRate: z.number().optional(),
-    minimunFare: z.number().optional(),
+    minimumFare: z.number().optional(),
   }),
   compareWithTierId: z.number().positive().optional(),
 });
@@ -382,6 +397,7 @@ export const vehicleTypesResponseSchema = z.object({
 // ========== TYPES ==========
 
 export type RideTier = z.infer<typeof rideTierSchema>;
+export type RideTierListItem = z.infer<typeof rideTierListItemSchema>;
 export type RideTiersListResponse = z.infer<typeof rideTiersListResponseSchema>;
 export type CreateRideTierInput = z.infer<typeof createRideTierSchema>;
 export type UpdateRideTierInput = z.infer<typeof updateRideTierSchema>;

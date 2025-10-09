@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { DataTable } from '@/features/core/components';
-import { RideTier, RideTiersListResponse } from '../../schemas/pricing.schemas';
+import { RideTier, RideTierListItem, RideTiersListResponse } from '../../schemas/pricing.schemas';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Car, DollarSign, AlertTriangle, CheckCircle, Users, MapPin } from 'lucide-react';
@@ -11,9 +11,9 @@ interface RideTiersTableProps {
   data: RideTiersListResponse | undefined;
   loading: boolean;
   onTierView?: (tierId: number) => void;
-  onTierEdit?: (tier: RideTier) => void;
-  onTierDelete?: (tier: RideTier) => void;
-  onTierToggle?: (tier: RideTier) => void;
+  onTierEdit?: (tier: RideTier | RideTierListItem) => void;
+  onTierDelete?: (tier: RideTier | RideTierListItem) => void;
+  onTierToggle?: (tier: RideTier | RideTierListItem) => void;
 }
 
 export function RideTiersTable({
@@ -24,7 +24,10 @@ export function RideTiersTable({
   onTierDelete,
   onTierToggle,
 }: RideTiersTableProps) {
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined | null) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '$0.00';
+    }
     return `$${(amount / 100).toFixed(2)}`;
   };
 
@@ -41,16 +44,16 @@ export function RideTiersTable({
 
   const columns = [
     {
-      key: 'id' as keyof RideTier,
+      key: 'id' as keyof RideTierListItem,
       header: 'ID',
       render: (value: number) => (
         <span className="font-mono text-sm">{value}</span>
       ),
     },
     {
-      key: 'name' as keyof RideTier,
+      key: 'name' as keyof RideTierListItem,
       header: 'Nombre',
-      render: (value: string, row: RideTier) => (
+      render: (value: string, row: RideTierListItem) => (
         <div className="flex items-center gap-2">
           <Car className="h-4 w-4 text-gray-400" />
           <div>
@@ -60,7 +63,7 @@ export function RideTiersTable({
       ),
     },
     {
-      key: 'baseFare' as keyof RideTier,
+      key: 'baseFare' as keyof RideTierListItem,
       header: 'Tarifa Base',
       render: (value: number) => (
         <div className="flex items-center gap-1">
@@ -70,23 +73,16 @@ export function RideTiersTable({
       ),
     },
     {
-      key: 'perMinuteRate' as keyof RideTier,
+      key: 'perMinuteRate' as keyof RideTierListItem,
       header: 'Por Minuto',
       render: (value: number) => (
         <span className="text-sm">{formatCurrency(value)}</span>
       ),
     },
     {
-      key: 'perKmRate' as keyof RideTier,
-      header: 'Por Kilómetro',
-      render: (value: number) => (
-        <span className="text-sm">{formatCurrency(value)}</span>
-      ),
-    },
-    {
-      key: 'minPassengers' as keyof RideTier,
+      key: 'minPassengers' as keyof RideTierListItem,
       header: 'Pasajeros',
-      render: (value: number, row: RideTier) => (
+      render: (value: number, row: RideTierListItem) => (
         <div className="flex items-center gap-1">
           <Users className="h-3 w-3 text-gray-400" />
           <span className="text-sm">
@@ -96,7 +92,7 @@ export function RideTiersTable({
       ),
     },
     {
-      key: 'priority' as keyof RideTier,
+      key: 'priority' as keyof RideTierListItem,
       header: 'Prioridad',
       render: (value: number) => (
         <Badge className={getPriorityColor(value)}>
@@ -105,9 +101,9 @@ export function RideTiersTable({
       ),
     },
     {
-      key: 'isActive' as keyof RideTier,
+      key: 'isActive' as keyof RideTierListItem,
       header: 'Estado',
-      render: (value: boolean, row: RideTier) => (
+      render: (value: boolean, row: RideTierListItem) => (
         <Badge variant={value ? "secondary" : "destructive"}>
           {value ? (
             <>
@@ -124,9 +120,9 @@ export function RideTiersTable({
       ),
     },
     {
-      key: 'countryId' as keyof RideTier,
+      key: 'countryId' as keyof RideTierListItem,
       header: 'Alcance',
-      render: (value: number | undefined, row: RideTier) => (
+      render: (value: number | undefined, row: RideTierListItem) => (
         <div className="text-xs text-gray-500">
           <div className="flex items-center gap-1">
             <MapPin className="h-3 w-3" />
@@ -137,7 +133,7 @@ export function RideTiersTable({
     },
   ];
 
-  const renderActions = (tier: RideTier) => (
+  const renderActions = (tier: RideTier | RideTierListItem) => (
     <div className="flex items-center gap-2">
       <Button
         variant="default"

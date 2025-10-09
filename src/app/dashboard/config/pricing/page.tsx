@@ -26,6 +26,9 @@ import {
   type TemporalPricingRule,
 } from '@/features/config/components/pricing';
 
+// Tipos de Pricing
+import type { RideTierListItem } from '@/features/config/schemas/pricing.schemas';
+
 // Hooks de Pricing
 import {
   useRideTiers,
@@ -55,7 +58,7 @@ export default function PricingConfigPage() {
   });
 
   // Estado para modales
-  const [selectedTier, setSelectedTier] = useState<RideTier | null>(null);
+  const [selectedTier, setSelectedTier] = useState<RideTier | RideTierListItem | null>(null);
   const [selectedTemporalRule, setSelectedTemporalRule] = useState<TemporalPricingRule | null>(null);
 
   const [isCreateTierModalOpen, setIsCreateTierModalOpen] = useState(false);
@@ -83,12 +86,12 @@ export default function PricingConfigPage() {
     setIsCreateTierModalOpen(true);
   };
 
-  const handleEditTier = (tier: RideTier) => {
+  const handleEditTier = (tier: RideTier | RideTierListItem) => {
     setSelectedTier(tier);
     setIsEditTierModalOpen(true);
   };
 
-  const handleDeleteTier = (tier: RideTier) => {
+  const handleDeleteTier = (tier: RideTier | RideTierListItem) => {
     setSelectedTier(tier);
     setIsDeleteTierModalOpen(true);
   };
@@ -97,7 +100,7 @@ export default function PricingConfigPage() {
     router.push(`/dashboard/config/pricing/${tierId}`);
   };
 
-  const handleToggleTier = (tier: RideTier) => {
+  const handleToggleTier = (tier: RideTier | RideTierListItem) => {
     setSelectedTier(tier);
     setIsToggleTierModalOpen(true);
   };

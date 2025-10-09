@@ -221,7 +221,7 @@ export default function RideTierDetailPage() {
             <div>
               <label className="text-sm font-medium text-muted-foreground">Tarifa Mínima</label>
               <p className="text-sm font-medium">
-                {tierData.minimunFare ? formatCurrency(tierData.minimunFare) : 'No definida'}
+                {tierData.minimumFare ? formatCurrency(tierData.minimumFare) : 'No definida'}
               </p>
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function RideTierDetailPage() {
         tierMultiplier={tierData.tierMultiplier}
         surgeMultiplier={tierData.surgeMultiplier}
         demandMultiplier={tierData.demandMultiplier}
-        minimunFare={tierData.minimunFare}
+        minimumFare={tierData.minimumFare}
       />
 
       {/* Multipliers */}

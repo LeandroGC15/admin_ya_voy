@@ -3,14 +3,14 @@
 import React from 'react';
 import { Modal } from '@/features/core/components';
 import { useDeleteRideTier } from '../../hooks';
-import { RideTier } from '../../schemas/pricing.schemas';
+import { RideTier, RideTierListItem } from '../../schemas/pricing.schemas';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 
 interface RideTiersDeleteModalProps {
-  tier: RideTier | null;
+  tier: RideTier | RideTierListItem | null;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
