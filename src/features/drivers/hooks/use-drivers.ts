@@ -82,8 +82,10 @@ export function useDeleteDriver() {
         permanent: boolean;
         reason: string;
       }>(ENDPOINTS.drivers.byId(driverId), {
-        reason,
-        permanent,
+        data: {
+          reason,
+          permanent,
+        }
       });
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
