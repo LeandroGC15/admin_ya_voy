@@ -64,8 +64,31 @@ export function useCreateDriver() {
 // Delete driver hook
 export function useDeleteDriver() {
   return useApiMutation(
-    async (driverId: string): Promise<void> => {
-      await api.delete<void>(ENDPOINTS.drivers.byId(driverId));
+    async ({ driverId, reason, permanent = false }: { 
+      driverId: string; 
+      reason: string; 
+      permanent?: boolean;
+    }): Promise<{
+      success: boolean;
+      message: string;
+      driverId: number;
+      permanent: boolean;
+      reason: string;
+    }> => {
+      const response = await api.delete<{
+        success: boolean;
+        message: string;
+        driverId: number;
+        permanent: boolean;
+        reason: string;
+      }>(ENDPOINTS.drivers.byId(driverId), {
+        reason,
+        permanent,
+      });
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      return response.data;
     },
     {
       onSuccess: () => {

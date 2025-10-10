@@ -27,7 +27,7 @@ export default function DriverDetailPage() {
   const handleVerificationToggle = () => {
     if (!driverData) return;
 
-    const newStatus = driverData.basic.verificationStatus === 'approved' ? 'suspended' : 'approved';
+    const newStatus = driverData.basic.verificationStatus === 'VERIFIED' ? 'SUSPENDED' : 'VERIFIED';
     updateVerificationMutation.mutate(
       {
         driverId: driverIdNumber,
@@ -120,39 +120,39 @@ export default function DriverDetailPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Estado</label>
-              <Badge variant={basic.status === 'online' ? 'default' : 'secondary'}>
-                {basic.status === 'online' ? 'En línea' :
-                 basic.status === 'busy' ? 'Ocupado' :
-                 basic.status === 'offline' ? 'Fuera de línea' :
-                 basic.status === 'unavailable' ? 'No disponible' :
-                 basic.status === 'suspended' ? 'Suspendido' : basic.status}
+              <Badge variant={basic.status === 'ONLINE' ? 'default' : 'secondary'}>
+                {basic.status === 'ONLINE' ? 'En línea' :
+                 basic.status === 'BUSY' ? 'Ocupado' :
+                 basic.status === 'OFFLINE' ? 'Fuera de línea' :
+                 basic.status === 'SUSPENDED' ? 'Suspendido' :
+                 basic.status}
               </Badge>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Verificación</label>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant={basic.verificationStatus === 'approved' ? 'default' : 'secondary'}>
-                  {basic.verificationStatus === 'approved' ? 'Verificado' :
-                   basic.verificationStatus === 'pending' ? 'Pendiente' :
-                   basic.verificationStatus === 'rejected' ? 'Rechazado' :
-                   basic.verificationStatus === 'under_review' ? 'En revisión' : basic.verificationStatus}
+                <Badge variant={basic.verificationStatus === 'VERIFIED' ? 'default' : 'secondary'}>
+                  {basic.verificationStatus === 'VERIFIED' ? 'Verificado' :
+                   basic.verificationStatus === 'PENDING' ? 'Pendiente' :
+                   basic.verificationStatus === 'REJECTED' ? 'Rechazado' :
+                   basic.verificationStatus === 'PENDING' ? 'En revisión' : basic.verificationStatus}
                 </Badge>
                 <Button
-                  variant={basic.verificationStatus === 'approved' ? 'destructive' : 'default'}
+                  variant={basic.verificationStatus === 'VERIFIED' ? 'destructive' : 'default'}
                   size="sm"
                   onClick={handleVerificationToggle}
                   disabled={updateVerificationMutation.isPending}
                 >
                   {updateVerificationMutation.isPending ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : basic.verificationStatus === 'approved' ? (
+                  ) : basic.verificationStatus === 'VERIFIED' ? (
                     <XCircle className="h-4 w-4 mr-2" />
                   ) : (
                     <CheckCircle className="h-4 w-4 mr-2" />
                   )}
                   {updateVerificationMutation.isPending
                     ? 'Actualizando...'
-                    : basic.verificationStatus === 'approved'
+                    : basic.verificationStatus === 'VERIFIED'
                       ? 'Suspender'
                       : 'Verificar'}
                 </Button>
@@ -262,10 +262,10 @@ export default function DriverDetailPage() {
                 <div key={document.id || index} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold capitalize">{document.documentType.replace('_', ' ')}</h4>
-                    <Badge variant={document.verificationStatus === 'verified' ? 'default' : 'secondary'}>
-                      {document.verificationStatus === 'verified' ? 'Verificado' :
-                       document.verificationStatus === 'pending' ? 'Pendiente' :
-                       document.verificationStatus === 'rejected' ? 'Rechazado' : document.verificationStatus}
+                    <Badge variant={document.verificationStatus === 'VERIFIED' ? 'default' : 'secondary'}>
+                      {document.verificationStatus === 'VERIFIED' ? 'Verificado' :
+                       document.verificationStatus === 'PENDING' ? 'Pendiente' :
+                       document.verificationStatus === 'REJECTED' ? 'Rechazado' : document.verificationStatus}
                     </Badge>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -353,14 +353,14 @@ export default function DriverDetailPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Estado:</span>
-                      <Badge variant={vehicle.status === 'active' ? 'default' : 'secondary'} className="ml-2">
-                        {vehicle.status === 'active' ? 'Activo' : vehicle.status}
+                      <Badge variant={vehicle.status === 'ACTIVE' ? 'default' : 'secondary'} className="ml-2">
+                        {vehicle.status === 'ACTIVE' ? 'Activo' : vehicle.status}
                       </Badge>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Verificación:</span>
-                      <Badge variant={vehicle.verificationStatus === 'verified' ? 'default' : 'secondary'} className="ml-2">
-                        {vehicle.verificationStatus === 'verified' ? 'Verificado' : vehicle.verificationStatus}
+                      <Badge variant={vehicle.verificationStatus === 'VERIFIED' ? 'default' : 'secondary'} className="ml-2">
+                        {vehicle.verificationStatus === 'VERIFIED' ? 'Verificado' : vehicle.verificationStatus}
                       </Badge>
                     </div>
                     {vehicle.vehicleType && (

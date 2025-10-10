@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DataTable, Modal, CreateButton, ActionButtons } from '@/features/core/components';
 import { useDrivers, useCreateDriver, useDeleteDriver } from '@/features/drivers/hooks';
+import { DriverDeleteModal } from '@/features/drivers/components';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { createDriverSchema, type Driver, type CreateDriverInput, type SearchDriversInput } from '@/features/drivers/schemas/driver-schemas';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const DriversPage: React.FC = () => {
   const router = useRouter();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchParams, setSearchParams] = useState<SearchDriversInput>({});
 
@@ -62,14 +65,8 @@ const DriversPage: React.FC = () => {
   };
 
   const handleDelete = (driver: Driver) => {
-    const fullName = `${driver.firstName} ${driver.lastName}`;
-    if (window.confirm(`¿Estás seguro de que quieres eliminar al conductor ${fullName}?`)) {
-      deleteDriverMutation.mutate(driver.id.toString(), {
-        onSuccess: () => {
-          invalidateQueries(['drivers']);
-        },
-      });
-    }
+    setSelectedDriver(driver);
+    setShowDeleteModal(true);
   };
 
   const handleSearch = (searchTerm: string) => {
@@ -83,13 +80,13 @@ const DriversPage: React.FC = () => {
 
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case 'online':
+      case 'ONLINE':
         return 'bg-green-100 text-green-800';
-      case 'busy':
+      case 'BUSY':
         return 'bg-yellow-100 text-yellow-800';
-      case 'offline':
+      case 'OFFLINE':
         return 'bg-gray-100 text-gray-800';
-      case 'unavailable':
+      case 'SUSPENDED':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -98,15 +95,12 @@ const DriversPage: React.FC = () => {
 
   const getVerificationColor = (status?: string) => {
     switch (status) {
-      case 'approved':
-      case 'verified':
+      case 'VERIFIED':
         return 'bg-green-100 text-green-800';
-      case 'pending':
+      case 'PENDING':
         return 'bg-yellow-100 text-yellow-800';
-      case 'rejected':
+      case 'REJECTED':
         return 'bg-red-100 text-red-800';
-      case 'under_review':
-        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -133,10 +127,10 @@ const DriversPage: React.FC = () => {
       header: 'Estado',
       render: (value: string) => (
         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(value)}`}>
-          {value === 'online' ? 'En línea' :
-           value === 'busy' ? 'Ocupado' :
-           value === 'offline' ? 'Fuera de línea' :
-           value === 'unavailable' ? 'No disponible' : value || 'Desconocido'}
+          {value === 'ONLINE' ? 'En línea' :
+           value === 'BUSY' ? 'Ocupado' :
+           value === 'OFFLINE' ? 'Fuera de línea' :
+           value === 'SUSPENDED' ? 'Suspendido' : value || 'Desconocido'}
         </span>
       ),
     },
@@ -145,9 +139,9 @@ const DriversPage: React.FC = () => {
       header: 'Verificación',
       render: (value: string) => (
         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getVerificationColor(value)}`}>
-          {value === 'approved' || value === 'verified' ? 'Verificado' :
-           value === 'pending' ? 'Pendiente' :
-           value === 'rejected' ? 'Rechazado' :
+          {value === 'VERIFIED' ? 'Verificado' :
+           value === 'PENDING' ? 'Pendiente' :
+           value === 'REJECTED' ? 'Rechazado' :
            value === 'under_review' ? 'En revisión' : value || 'Desconocido'}
         </span>
       ),
@@ -357,6 +351,19 @@ const DriversPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Delete Modal */}
+      <DriverDeleteModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedDriver(null);
+        }}
+        driver={selectedDriver}
+        onSuccess={() => {
+          setSelectedDriver(null);
+        }}
+      />
     </div>
   );
 };
