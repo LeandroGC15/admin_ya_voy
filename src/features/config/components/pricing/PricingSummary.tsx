@@ -158,6 +158,36 @@ export function PricingSummary() {
               </div>
             </div>
           )}
+
+          {/* Detailed Tiers List */}
+          {rideTiersSummary && rideTiersSummary.summary && rideTiersSummary.summary.tiers && rideTiersSummary.summary.tiers.length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-sm font-semibold mb-3">Detalle de Niveles</h4>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {rideTiersSummary.summary.tiers.map((tier) => (
+                  <div key={tier.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <div>
+                        <div className="font-medium text-sm">{tier.name}</div>
+                        <div className="text-xs text-gray-600">
+                          ID: {tier.id} • {tier.ridesCount.toLocaleString()} viajes
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-sm">
+                        {formatCurrency(tier.baseFare)}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {tier.tierMultiplier}x • {tier.isActive ? 'Activo' : 'Inactivo'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
