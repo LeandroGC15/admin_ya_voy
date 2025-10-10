@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useUser } from '@/features/users/hooks';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import Loader from '@/components/ui/loader';
 
 export default function UserDetailPage() {
   const params = useParams();
@@ -20,18 +21,8 @@ export default function UserDetailPage() {
     router.push('/dashboard/users');
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Cargando detalles del usuario...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !userData) {
+  // Solo mostrar error si no está cargando y hay un error real
+  if (!isLoading && error) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -50,6 +41,15 @@ export default function UserDetailPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // No renderizar nada mientras está cargando (el loader se mostrará)
+  if (isLoading || !userData) {
+    return (
+      <div className="min-h-screen">
+        <Loader isVisible={true} showBackground={true} />
       </div>
     );
   }

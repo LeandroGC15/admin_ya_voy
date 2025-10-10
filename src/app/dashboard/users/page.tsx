@@ -9,6 +9,7 @@ import { DataTable, Modal, CreateButton } from '@/features/core/components';
 import UserDeleteForm from '@/features/users/components/UserDeleteForm';
 import { UserRestoreModal } from '@/features/users/components/UserRestoreModal';
 import UserUpdateForm from '@/features/users/components/UserUpdateForm';
+import Loader from '@/components/ui/loader';
 import { useUsers, useCreateUser, useDeleteUser, useRestoreUser } from '@/features/users/hooks';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { createUserSchema, updateUserSchema, type User, type CreateUserInput, type UpdateUserInput, type SearchUsersInput } from '@/features/users/schemas/user-schemas';
@@ -509,6 +510,9 @@ const UsersPage: React.FC = () => {
         onConfirm={handleConfirmActivate}
         requireReason={false} // Razón opcional para activación
       />
+
+      {/* Loader para estados de carga */}
+      <Loader isVisible={isLoading} showBackground={true} />
     </div>
   );
 };
