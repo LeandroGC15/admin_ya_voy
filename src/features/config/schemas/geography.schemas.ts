@@ -257,7 +257,7 @@ export const updateCitySchema = createCitySchema.partial();
 // Search countries schema
 export const searchCountriesSchema = z.object({
   page: z.number().min(1).default(1).optional(),
-  limit: z.number().min(1).max(100).default(20).optional(),
+  limit: z.number().min(1).max(100).default(20).optional(), // API limit capped at 100
   continent: z.string().optional(),
   isActive: z.boolean().optional(),
   search: z.string().max(100).optional().or(z.literal('')),
@@ -268,7 +268,7 @@ export const searchCountriesSchema = z.object({
 // Search states schema
 export const searchStatesSchema = z.object({
   page: z.number().min(1).default(1).optional(),
-  limit: z.number().min(1).max(100).default(20).optional(),
+  limit: z.number().min(1).max(100).default(20).optional(), // API limit capped at 100
   countryId: z.number().positive().optional(),
   isActive: z.boolean().optional(),
   search: z.string().max(100).optional().or(z.literal('')),
@@ -279,7 +279,7 @@ export const searchStatesSchema = z.object({
 // Search cities schema
 export const searchCitiesSchema = z.object({
   page: z.number().min(1).default(1).optional(),
-  limit: z.number().min(1).max(100).default(20).optional(),
+  limit: z.number().min(1).max(100).default(20).optional(), // API limit capped at 100
   stateId: z.number().positive().optional(),
   countryId: z.number().positive().optional(),
   isActive: z.boolean().optional(),

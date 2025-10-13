@@ -26,7 +26,7 @@ export default function TemporalRuleDetailPage() {
   const toggleRuleMutation = useToggleTemporalRuleStatus();
 
   // Geographic data for resolving names
-  const { data: countriesData } = useCountries({ limit: 1000, isActive: true });
+  const { data: countriesData } = useCountries({ limit: 100, isActive: true });
   const { data: statesData } = useStatesByCountry(ruleData?.countryId || 0, !!ruleData?.countryId);
   const { data: citiesData } = useCitiesByState(ruleData?.stateId || 0, !!ruleData?.stateId);
 

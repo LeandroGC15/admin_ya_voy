@@ -1,6 +1,15 @@
 // Geography specific components
 export { CountriesTable } from './CountriesTable';
 export { CountriesCreateModal } from './CountriesCreateModal';
+
+// Service Zones Components
+export { ServiceZonesTable } from './ServiceZonesTable';
+export { ServiceZonesCreateModal } from './ServiceZonesCreateModal';
+export { ServiceZonesEditModal } from './ServiceZonesEditModal';
+export { ServiceZonesDeleteModal } from './ServiceZonesDeleteModal';
+export { ServiceZonesToggleModal } from './ServiceZonesToggleModal';
+export { GeometryValidationModal } from './GeometryValidationModal';
+export { BulkPricingUpdateModal } from './BulkPricingUpdateModal';
 export { CountriesEditModal } from './CountriesEditModal';
 export { CountriesDeleteModal } from './CountriesDeleteModal';
 export { CountriesToggleModal } from './CountriesToggleModal';

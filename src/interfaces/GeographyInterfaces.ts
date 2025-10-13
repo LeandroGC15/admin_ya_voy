@@ -2,6 +2,13 @@
  * Geography Management interfaces
  */
 
+// Zone Types
+export enum ZoneType {
+  REGULAR = 'REGULAR',
+  PREMIUM = 'PREMIUM',
+  RESTRICTED = 'RESTRICTED'
+}
+
 // Countries
 export interface Country {
   id: number;
@@ -157,26 +164,149 @@ export interface CitiesResponse {
   totalPages: number;
 }
 
-// Service Zones
-export interface Coordinate {
-  lat: number;
-  lng: number;
+// Service Zones - Updated according to API documentation
+
+// GeoJSON types
+export interface GeoJSONPolygon {
+  type: 'Polygon';
+  coordinates: number[][][];
 }
 
+// Service Zone completo según API
 export interface ServiceZone {
   id: number;
   name: string;
   cityId: number;
-  city?: City;
-  coordinates: Coordinate[];
+  zoneType: ZoneType;
+  boundaries: GeoJSONPolygon;
+  centerLat: number;
+  centerLng: number;
   isActive: boolean;
-  baseFare: number;
-  perKmRate: number;
-  perMinuteRate: number;
-  minimumFare: number;
-  bookingFee: number;
+  pricingMultiplier: number;
+  demandMultiplier: number;
+  maxDrivers?: number;
+  minDrivers?: number;
+  peakHours?: {
+    weekdays: string[];
+    weekends: string[];
+  };
   createdAt: string;
   updatedAt: string;
+  city?: {
+    id: number;
+    name: string;
+    state: {
+      id: number;
+      name: string;
+      country: {
+        id: number;
+        name: string;
+      };
+    };
+  };
+}
+
+// Respuestas de API
+export interface ServiceZonesListResponse {
+  zones: ServiceZoneListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface ServiceZoneListItem {
+  id: number;
+  name: string;
+  cityName: string;
+  stateName: string;
+  zoneType: ZoneType;
+  isActive: boolean;
+  pricingMultiplier: number;
+  demandMultiplier: number;
+}
+
+// Validación de geometría
+export interface GeometryValidationResponse {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  analysis: {
+    areaKm2: number;
+    overlapPercentage: number;
+    gapPercentage: number;
+  };
+}
+
+// Análisis de cobertura
+export interface CoverageAnalysisResponse {
+  cityId: number;
+  cityName: string;
+  totalCoverage: number;
+  overlappingArea: number;
+  uncoveredArea: number;
+  coverageByType: {
+    regular: number;
+    premium: number;
+    restricted: number;
+  };
+  issues: string[];
+  recommendations: string[];
+}
+
+// Pricing
+export interface PricingValidationResponse {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  comparison?: {
+    existingZone: {
+      id: number;
+      name: string;
+      pricingMultiplier: number;
+      demandMultiplier: number;
+    };
+    differences: {
+      pricingMultiplier: number;
+      demandMultiplier: number;
+    };
+    competitiveness: string;
+  };
+}
+
+export interface BulkPricingUpdateRequest {
+  zoneIds?: number[];
+  cityId?: number;
+  zoneType?: ZoneType;
+  adjustmentType: 'percentage' | 'fixed';
+  adjustmentValue: number;
+  field: 'pricingMultiplier' | 'demandMultiplier';
+}
+
+export interface PricingStatsResponse {
+  totalZones: number;
+  activeZones: number;
+  averagePricingMultiplier: number;
+  averageDemandMultiplier: number;
+  highestPricingMultiplier: number;
+  lowestPricingMultiplier: number;
+  zonesByType: {
+    regular: number;
+    premium: number;
+    restricted: number;
+  };
+  zonesByCity: Array<{
+    cityId: number;
+    cityName: string;
+    totalZones: number;
+    avgPricingMultiplier: number;
+  }>;
+}
+
+// Legacy interfaces for backward compatibility
+export interface Coordinate {
+  lat: number;
+  lng: number;
 }
 
 export interface CreateServiceZoneRequest {

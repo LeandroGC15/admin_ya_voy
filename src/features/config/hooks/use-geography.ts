@@ -342,6 +342,8 @@ export function useStatesStatsByCountry() {
 // ========== CITIES HOOKS ==========
 
 // Fetch cities list
+// NOTE: API limit is capped at 100 items maximum per request
+// Do not use limits higher than 100 or requests will fail
 export function useCities(params: SearchCitiesInput = {}) {
   return useApiQuery(
     geographyKeys.citiesList(params),

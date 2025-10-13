@@ -62,6 +62,9 @@ const Sidebar = () => {
               <Link href="/dashboard/config/geography" className="block rounded-md px-4 py-2 text-sm text-gray-300 hover:bg-[#5C7E9F] hover:text-white">
                  Panel Geográfico
               </Link>
+              <Link href="/dashboard/config/geography/service-zones" className="block rounded-md px-4 py-2 text-sm text-gray-300 hover:bg-[#5C7E9F] hover:text-white">
+                 Zonas de Servicio
+              </Link>
             </div>
           )}
         </div>

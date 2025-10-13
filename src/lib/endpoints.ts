@@ -80,6 +80,15 @@ export const ENDPOINTS = {
     // Service Zones
     serviceZones: 'admin/geography/service-zones',
     serviceZoneById: (id: string | number) => `admin/geography/service-zones/${id}`,
+    serviceZonesByCity: (cityId: string | number) => `admin/geography/service-zones/by-city/${cityId}`,
+    serviceZoneToggleStatus: (id: string | number) => `admin/geography/service-zones/${id}/toggle-status`,
+    validateGeometry: 'admin/geography/service-zones/validate-geometry',
+    coverageAnalysis: (cityId: string | number) => `admin/geography/service-zones/coverage-analysis/city/${cityId}`,
+    pricingMatrix: (cityId: string | number) => `admin/geography/service-zones/pricing-matrix/city/${cityId}`,
+    bulkUpdateStatus: 'admin/geography/service-zones/bulk-update-status',
+    bulkUpdatePricing: 'admin/geography/service-zones/bulk-update-pricing',
+    validatePricing: 'admin/geography/service-zones/validate-pricing',
+    pricingStats: 'admin/geography/service-zones/pricing/stats',
 
     // Bulk Import
     bulkImport: {

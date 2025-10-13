@@ -21,16 +21,19 @@ import {
   useStatesStatsByCountry,
   useCitiesStatsByState
 } from '@/features/config/hooks/use-geography';
+import { usePricingStats } from '@/features/config/hooks/use-service-zones';
 
 export default function GeographyConfigPage() {
   const { data: countriesStats, isLoading: countriesLoading } = useCountriesStatsByContinent();
   const { data: statesStats, isLoading: statesLoading } = useStatesStatsByCountry();
   const { data: citiesStats, isLoading: citiesLoading } = useCitiesStatsByState();
+  const { data: serviceZonesStats, isLoading: serviceZonesLoading } = usePricingStats();
 
   // Calculate totals from stats
   const totalCountries = countriesStats?.stats?.reduce((acc, stat) => acc + stat.count, 0) || 0;
   const totalStates = statesStats?.stats?.reduce((acc, stat) => acc + stat.statesCount, 0) || 0;
   const totalCities = citiesStats?.stats?.reduce((acc, stat) => acc + stat.citiesCount, 0) || 0;
+  const totalServiceZones = serviceZonesStats?.totalZones || 0;
 
   const geographySections = [
     {
@@ -41,6 +44,15 @@ export default function GeographyConfigPage() {
       stats: `${totalCountries} países registrados`,
       color: 'bg-blue-500',
       features: ['Códigos ISO', 'Monedas', 'Zonas horarias', 'Tasas fiscales', 'Estados y ciudades']
+    },
+    {
+      title: 'Zonas de Servicio',
+      description: 'Gestiona zonas de servicio con polígonos geográficos, pricing dinámico y análisis de cobertura. Configura multiplicadores de pricing y demanda.',
+      icon: MapPin,
+      href: '/dashboard/config/geography/service-zones',
+      stats: `${totalServiceZones} zonas de servicio`,
+      color: 'bg-green-500',
+      features: ['Polígonos geográficos', 'Pricing dinámico', 'Análisis de cobertura', 'Multiplicadores de demanda', 'Validación de geometría']
     }
   ];
 
@@ -71,7 +83,7 @@ export default function GeographyConfigPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Países</CardTitle>
@@ -113,6 +125,21 @@ export default function GeographyConfigPage() {
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               {citiesLoading ? 'Cargando...' : 'ciudades registradas'}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Zonas de Servicio</CardTitle>
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {serviceZonesLoading ? '...' : totalServiceZones}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {serviceZonesLoading ? 'Cargando...' : 'zonas configuradas'}
             </p>
           </CardContent>
         </Card>
@@ -161,7 +188,7 @@ export default function GeographyConfigPage() {
                       <Button asChild className="flex-1">
                         <Link href={section.href} className="flex items-center gap-2">
                           <Settings className="h-4 w-4" />
-                          Gestionar Países
+                          {section.title === 'Zonas de Servicio' ? 'Gestionar Zonas' : 'Gestionar Países'}
                         </Link>
                       </Button>
                       <Button asChild variant="outline">
