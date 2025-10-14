@@ -161,6 +161,7 @@ export const ENDPOINTS = {
   reports: {
     generate: 'admin/reports/generate',
     export: 'admin/reports/export',
+    sales: 'admin/reports-analytics/analytics/financial',
     dashboard: {
       widgets: 'admin/reports/dashboard/widgets',
       custom: 'admin/reports/dashboard/custom',

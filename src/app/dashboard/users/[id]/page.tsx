@@ -172,20 +172,20 @@ export default function UserDetailPage() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{userData.totalRides}</div>
+              <div className="text-2xl font-bold text-blue-600">{userData.totalRides || 0}</div>
               <div className="text-sm text-muted-foreground">Viajes Totales</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{userData.completedRides}</div>
+              <div className="text-2xl font-bold text-green-600">{userData.completedRides || 0}</div>
               <div className="text-sm text-muted-foreground">Viajes Completados</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{userData.cancelledRides}</div>
+              <div className="text-2xl font-bold text-red-600">{userData.cancelledRides || 0}</div>
               <div className="text-sm text-muted-foreground">Viajes Cancelados</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-yellow-600">
-                {userData.averageRating ? userData.averageRating.toFixed(1) : 'N/A'}
+                {userData.averageRating ? userData.averageRating.toFixed(1) : '0.0'}
               </div>
               <div className="text-sm text-muted-foreground">Calificación Promedio</div>
             </div>
@@ -207,10 +207,10 @@ export default function UserDetailPage() {
                 </div>
                 <div className="text-sm text-muted-foreground">Saldo Actual</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{userData.wallet.totalTransactions}</div>
-                <div className="text-sm text-muted-foreground">Transacciones Totales</div>
-              </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{userData.wallet.totalTransactions || 0}</div>
+              <div className="text-sm text-muted-foreground">Transacciones Totales</div>
+            </div>
             </div>
           </CardContent>
         </Card>
