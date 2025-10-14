@@ -54,7 +54,10 @@ export function ServiceZonesCreateModal({
       isActive: true,
       maxDrivers: undefined,
       minDrivers: undefined,
-      peakHours: undefined,
+      peakHours: {
+        weekdays: [],
+        weekends: []
+      },
     },
   });
 
@@ -135,29 +138,39 @@ export function ServiceZonesCreateModal({
     }
   }, [citiesData, cities, selectedStateId, selectedCityId]);
 
-  // Watch specific form values for validation
-  const name = form.watch('name');
-  const zoneType = form.watch('zoneType');
-  const pricingMultiplier = form.watch('pricingMultiplier');
-  const demandMultiplier = form.watch('demandMultiplier');
-  const maxDrivers = form.watch('maxDrivers');
-  const minDrivers = form.watch('minDrivers');
+  // Validate time slot format (HH:MM-HH:MM)
+  const validateTimeSlot = React.useCallback((timeSlot: string): boolean => {
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]-([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(timeSlot);
+  }, []);
+
+  // Watch specific form values for validation (memoized to prevent unnecessary re-renders)
+  const watchedValues = React.useMemo(() => ({
+    name: form.watch('name'),
+    zoneType: form.watch('zoneType'),
+    pricingMultiplier: form.watch('pricingMultiplier'),
+    demandMultiplier: form.watch('demandMultiplier'),
+    maxDrivers: form.watch('maxDrivers'),
+    minDrivers: form.watch('minDrivers'),
+    peakHours: form.watch('peakHours'),
+  }), [form]);
 
   // Validate form data when polygon or form values change
   useEffect(() => {
-    if (currentPolygon && polygonCenter && selectedCityId) {
+    if (currentPolygon && polygonCenter && selectedCityId && watchedValues.name?.trim()) {
       const formData = {
-        name,
-        zoneType,
-        pricingMultiplier,
-        demandMultiplier,
-        maxDrivers,
-        minDrivers,
+        name: watchedValues.name,
+        zoneType: watchedValues.zoneType,
+        pricingMultiplier: watchedValues.pricingMultiplier,
+        demandMultiplier: watchedValues.demandMultiplier,
+        maxDrivers: watchedValues.maxDrivers,
+        minDrivers: watchedValues.minDrivers,
         cityId: selectedCityId,
         boundaries: currentPolygon,
         centerLat: polygonCenter.lat,
         centerLng: polygonCenter.lng,
       };
+
 
       const validation = getComprehensiveValidation(
         formData,
@@ -165,13 +178,32 @@ export function ServiceZonesCreateModal({
         undefined // No excludeZoneId for new zones
       );
 
-      setValidationErrors(validation.errors);
+      // Additional validation for peak hours
+      const peakHoursErrors: string[] = [];
+      const weekdays = watchedValues.peakHours?.weekdays ?? [];
+      if (Array.isArray(weekdays) && weekdays.length > 0) {
+        weekdays.forEach((timeSlot) => {
+          if (!validateTimeSlot(timeSlot)) {
+            peakHoursErrors.push(`Horario de semana inválido: "${timeSlot}". Use formato HH:MM-HH:MM`);
+          }
+        });
+      }
+      const weekends = watchedValues.peakHours?.weekends ?? [];
+      if (Array.isArray(weekends) && weekends.length > 0) {
+        weekends.forEach((timeSlot) => {
+          if (!validateTimeSlot(timeSlot)) {
+            peakHoursErrors.push(`Horario de fin de semana inválido: "${timeSlot}". Use formato HH:MM-HH:MM`);
+          }
+        });
+      }
+
+      setValidationErrors([...validation.errors, ...peakHoursErrors]);
       setValidationWarnings(validation.warnings);
     } else {
       setValidationErrors([]);
       setValidationWarnings([]);
     }
-  }, [currentPolygon, polygonCenter, selectedCityId, name, zoneType, pricingMultiplier, demandMultiplier, maxDrivers, minDrivers, existingZones]);
+  }, [currentPolygon, polygonCenter, selectedCityId, watchedValues, validateTimeSlot]); // Removed existingZones to prevent infinite loop
 
   // Handle polygon completion
   const handlePolygonComplete = (polygon: GeoJSONPolygon, center: { lat: number; lng: number }) => {
@@ -326,7 +358,20 @@ export function ServiceZonesCreateModal({
       onClose();
       
       // Reset form
-      form.reset();
+      form.reset({
+        name: '',
+        cityId: 0,
+        zoneType: 'regular',
+        pricingMultiplier: 1.0,
+        demandMultiplier: 1.0,
+        isActive: true,
+        maxDrivers: undefined,
+        minDrivers: undefined,
+        peakHours: {
+          weekdays: [],
+          weekends: []
+        },
+      });
       setCurrentPolygon(null);
       setPolygonCenter(null);
       setValidationErrors([]);
@@ -500,6 +545,149 @@ export function ServiceZonesCreateModal({
                         {...form.register('maxDrivers', { valueAsNumber: true })}
                       />
                     </div>
+                  </div>
+
+                  {/* Peak Hours Configuration */}
+                  <div className="space-y-4">
+                    <Label>Horarios Pico (Opcional)</Label>
+                    <p className="text-xs text-gray-600">
+                      Configura los horarios donde hay mayor demanda de servicios
+                    </p>
+
+                    {/* Weekdays Schedule */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-normal">
+                          🏢 Días de Semana (Lunes - Viernes)
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const currentPeakHours = form.getValues('peakHours') || { weekdays: [], weekends: [] };
+                            const newWeekdays = [...(currentPeakHours.weekdays || []), '08:00-18:00'];
+                            form.setValue('peakHours', {
+                              ...currentPeakHours,
+                              weekdays: newWeekdays
+                            });
+                          }}
+                        >
+                          + Agregar Horario
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {form.watch('peakHours.weekdays')?.map((timeSlot: string, index: number) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Input
+                              placeholder="08:00-18:00"
+                              value={timeSlot}
+                              onChange={(e) => {
+                                const currentPeakHours = form.getValues('peakHours') || { weekdays: [], weekends: [] };
+                                const newWeekdays = [...(currentPeakHours.weekdays || [])];
+                                newWeekdays[index] = e.target.value;
+                                form.setValue('peakHours', {
+                                  ...currentPeakHours,
+                                  weekdays: newWeekdays
+                                });
+                              }}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const currentPeakHours = form.getValues('peakHours') || { weekdays: [], weekends: [] };
+                                const newWeekdays = (currentPeakHours.weekdays || []).filter((_, i) => i !== index);
+                                form.setValue('peakHours', {
+                                  ...currentPeakHours,
+                                  weekdays: newWeekdays
+                                });
+                              }}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        ))}
+                        {(!form.watch('peakHours.weekdays') || form.watch('peakHours.weekdays').length === 0) && (
+                          <p className="text-xs text-gray-500 italic">Sin horarios configurados</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Weekends Schedule */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-normal">
+                          🎉 Fines de Semana (Sábado - Domingo)
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const currentPeakHours = form.getValues('peakHours') || { weekdays: [], weekends: [] };
+                            const newWeekends = [...(currentPeakHours.weekends || []), '10:00-20:00'];
+                            form.setValue('peakHours', {
+                              ...currentPeakHours,
+                              weekends: newWeekends
+                            });
+                          }}
+                        >
+                          + Agregar Horario
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {form.watch('peakHours.weekends')?.map((timeSlot: string, index: number) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Input
+                              placeholder="10:00-20:00"
+                              value={timeSlot}
+                              onChange={(e) => {
+                                const currentPeakHours = form.getValues('peakHours') || { weekdays: [], weekends: [] };
+                                const newWeekends = [...(currentPeakHours.weekends || [])];
+                                newWeekends[index] = e.target.value;
+                                form.setValue('peakHours', {
+                                  ...currentPeakHours,
+                                  weekends: newWeekends
+                                });
+                              }}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const currentPeakHours = form.getValues('peakHours') || { weekdays: [], weekends: [] };
+                                const newWeekends = (currentPeakHours.weekends || []).filter((_, i) => i !== index);
+                                form.setValue('peakHours', {
+                                  ...currentPeakHours,
+                                  weekends: newWeekends
+                                });
+                              }}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        ))}
+                        {(!form.watch('peakHours.weekends') || form.watch('peakHours.weekends').length === 0) && (
+                          <p className="text-xs text-gray-500 italic">Sin horarios configurados</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {form.formState.errors.peakHours && (
+                      <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          {form.formState.errors.peakHours.message}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                 </CardContent>
               </Card>

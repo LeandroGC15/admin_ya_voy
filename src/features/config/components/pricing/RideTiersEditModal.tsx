@@ -28,11 +28,11 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
     resolver: zodResolver(updateRideTierSchema),
     defaultValues: {
       name: '',
-      baseFare: 250, // 2.50 USD in cents
-      minimumFare: 200, // 2.00 USD in cents
-      perMinuteRate: 15, // 0.15 USD in cents
-      perKmRate: 80, // 0.80 USD in cents
-      imageUrl: undefined,
+      baseFare: 200, // 2.00 USD in cents (within limits)
+      minimumFare: 150, // 1.50 USD in cents (within limits)
+      perMinuteRate: 10, // 0.10 USD in cents (within limits)
+      perKmRate: 50, // 0.50 USD in cents (within limits)
+      imageUrl: '', // Empty string instead of undefined for URL validation
       tierMultiplier: 1.0,
       surgeMultiplier: 1.0,
       demandMultiplier: 1.0,
@@ -42,7 +42,7 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
       maxPassengers: 4,
       isActive: true,
       priority: 5,
-      vehicleTypeIds: undefined,
+      vehicleTypeIds: [],
     },
   });
 
@@ -63,7 +63,7 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
         minimumFare: tierData.minimumFare,
         perMinuteRate: tierData.perMinuteRate,
         perKmRate: tierData.perKmRate,
-        imageUrl: (tierData as any).imageUrl || undefined,
+        imageUrl: (tierData as any).imageUrl || '',
         tierMultiplier: tierData.tierMultiplier,
         surgeMultiplier: tierData.surgeMultiplier,
         demandMultiplier: tierData.demandMultiplier,
@@ -73,7 +73,7 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
         maxPassengers: tierData.maxPassengers,
         isActive: tierData.isActive,
         priority: tierData.priority,
-        vehicleTypeIds: (tierData as any).vehicleTypeIds || (tierData as any).vehicleTypes?.map((vt: any) => vt.id) || undefined,
+        vehicleTypeIds: (tierData as any).vehicleTypeIds || (tierData as any).vehicleTypes?.map((vt: any) => vt.id) || [],
       });
     }
   }, [tierData, isOpen, form]);

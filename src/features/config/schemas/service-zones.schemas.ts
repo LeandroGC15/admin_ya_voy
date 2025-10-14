@@ -92,11 +92,20 @@ export const createServiceZoneSchema = z.object({
   maxDrivers: z.number().int().positive('Máximo conductores debe ser un número positivo').optional(),
   minDrivers: z.number().int().min(0, 'Mínimo conductores debe ser 0 o mayor').optional(),
   isActive: z.boolean().default(true),
-  peakHours: peakHoursSchema.optional(),
+  peakHours: peakHoursSchema.nullable().optional(),
 });
 
-// Update schema (partial)
-export const updateServiceZoneSchema = createServiceZoneSchema.partial();
+// Update schema - some fields remain required for updates
+export const updateServiceZoneSchema = createServiceZoneSchema.omit({
+  boundaries: true,
+  centerLat: true,
+  centerLng: true
+}).partial().extend({
+  // Boundaries are optional in updates but if provided must be valid
+  boundaries: geoJSONPolygonSchema.optional(),
+  centerLat: z.number().min(-90, 'Latitud debe estar entre -90 y 90').max(90).optional(),
+  centerLng: z.number().min(-180, 'Longitud debe estar entre -180 y 180').max(180).optional(),
+});
 
 // ========== SEARCH/FILTER SCHEMAS ==========
 
@@ -110,7 +119,7 @@ export const searchServiceZonesSchema = z.object({
   zoneType: z.enum(['regular', 'premium', 'restricted']).optional(),
   isActive: z.boolean().optional(),
   search: z.string().max(100).optional().or(z.literal('')),
-  sortBy: z.string().optional(),
+  sortBy: z.enum(['id', 'zoneType', 'pricingMultiplier', 'demandMultiplier']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 

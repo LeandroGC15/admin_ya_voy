@@ -771,8 +771,7 @@ export function ServiceZonesEditModal({
                   {mapCenter || currentPolygon ? (
                     <GoogleMapProvider>
                       <ZoneDrawingMap
-                        key={mapKey}
-                        existingZones={existingZones?.filter(z => z.id !== zoneId) || []}
+                        existingZones={Array.isArray(existingZones) ? existingZones.filter(z => z.id !== zoneId) : []}
                         onPolygonComplete={handlePolygonComplete}
                         onPolygonEdit={handlePolygonEdit}
                         initialPolygon={currentPolygon || undefined}

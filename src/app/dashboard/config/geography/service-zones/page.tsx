@@ -19,7 +19,8 @@ import {
   ServiceZonesToggleModal,
   BulkPricingUpdateModal,
 } from '@/features/config/components/geography';
-import { useServiceZones, usePricingStats } from '@/features/config/hooks/use-service-zones';
+import { useServiceZones, usePricingStats, usePricingMatrix } from '@/features/config/hooks/use-service-zones';
+import { invalidateQueries } from '@/lib/api/react-query-client';
 import { useCities, useStates, useCountries } from '@/features/config/hooks/use-geography';
 import type { ServiceZoneListItem, SearchServiceZonesInput } from '@/features/config/schemas/service-zones.schemas';
 import { ServiceZone } from '@/interfaces/GeographyInterfaces';
@@ -35,7 +36,7 @@ export default function ServiceZonesPage() {
     countryId: undefined,
     zoneType: undefined,
     isActive: undefined,
-    sortBy: 'name',
+    sortBy: 'id',
     sortOrder: 'asc',
   });
 
@@ -102,13 +103,30 @@ export default function ServiceZonesPage() {
   };
 
   // Handle success
-  const handleSuccess = () => {
-    // Refresh data
-    window.location.reload();
+  const handleSuccess = (updatedZoneId?: number) => {
+    // Invalidate queries to refresh data without full page reload
+    console.log('🔄 ServiceZonesPage - Invalidating queries after zone update');
+    invalidateQueries(['service-zones']);
+
+    // Also invalidate the specific zone query if we know the ID
+    if (updatedZoneId) {
+      console.log('🔄 ServiceZonesPage - Invalidating specific zone query:', updatedZoneId);
+      invalidateQueries(['service-zones', 'detail', updatedZoneId.toString()]);
+    }
   };
 
-  // Get zones for map visualization - disabled until full zone data is available
-  const zonesForMap: ServiceZone[] = []; // Temporarily disabled
+  // Handle edit success with zone ID
+  const handleEditSuccess = () => {
+    if (selectedZone) {
+      handleSuccess(selectedZone.id);
+    } else {
+      handleSuccess();
+    }
+  };
+
+  // Get zones for map visualization - temporary disabled until proper endpoint is implemented
+  // The map component will show a message that this functionality is under development
+  const zonesForMap: ServiceZone[] = [];
 
   return (
     <div className="space-y-6">
@@ -327,17 +345,17 @@ export default function ServiceZonesPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Ordenar por</label>
                   <Select
-                    value={searchParams.sortBy || 'name'}
+                    value={searchParams.sortBy || 'id'}
                     onValueChange={(value) => handleFilterChange('sortBy', value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="name">Nombre</SelectItem>
+                      <SelectItem value="id">ID</SelectItem>
+                      <SelectItem value="zoneType">Tipo de Zona</SelectItem>
                       <SelectItem value="pricingMultiplier">Pricing</SelectItem>
                       <SelectItem value="demandMultiplier">Demanda</SelectItem>
-                      <SelectItem value="createdAt">Fecha de creación</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -469,7 +487,7 @@ export default function ServiceZonesPage() {
           <ServiceZonesEditModal
             isOpen={isEditModalOpen}
             onClose={handleModalClose}
-            onSuccess={handleSuccess}
+            onSuccess={handleEditSuccess}
             zoneId={selectedZone.id}
           />
 

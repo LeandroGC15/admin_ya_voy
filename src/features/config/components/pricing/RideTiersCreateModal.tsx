@@ -25,11 +25,11 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
     resolver: zodResolver(createRideTierSchema),
     defaultValues: {
       name: '',
-      baseFare: 250, // 2.50 USD in cents
-      minimumFare: 200, // 2.00 USD in cents
-      perMinuteRate: 15, // 0.15 USD in cents
-      perKmRate: 80, // 0.80 USD in cents
-      imageUrl: undefined,
+      baseFare: 2.00, // 2.00 USD in cents (within limits)
+      minimunFare: 1.50, // 1.50 USD in cents (within limits)
+      perMinuteRate: 1.00, // 0.10 USD in cents (within limits)
+      perKmRate: 0.50, // 0.50 USD in cents (within limits)
+      imageUrl: '', // Empty string instead of undefined for URL validation
       tierMultiplier: 1.0,
       surgeMultiplier: 1.0,
       demandMultiplier: 1.0,
@@ -39,7 +39,7 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
       maxPassengers: 4,
       isActive: true,
       priority: 5,
-      vehicleTypeIds: undefined,
+      vehicleTypeIds: [],
     },
   });
 
@@ -213,19 +213,19 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="minimumFare">Tarifa Mínima (USD) *</Label>
+              <Label htmlFor="minimunFare">Tarifa Mínima (USD) *</Label>
               <Input
-                id="minimumFare"
+                id="minimunFare"
                 type="number"
                 step="0.01"
                 min="0"
-                {...form.register('minimumFare', {
+                {...form.register('minimunFare', {
                   setValueAs: (value) => value ? parseCurrencyInput(value) : 0
                 })}
                 placeholder="2.00"
               />
-              {form.formState.errors.minimumFare && (
-                <p className="text-sm text-red-600">{form.formState.errors.minimumFare.message}</p>
+              {form.formState.errors.minimunFare && (
+                <p className="text-sm text-red-600">{form.formState.errors.minimunFare.message}</p>
               )}
               <p className="text-sm text-gray-500">
                 La tarifa mínima garantizada (debe ser ≤ tarifa base)
@@ -244,7 +244,7 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
           tierMultiplier={form.watch('tierMultiplier') || 1.0}
           surgeMultiplier={form.watch('surgeMultiplier') || 1.0}
           demandMultiplier={form.watch('demandMultiplier') || 1.0}
-          minimumFare={form.watch('minimumFare') || 0}
+          minimumFare={form.watch('minimunFare') || 0}
         />
 
         {/* Multipliers */}

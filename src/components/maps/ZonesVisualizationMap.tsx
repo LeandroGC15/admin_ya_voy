@@ -368,9 +368,11 @@ export function ZonesVisualizationMap({
           <CardContent className="pt-6">
             <div className="text-center text-gray-600">
               <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-lg font-medium mb-2">No hay zonas para mostrar</p>
+              <p className="text-lg font-medium mb-2">Mapa de Cobertura en Desarrollo</p>
               <p className="text-sm">
-                No se encontraron zonas de servicio en esta área.
+                La visualización de zonas en el mapa estará disponible próximamente.
+                <br />
+                Por ahora puedes gestionar las zonas desde la pestaña "Vista General".
               </p>
             </div>
           </CardContent>

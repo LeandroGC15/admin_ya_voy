@@ -64,7 +64,7 @@ export const createRideTierSchema = z.object({
   baseFare: z.number()
     .min(50, 'La tarifa base debe ser al menos 50 centavos')
     .max(10000, 'La tarifa base no puede ser mayor a 10000 centavos'),
-  minimumFare: z.number()
+  minimunFare: z.number()
     .min(0, 'La tarifa mínima no puede ser negativa')
     .max(10000, 'La tarifa mínima no puede ser mayor a 10000 centavos'),
   perMinuteRate: z.number()
@@ -74,8 +74,10 @@ export const createRideTierSchema = z.object({
     .min(20, 'La tarifa por kilómetro debe ser al menos 20 centavos')
     .max(500, 'La tarifa por kilómetro no puede ser mayor a 500 centavos'),
   imageUrl: z.string()
-    .url('La URL de imagen debe ser válida')
-    .optional(),
+    .optional()
+    .refine((val) => !val || val === '' || z.string().url().safeParse(val).success, {
+      message: 'La URL de imagen debe ser válida o estar vacía',
+    }),
   tierMultiplier: z.number()
     .min(0.1, 'El multiplicador debe ser al menos 0.1')
     .max(10.0, 'El multiplicador no puede ser mayor a 10.0')
@@ -89,11 +91,11 @@ export const createRideTierSchema = z.object({
     .max(10.0, 'El multiplicador de demanda no puede ser mayor a 10.0')
     .default(1.0),
   luxuryMultiplier: z.number()
-    .min(1.0, 'El multiplicador de lujo debe ser al menos 1.0')
+    .min(0.1, 'El multiplicador de lujo debe ser al menos 0.1')
     .max(5.0, 'El multiplicador de lujo no puede ser mayor a 5.0')
     .default(1.0),
   comfortMultiplier: z.number()
-    .min(1.0, 'El multiplicador de confort debe ser al menos 1.0')
+    .min(0.1, 'El multiplicador de confort debe ser al menos 0.1')
     .max(5.0, 'El multiplicador de confort no puede ser mayor a 5.0')
     .default(1.0),
   minPassengers: z.number()
@@ -111,7 +113,7 @@ export const createRideTierSchema = z.object({
     .default(5),
   vehicleTypeIds: z.array(z.number().positive())
     .optional(),
-}).refine((data) => data.minimumFare <= data.baseFare, {
+}).refine((data) => data.minimunFare <= data.baseFare, {
   message: "La tarifa mínima no puede ser mayor que la tarifa base",
   path: ["minimumFare"]
 });
@@ -139,8 +141,10 @@ export const updateRideTierSchema = z.object({
     .max(500, 'La tarifa por kilómetro no puede ser mayor a 500 centavos')
     .optional(),
   imageUrl: z.string()
-    .url('La URL de imagen debe ser válida')
-    .optional(),
+    .optional()
+    .refine((val) => !val || val === '' || z.string().url().safeParse(val).success, {
+      message: 'La URL de imagen debe ser válida o estar vacía',
+    }),
   tierMultiplier: z.number()
     .min(0.1, 'El multiplicador debe ser al menos 0.1')
     .max(10.0, 'El multiplicador no puede ser mayor a 10.0')
@@ -154,11 +158,11 @@ export const updateRideTierSchema = z.object({
     .max(10.0, 'El multiplicador de demanda no puede ser mayor a 10.0')
     .optional(),
   luxuryMultiplier: z.number()
-    .min(1.0, 'El multiplicador de lujo debe ser al menos 1.0')
+    .min(0.1, 'El multiplicador de lujo debe ser al menos 0.1')
     .max(5.0, 'El multiplicador de lujo no puede ser mayor a 5.0')
     .optional(),
   comfortMultiplier: z.number()
-    .min(1.0, 'El multiplicador de confort debe ser al menos 1.0')
+    .min(0.1, 'El multiplicador de confort debe ser al menos 0.1')
     .max(5.0, 'El multiplicador de confort no puede ser mayor a 5.0')
     .optional(),
   minPassengers: z.number()

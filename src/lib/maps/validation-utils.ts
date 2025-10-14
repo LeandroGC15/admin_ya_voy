@@ -14,12 +14,17 @@ export function validateZoneData(data: CreateServiceZoneInput | UpdateServiceZon
   // Validate name - only required for creation
   if ('name' in data) {
     if (data.name !== undefined && data.name !== null) {
-      // If name is provided, validate it
-      if (data.name.trim().length === 0) {
-        errors.push('El nombre de la zona no puede estar vacío');
-      } else if (data.name.length > 100) {
-        errors.push('El nombre de la zona no puede exceder 100 caracteres');
+      // If name is provided and has content, validate it
+      const trimmedName = data.name.trim();
+      if (trimmedName.length > 0) {
+        // Only validate if user has started typing
+        if (trimmedName.length < 2) {
+          errors.push('El nombre de la zona debe tener al menos 2 caracteres');
+        } else if (data.name.length > 100) {
+          errors.push('El nombre de la zona no puede exceder 100 caracteres');
+        }
       }
+      // Don't show empty error if user hasn't started typing yet
     }
     // For updates, name is optional so we don't require it
   }
@@ -159,18 +164,26 @@ export function formatValidationErrors(errors: string[]): string {
  * Check if polygon overlaps with existing zones
  */
 export function checkPolygonOverlap(
-  polygon: any, 
-  existingZones: Array<{ boundaries: any; id?: number }>,
+  polygon: any,
+  existingZones: Array<{ boundaries: any; id?: number }> | undefined | null,
   excludeZoneId?: number
 ): { hasOverlap: boolean; overlappingZones: number[] } {
   const overlappingZones: number[] = [];
-  
+
+  // Ensure existingZones is an array
+  if (!existingZones || !Array.isArray(existingZones)) {
+    return {
+      hasOverlap: false,
+      overlappingZones
+    };
+  }
+
   existingZones.forEach(zone => {
     // Skip the zone being edited
     if (excludeZoneId && zone.id === excludeZoneId) {
       return;
     }
-    
+
     // Simple bounding box check for performance
     if (checkBoundingBoxOverlap(polygon, zone.boundaries)) {
       if (zone.id) {
@@ -178,7 +191,7 @@ export function checkPolygonOverlap(
       }
     }
   });
-  
+
   return {
     hasOverlap: overlappingZones.length > 0,
     overlappingZones
@@ -223,10 +236,15 @@ export function checkBoundingBoxOverlap(polygon1: any, polygon2: any): boolean {
 export function validateZoneNameUniqueness(
   name: string,
   cityId: number,
-  existingZones: Array<{ name: string; cityId: number; id?: number }>,
+  existingZones: Array<{ name: string; cityId: number; id?: number }> | undefined | null,
   excludeZoneId?: number
 ): boolean {
-  return !existingZones.some(zone => 
+  // If existingZones is not an array, consider name as unique
+  if (!existingZones || !Array.isArray(existingZones)) {
+    return true;
+  }
+
+  return !existingZones.some(zone =>
     zone.name.toLowerCase() === name.toLowerCase() &&
     zone.cityId === cityId &&
     zone.id !== excludeZoneId
@@ -310,7 +328,7 @@ export function validateZoneArea(polygon: any): { isValid: boolean; warnings: st
  */
 export function getComprehensiveValidation(
   data: CreateServiceZoneInput | UpdateServiceZoneInput | Partial<CreateServiceZoneInput> | Partial<UpdateServiceZoneInput>,
-  existingZones: Array<{ boundaries: any; name: string; cityId: number; id?: number }> = [],
+  existingZones: Array<{ boundaries: any; name: string; cityId: number; id?: number }> | undefined | null = [],
   excludeZoneId?: number
 ): {
   isValid: boolean;

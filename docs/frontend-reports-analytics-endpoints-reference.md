@@ -2,6 +2,30 @@
 
 Frontend reference documentation for Reports & Analytics module endpoints.
 
+## Pricing Module - Data Transformation Notes
+
+### Frontend to Backend Data Conversion
+
+Due to differences in validation limits between frontend and backend, automatic data transformation is applied before sending requests to the backend:
+
+#### Multiplier Conversions Applied:
+- **tierMultiplier**: Frontend (0.1-10.0) → Backend (0.5-5.0) → `Math.max(0.5, Math.min(5.0, value))`
+- **surgeMultiplier**: Frontend (0.1-10.0) → Backend (1.0-10.0) → `Math.max(1.0, Math.min(10.0, value))`
+- **demandMultiplier**: Frontend (0.1-10.0) → Backend (1.0-5.0) → `Math.max(1.0, Math.min(5.0, value))`
+- **luxuryMultiplier**: Frontend (0.1-5.0) → Backend (1.0-3.0) → `Math.max(1.0, Math.min(3.0, value))`
+- **comfortMultiplier**: Frontend (0.1-5.0) → Backend (1.0-2.0) → `Math.max(1.0, Math.min(2.0, value))`
+
+#### Important Notes:
+- Frontend allows more flexible ranges (starting from 0.1) for better UX
+- Backend enforces stricter limits for data integrity
+- Automatic conversion ensures compatibility without user intervention
+- Conversion logs are available in browser console for debugging
+
+### Validation Strategy:
+- **Frontend**: Permissive validation (0.1+ ranges) for user experience
+- **Backend**: Strict validation for data integrity
+- **Transformation Layer**: Automatic conversion between the two
+
 ## Reports Endpoints
 
 ### `GET /admin/reports-analytics/reports`

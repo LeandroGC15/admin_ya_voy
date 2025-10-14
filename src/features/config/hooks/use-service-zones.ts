@@ -126,6 +126,9 @@ export function useUpdateServiceZone() {
       onSuccess: () => {
         invalidateQueries(['service-zones']);
       },
+      onError: (error) => {
+        console.error('Error updating service zone:', error);
+      }
     }
   );
 }
@@ -214,7 +217,7 @@ export function usePricingMatrix(cityId: number) {
       return response.data;
     },
     {
-      enabled: !!cityId,
+      enabled: !!cityId && cityId > 0,
     }
   );
 }

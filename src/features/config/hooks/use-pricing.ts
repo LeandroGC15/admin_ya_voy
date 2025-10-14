@@ -84,11 +84,27 @@ export function useRideTiers(params: RideTiersQueryParams = {}) {
   );
 }
 
+// Transform ride tier data to match backend expectations
+function transformRideTierData(data: CreateRideTierInput | UpdateRideTierInput) {
+  return {
+    ...data,
+    // Ensure multipliers are within backend limits
+    tierMultiplier: Math.max(0.5, Math.min(5.0, data.tierMultiplier || 1.0)),
+    surgeMultiplier: Math.max(1.0, Math.min(10.0, data.surgeMultiplier || 1.0)),
+    demandMultiplier: Math.max(1.0, Math.min(5.0, data.demandMultiplier || 1.0)),
+    luxuryMultiplier: Math.max(1.0, Math.min(3.0, data.luxuryMultiplier || 1.0)),
+    comfortMultiplier: Math.max(1.0, Math.min(2.0, data.comfortMultiplier || 1.0)),
+  };
+}
+
 // Create ride tier
 export function useCreateRideTier() {
   return useApiMutation(
     async (data: CreateRideTierInput): Promise<PricingRideTier> => {
-      const response = await api.post<PricingRideTier>(ENDPOINTS.pricing.rideTiers, data);
+      const transformedData = transformRideTierData(data);
+      console.log('📤 useCreateRideTier - Original data:', data);
+      console.log('🔄 useCreateRideTier - Transformed data:', transformedData);
+      const response = await api.post<PricingRideTier>(ENDPOINTS.pricing.rideTiers, transformedData);
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
       }
@@ -123,7 +139,13 @@ export function useRideTier(id: number) {
 export function useUpdateRideTier() {
   return useApiMutation(
     async ({ id, data }: { id: number; data: UpdateRideTierInput }): Promise<PricingRideTier> => {
-      const response = await api.patch<PricingRideTier>(ENDPOINTS.pricing.rideTierById(id), data);
+      // Transform data to match backend validation limits
+      const transformedData = transformRideTierData(data);
+
+      console.log('📤 useUpdateRideTier - Original data:', data);
+      console.log('🔄 useUpdateRideTier - Transformed data:', transformedData);
+
+      const response = await api.patch<PricingRideTier>(ENDPOINTS.pricing.rideTierById(id), transformedData);
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
       }
@@ -440,7 +462,7 @@ export function useVehicleTypes() {
   return useApiQuery(
     pricingKeys.vehicleTypes(),
     async (): Promise<VehicleTypesResponse> => {
-      const response = await api.get<VehicleTypesResponse>(ENDPOINTS.pricing.vehicleTypes);
+      const response = await api.post<VehicleTypesResponse>(ENDPOINTS.pricing.vehicleTypes);
       if (!response || !response.data) {
         throw new Error('Invalid API response: no data received');
       }

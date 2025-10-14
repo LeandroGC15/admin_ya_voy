@@ -29,7 +29,9 @@ interface ZoneDrawingMapProps {
   existingZones?: ServiceZone[];
   onPolygonComplete?: (polygon: GeoJSONPolygon, center: { lat: number; lng: number }) => void;
   onPolygonEdit?: (polygon: GeoJSONPolygon, center: { lat: number; lng: number }) => void;
+  onClear?: () => void; // Custom clear function (optional)
   initialPolygon?: GeoJSONPolygon;
+  polygon?: GeoJSONPolygon; // Current polygon state (can change externally)
   readOnly?: boolean;
   className?: string;
 }
@@ -40,7 +42,9 @@ export function ZoneDrawingMap({
   existingZones = [],
   onPolygonComplete,
   onPolygonEdit,
+  onClear,
   initialPolygon,
+  polygon, // Current polygon state (can change externally)
   readOnly = false,
   className = '',
 }: ZoneDrawingMapProps) {
@@ -55,7 +59,7 @@ export function ZoneDrawingMap({
   console.log('🎨 ZoneDrawingMap - COMPONENT RENDERED with props:', {
     center,
     zoom,
-    existingZonesCount: existingZones.length,
+    existingZonesCount: Array.isArray(existingZones) ? existingZones.length : 0,
     hasInitialPolygon: !!initialPolygon,
     readOnly,
     componentId: Math.random().toString(36).substr(2, 9),
@@ -68,7 +72,7 @@ export function ZoneDrawingMap({
       console.log('🔄 ZoneDrawingMap - Props changed:', {
         center,
         zoom,
-        hasExistingZones: existingZones.length > 0
+        hasExistingZones: Array.isArray(existingZones) && existingZones.length > 0
       });
     }
   }, [center, zoom, existingZones]);
@@ -102,6 +106,7 @@ export function ZoneDrawingMap({
   const [isEditing, setIsEditing] = useState(false);
   const [drawnPolygon, setDrawnPolygon] = useState<GeoJSONPolygon | null>(initialPolygon || null);
   const [polygonCenter, setPolygonCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [vertexMarkers, setVertexMarkers] = useState<google.maps.Marker[]>([]);
 
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -135,7 +140,7 @@ export function ZoneDrawingMap({
     map.setZoom(zoom);
 
     // Fit map to show existing zones if any
-    if (existingZones.length > 0) {
+    if (Array.isArray(existingZones) && existingZones.length > 0) {
       const bounds = new google.maps.LatLngBounds();
       existingZones.forEach(zone => {
         zone.boundaries.coordinates[0].forEach(coord => {
@@ -174,16 +179,28 @@ export function ZoneDrawingMap({
 
   // Handle polygon edit
   const onPolygonEditHandler = useCallback(() => {
-    if (!currentPolygon || readOnly) return;
-    
+    if (!currentPolygon || readOnly) {
+      console.log('🚫 ZoneDrawingMap - onPolygonEditHandler skipped (no polygon or readonly)');
+      return;
+    }
+
+    console.log('🔄 ZoneDrawingMap - Converting polygon to GeoJSON...');
+
     // Convert to GeoJSON
     const geoJSON = googleMapsPolygonToGeoJSON(currentPolygon);
     const center = calculatePolygonCenter(geoJSON);
-    
+
+    console.log('📐 ZoneDrawingMap - Polygon converted:', {
+      vertices: geoJSON.coordinates[0].length - 1, // -1 because it's closed
+      center: center,
+      type: geoJSON.type
+    });
+
     setDrawnPolygon(geoJSON);
     setPolygonCenter(center);
-    
+
     // Notify parent
+    console.log('📤 ZoneDrawingMap - Notifying parent component');
     onPolygonEdit?.(geoJSON, center);
   }, [currentPolygon, readOnly, onPolygonEdit]);
 
@@ -215,31 +232,127 @@ export function ZoneDrawingMap({
       currentPolygon.setMap(null);
       setCurrentPolygon(null);
     }
+
+    // Clear vertex markers
+    vertexMarkers.forEach(marker => {
+      marker.setMap(null);
+    });
+    setVertexMarkers([]);
+
     setDrawnPolygon(null);
     setPolygonCenter(null);
     setIsEditing(false);
-  }, [currentPolygon]);
+  }, [currentPolygon, vertexMarkers]);
 
   // Edit polygon
   const editPolygon = useCallback(() => {
-    if (currentPolygon && !readOnly) {
+    if (currentPolygon && !readOnly && (polygon || drawnPolygon)) {
+      console.log('🎨 ZoneDrawingMap - Starting polygon edit mode with vertex markers');
       setIsEditing(true);
-      currentPolygon.setEditable(true);
+
+      // Create draggable markers for each vertex
+      const activePolygon = polygon || drawnPolygon;
+      const path = activePolygon!.coordinates[0];
+
+      const markers = path.map((coord, index) => {
+        const marker = new google.maps.Marker({
+          position: { lat: coord[1], lng: coord[0] },
+          map: map,
+          draggable: true,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: '#4285F4',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 2,
+          },
+        });
+
+        // Handle marker drag
+        google.maps.event.addListener(marker, 'drag', () => {
+          const newPosition = marker.getPosition();
+          if (newPosition) {
+            // Update the polygon path
+            const newPath = [...path];
+            newPath[index] = [newPosition.lng(), newPosition.lat()];
+            const updatedPolygon = {
+              ...activePolygon!,
+              coordinates: [newPath],
+            };
+
+            // Update polygon visual
+            const latLngPath = newPath.map(coord => new google.maps.LatLng(coord[1], coord[0]));
+            currentPolygon.setPaths(latLngPath);
+
+            // Update internal state
+            const center = calculatePolygonCenter(updatedPolygon);
+            setDrawnPolygon(updatedPolygon);
+            setPolygonCenter(center);
+          }
+        });
+
+        // Handle drag end
+        google.maps.event.addListener(marker, 'dragend', () => {
+          console.log('🎯 ZoneDrawingMap - Vertex moved via marker');
+          // Update markers positions
+          updateVertexMarkers();
+        });
+
+        return marker;
+      });
+
+      setVertexMarkers(markers);
+      console.log('✅ ZoneDrawingMap - Vertex markers created');
     }
-  }, [currentPolygon, readOnly]);
+  }, [currentPolygon, readOnly, polygon, drawnPolygon, map]);
+
+  // Update vertex markers positions
+  const updateVertexMarkers = useCallback(() => {
+    if (vertexMarkers.length > 0 && (polygon || drawnPolygon)) {
+      const activePolygon = polygon || drawnPolygon;
+      const path = activePolygon!.coordinates[0];
+
+      vertexMarkers.forEach((marker, index) => {
+        if (path[index]) {
+          const newPosition = new google.maps.LatLng(path[index][1], path[index][0]);
+          marker.setPosition(newPosition);
+        }
+      });
+    }
+  }, [vertexMarkers, polygon, drawnPolygon]);
+
+  // Update vertex markers when polygon changes during editing
+  useEffect(() => {
+    if (isEditing && vertexMarkers.length > 0) {
+      updateVertexMarkers();
+    }
+  }, [polygon, drawnPolygon, isEditing, vertexMarkers.length, updateVertexMarkers]);
 
   // Finish editing
   const finishEditing = useCallback(() => {
     if (currentPolygon) {
       setIsEditing(false);
-      currentPolygon.setEditable(false);
+
+      // Remove vertex markers
+      vertexMarkers.forEach(marker => {
+        marker.setMap(null);
+      });
+      setVertexMarkers([]);
+
+      // Notify parent with final polygon state
       onPolygonEditHandler();
     }
-  }, [currentPolygon, onPolygonEditHandler]);
+  }, [currentPolygon, vertexMarkers, onPolygonEditHandler]);
 
   // Initialize with existing polygon
   useEffect(() => {
     if (initialPolygon && map) {
+      console.log('🏗️ ZoneDrawingMap - Initializing polygon:', {
+        coordsCount: initialPolygon.coordinates[0].length,
+        hasCurrentPolygon: !!currentPolygon
+      });
+
       const path = initialPolygon.coordinates[0].map(coord =>
         new google.maps.LatLng(coord[1], coord[0])
       );
@@ -254,8 +367,41 @@ export function ZoneDrawingMap({
       setCurrentPolygon(polygon);
       setDrawnPolygon(initialPolygon);
       setPolygonCenter(calculatePolygonCenter(initialPolygon));
+
+      console.log('✅ ZoneDrawingMap - Polygon initialized');
     }
   }, [initialPolygon, map]);
+
+  // Update polygon when drawnPolygon changes (for internal edits) or when polygon prop changes (from external)
+  useEffect(() => {
+    if (currentPolygon && map && !isEditing) {
+      // Priority: use polygon prop if provided, otherwise use drawnPolygon
+      const activePolygon = polygon || drawnPolygon;
+
+      if (activePolygon) {
+        console.log('🔄 ZoneDrawingMap - Updating polygon:', {
+          fromProp: !!polygon,
+          fromInternal: !polygon && !!drawnPolygon,
+          coordsCount: activePolygon.coordinates[0].length
+        });
+
+        // Update the Google Maps polygon with new coordinates
+        const path = activePolygon.coordinates[0].map(coord =>
+          new google.maps.LatLng(coord[1], coord[0])
+        );
+
+        currentPolygon.setPaths(path);
+        setPolygonCenter(calculatePolygonCenter(activePolygon));
+
+        // If updating from prop, also update internal state
+        if (polygon && polygon !== drawnPolygon) {
+          setDrawnPolygon(polygon);
+        }
+
+        console.log('✅ ZoneDrawingMap - Polygon updated');
+      }
+    }
+  }, [polygon, drawnPolygon, currentPolygon, map, isEditing]);
 
   // Update map center when center prop changes (only for updates after initial load)
   useEffect(() => {
@@ -291,7 +437,7 @@ export function ZoneDrawingMap({
             }}
           >
             {/* Drawing Manager */}
-            {!readOnly && (
+            {!readOnly && onPolygonComplete && (
               <DrawingManager
                 onLoad={onDrawingManagerLoad}
                 options={drawingManagerOptions}
@@ -300,7 +446,7 @@ export function ZoneDrawingMap({
             )}
 
             {/* Existing Zones */}
-            {existingZones.map((zone) => (
+            {Array.isArray(existingZones) && existingZones.map((zone) => (
               <Polygon
                 key={zone.id}
                 paths={zone.boundaries.coordinates[0].map(coord => ({
@@ -312,18 +458,17 @@ export function ZoneDrawingMap({
             ))}
 
             {/* Current Polygon */}
-            {drawnPolygon && (
+            {(polygon || drawnPolygon) && (
               <Polygon
-                paths={drawnPolygon.coordinates[0].map(coord => ({
+                paths={(polygon || drawnPolygon)!.coordinates[0].map(coord => ({
                   lat: coord[1],
                   lng: coord[0],
                 }))}
                 options={{
                   ...getZoneStyle('regular', true),
-                  editable: isEditing,
+                  editable: false, // Never editable - we use markers for editing
                   clickable: true,
                 }}
-                onMouseUp={onPolygonEditHandler}
               />
             )}
           </GoogleMap>
@@ -332,7 +477,7 @@ export function ZoneDrawingMap({
         {/* Drawing Controls */}
         {!readOnly && (
           <div className="absolute top-4 right-4 space-y-2">
-            {!drawnPolygon && !isDrawing && (
+            {!(polygon || drawnPolygon) && !isDrawing && onPolygonComplete && (
               <Button onClick={startDrawing} size="sm" className="shadow-lg">
                 <Edit3 className="h-4 w-4 mr-2" />
                 Dibujar Zona
@@ -348,15 +493,20 @@ export function ZoneDrawingMap({
               </div>
             )}
 
-            {drawnPolygon && !isEditing && (
+            {(polygon || drawnPolygon) && !isEditing && (
               <div className="flex space-x-2">
                 <Button onClick={editPolygon} size="sm" className="shadow-lg">
                   <Edit3 className="h-4 w-4 mr-2" />
                   Editar
                 </Button>
-                <Button onClick={clearPolygon} variant="destructive" size="sm" className="shadow-lg">
+                <Button
+                  onClick={onClear || clearPolygon}
+                  variant="destructive"
+                  size="sm"
+                  className="shadow-lg"
+                >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Limpiar
+                  {initialPolygon ? 'Descartar cambios' : 'Limpiar'}
                 </Button>
               </div>
             )}
@@ -390,7 +540,7 @@ export function ZoneDrawingMap({
                 {drawnPolygon.coordinates[0].length} vértices
               </Badge>
             </div>
-            {existingZones.length > 0 && (
+            {Array.isArray(existingZones) && existingZones.length > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Zonas existentes:</span>
                 <Badge variant="outline">
