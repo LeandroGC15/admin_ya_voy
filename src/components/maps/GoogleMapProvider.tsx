@@ -18,6 +18,7 @@ export function GoogleMapProvider({ children }: GoogleMapProviderProps) {
     id: 'google-map-script',
     googleMapsApiKey: apiKey,
     libraries: libraries,
+    version: 'weekly', // Agregar esta línea para usar la última versión estable
     preventGoogleFontsLoading: true,
   });
   

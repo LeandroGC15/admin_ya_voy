@@ -121,8 +121,8 @@ export default function ServiceZoneDetailPage() {
           {zone.isActive ? 'Activa' : 'Inactiva'}
         </Badge>
         <Badge variant="outline" className="text-sm">
-          {zone.zoneType === 'regular' ? 'Regular' :
-           zone.zoneType === 'premium' ? 'Premium' : 'Restringida'}
+          {zone.zoneType === 'REGULAR' ? 'Regular' :
+           zone.zoneType === 'PREMIUM' ? 'Premium' : 'Restringida'}
         </Badge>
         <span className="text-sm text-gray-500">
           Creada: {new Date(zone.createdAt).toLocaleDateString()}
@@ -306,8 +306,8 @@ export default function ServiceZoneDetailPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Tipo</span>
                   <Badge variant="outline">
-                    {zone.zoneType === 'regular' ? 'Regular' :
-                     zone.zoneType === 'premium' ? 'Premium' : 'Restringida'}
+                    {zone.zoneType === 'REGULAR' ? 'Regular' :
+                     zone.zoneType === 'PREMIUM' ? 'Premium' : 'Restringida'}
                   </Badge>
                 </div>
 

@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search, Filter, Map, BarChart3, Settings, Download } from 'lucide-react';
+import { Plus, Search, Filter, Map, BarChart3, Settings, Download, ArrowLeft, MapPin, TrendingUp, Users, Activity } from 'lucide-react';
 import { GoogleMapProvider } from '@/components/maps/GoogleMapProvider';
 import { ZonesVisualizationMap } from '@/components/maps/ZonesVisualizationMap';
 import {
@@ -129,26 +130,43 @@ export default function ServiceZonesPage() {
   const zonesForMap: ServiceZone[] = [];
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-gray-600">
+        <Link href="/dashboard/config/geography" className="flex items-center gap-1 hover:text-gray-900">
+          <ArrowLeft className="h-4 w-4" />
+          Configuración Geográfica
+        </Link>
+        <span>/</span>
+        <span className="font-medium">Zonas de Servicio</span>
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Zonas de Servicio</h1>
-          <p className="text-gray-600">
-            Gestiona las zonas de servicio y sus configuraciones de pricing
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <MapPin className="h-8 w-8" />
+            Gestión de Zonas de Servicio
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Administra zonas de servicio, configuraciones de pricing y cobertura territorial
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex gap-3">
           <Button
             variant="outline"
             onClick={() => setIsBulkPricingModalOpen(true)}
+            className="flex items-center gap-2"
           >
-            <Settings className="h-4 w-4 mr-2" />
+            <Settings className="h-4 w-4" />
             Bulk Pricing
           </Button>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Crear Zona
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Zona
           </Button>
         </div>
       </div>
@@ -157,38 +175,54 @@ export default function ServiceZonesPage() {
       {pricingStats ? (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
-            <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{pricingStats.totalZones}</div>
-                <div className="text-xs text-gray-600">Total Zonas</div>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Zonas</CardTitle>
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{pricingStats.totalZones}</div>
+              <p className="text-xs text-muted-foreground">
+                Zonas registradas en el sistema
+              </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{pricingStats.activeZones}</div>
-                <div className="text-xs text-gray-600">Zonas Activas</div>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Zonas Activas</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{pricingStats.activeZones}</div>
+              <p className="text-xs text-muted-foreground">
+                {((pricingStats.activeZones / pricingStats.totalZones) * 100).toFixed(1)}% del total
+              </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{pricingStats.averagePricingMultiplier.toFixed(2)}x</div>
-                <div className="text-xs text-gray-600">Pricing Promedio</div>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pricing Promedio</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{pricingStats.averagePricingMultiplier.toFixed(2)}x</div>
+              <p className="text-xs text-muted-foreground">
+                Multiplicador promedio de precios
+              </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{pricingStats.averageDemandMultiplier.toFixed(2)}x</div>
-                <div className="text-xs text-gray-600">Demanda Promedio</div>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Demanda Promedio</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">{pricingStats.averageDemandMultiplier.toFixed(2)}x</div>
+              <p className="text-xs text-muted-foreground">
+                Multiplicador promedio de demanda
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -230,16 +264,24 @@ export default function ServiceZonesPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Search */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Buscar</label>
-                  <Input
-                    placeholder="Nombre de zona..."
-                    value={searchParams.search || ''}
-                    onChange={(e) => handleSearch(e.target.value)}
-                  />
+              <div className="space-y-4">
+                {/* Search Bar */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Buscar por nombre de zona, ciudad o estado..."
+                      value={searchParams.search || ''}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <Button variant="outline" size="sm">
+                    <Search className="h-4 w-4" />
+                  </Button>
                 </div>
+                
+                {/* Filters Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
 
                 {/* Country Filter */}
                 <div className="space-y-2">
@@ -376,6 +418,7 @@ export default function ServiceZonesPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -415,12 +458,12 @@ export default function ServiceZonesPage() {
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* Pricing Distribution */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
+                  <TrendingUp className="h-5 w-5" />
                   Distribución de Pricing
                 </CardTitle>
               </CardHeader>
@@ -429,15 +472,15 @@ export default function ServiceZonesPage() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Pricing más alto:</span>
-                      <Badge variant="outline">{pricingStats.highestPricingMultiplier}x</Badge>
+                      <Badge variant="destructive" className="font-mono">{pricingStats.highestPricingMultiplier}x</Badge>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Pricing más bajo:</span>
-                      <Badge variant="outline">{pricingStats.lowestPricingMultiplier}x</Badge>
+                      <Badge variant="secondary" className="font-mono">{pricingStats.lowestPricingMultiplier}x</Badge>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Pricing promedio:</span>
-                      <Badge variant="outline">{pricingStats.averagePricingMultiplier.toFixed(2)}x</Badge>
+                      <Badge variant="outline" className="font-mono">{pricingStats.averagePricingMultiplier.toFixed(2)}x</Badge>
                     </div>
                   </div>
                 )}
@@ -448,7 +491,7 @@ export default function ServiceZonesPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
+                  <MapPin className="h-5 w-5" />
                   Zonas por Tipo
                 </CardTitle>
               </CardHeader>
@@ -466,6 +509,34 @@ export default function ServiceZonesPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Restringida:</span>
                       <Badge variant="destructive">{pricingStats.zonesByType.restricted}</Badge>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Demand Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Distribución de Demanda
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pricingStats && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Demanda promedio:</span>
+                      <Badge variant="outline" className="font-mono">{pricingStats.averageDemandMultiplier.toFixed(2)}x</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Zonas activas:</span>
+                      <Badge variant="default" className="font-mono">{pricingStats.activeZones}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Total zonas:</span>
+                      <Badge variant="secondary" className="font-mono">{pricingStats.totalZones}</Badge>
                     </div>
                   </div>
                 )}

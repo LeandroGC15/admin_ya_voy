@@ -422,6 +422,13 @@ export function ServiceZonesEditModal({
 
   // Handle polygon edit
   const handlePolygonEdit = (polygon: GeoJSONPolygon, center: { lat: number; lng: number }) => {
+    console.log('🎯 ServiceZonesEditModal - Received polygon edit:', {
+      vertexCount: polygon.coordinates[0].length,
+      center,
+      firstVertex: polygon.coordinates[0][0],
+      lastVertex: polygon.coordinates[0][polygon.coordinates[0].length - 1]
+    });
+
     setCurrentPolygon(polygon);
     setPolygonCenter(center);
 
@@ -429,11 +436,61 @@ export function ServiceZonesEditModal({
     form.setValue('centerLat', center.lat);
     form.setValue('centerLng', center.lng);
     form.setValue('boundaries', polygon);
+
+    console.log('✅ ServiceZonesEditModal - Form updated with new polygon');
   };
 
   // Handle form submission
   const onSubmit = async (data: UpdateServiceZoneInput) => {
-    if (!currentPolygon || !polygonCenter) {
+    // Use current polygon if available, otherwise use original zone geometry
+    const finalPolygon = currentPolygon || zone?.boundaries;
+    
+    // Helper function to safely convert coordinates to numbers
+    const parseCoordinate = (value: any): number | null => {
+      if (value == null) return null;
+      const num = typeof value === 'string' ? parseFloat(value) : Number(value);
+      return isNaN(num) ? null : num;
+    };
+    
+    const finalCenter = polygonCenter || (zone ? (() => {
+      const lat = parseCoordinate(zone.centerLat);
+      const lng = parseCoordinate(zone.centerLng);
+      
+      if (lat !== null && lng !== null && 
+          lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        return { lat, lng };
+      }
+      return null;
+    })() : null);
+
+    // Debug logs
+    console.log('🔍 ServiceZonesEditModal - onSubmit validation:', {
+      hasCurrentPolygon: !!currentPolygon,
+      hasOriginalBoundaries: !!zone?.boundaries,
+      finalPolygon: !!finalPolygon,
+      finalCenter: !!finalCenter,
+      zoneId,
+      zoneName: zone?.name,
+      polygonCenter: polygonCenter,
+      zoneCenterLat: zone?.centerLat,
+      zoneCenterLng: zone?.centerLng,
+      zoneCenterLatType: typeof zone?.centerLat,
+      zoneCenterLngType: typeof zone?.centerLng,
+      isZoneCenterLatValid: zone && typeof zone.centerLat === 'number' && !isNaN(zone.centerLat),
+      isZoneCenterLngValid: zone && typeof zone.centerLng === 'number' && !isNaN(zone.centerLng)
+    });
+
+    if (!finalPolygon || !finalCenter) {
+      console.error('❌ ServiceZonesEditModal - Missing geometry:', {
+        finalPolygon: !!finalPolygon,
+        finalCenter: !!finalCenter,
+        currentPolygon: !!currentPolygon,
+        originalBoundaries: !!zone?.boundaries,
+        originalCenter: zone ? {
+          lat: zone.centerLat,
+          lng: zone.centerLng
+        } : null
+      });
       setValidationErrors(['Debe tener un polígono válido']);
       return;
     }
@@ -442,9 +499,9 @@ export function ServiceZonesEditModal({
     const finalValidation = getComprehensiveValidation(
       {
         ...data,
-        boundaries: currentPolygon,
-        centerLat: polygonCenter.lat,
-        centerLng: polygonCenter.lng,
+        boundaries: finalPolygon,
+        centerLat: finalCenter.lat,
+        centerLng: finalCenter.lng,
       },
       existingZones || [],
       zoneId
@@ -458,9 +515,9 @@ export function ServiceZonesEditModal({
     try {
       const zoneData = {
         ...data,
-        boundaries: currentPolygon,
-        centerLat: polygonCenter.lat,
-        centerLng: polygonCenter.lng,
+        boundaries: finalPolygon,
+        centerLat: finalCenter.lat,
+        centerLng: finalCenter.lng,
       };
 
       await updateServiceZoneMutation.mutateAsync({ id: zoneId, data: zoneData });
@@ -473,16 +530,15 @@ export function ServiceZonesEditModal({
 
   const isLoading = updateServiceZoneMutation.isPending;
 
-  // For editing existing zones, be reactive - activate button as soon as zone data is loaded
-  // Check both local state and zone data for geometry
+  // For editing existing zones, check if we have valid geometry (either from current state or original zone)
   const hasValidGeometry = (currentPolygon && polygonCenter) ||
     (zone && zone.boundaries &&
      typeof zone.centerLat === 'number' && typeof zone.centerLng === 'number' &&
      !isNaN(zone.centerLat) && !isNaN(zone.centerLng));
 
-  // Button should be active when zone data is loaded and has geometry
-  // Always active for editing - user can save anytime
-  const canSubmit = zoneDataLoaded && hasValidGeometry && !isLoading;
+  // For editing: button should be active when zone data is loaded
+  // User can update form fields even without changing the map geometry
+  const canSubmit = zoneDataLoaded && !isLoading;
 
   // Debug: Log button state
   React.useEffect(() => {
@@ -490,9 +546,12 @@ export function ServiceZonesEditModal({
       zoneDataLoaded,
       hasValidGeometry,
       isLoading,
-      canSubmit
+      canSubmit,
+      hasCurrentPolygon: !!currentPolygon,
+      hasOriginalPolygon: !!(zone?.boundaries),
+      polygonSource: currentPolygon ? 'current' : 'original'
     });
-  }, [zoneDataLoaded, hasValidGeometry, isLoading, canSubmit]);
+  }, [zoneDataLoaded, hasValidGeometry, isLoading, canSubmit, currentPolygon, zone?.boundaries]);
 
 
   const isLoadingGeography = shouldLoadGeography && (!statesData || !citiesData);
@@ -770,11 +829,12 @@ export function ServiceZonesEditModal({
                 <CardContent>
                   {mapCenter || currentPolygon ? (
                     <GoogleMapProvider>
-                      <ZoneDrawingMap
+                        <ZoneDrawingMap
                         existingZones={Array.isArray(existingZones) ? existingZones.filter(z => z.id !== zoneId) : []}
                         onPolygonComplete={handlePolygonComplete}
                         onPolygonEdit={handlePolygonEdit}
                         initialPolygon={currentPolygon || undefined}
+                        polygon={currentPolygon || undefined}
                         center={mapCenter || (zone &&
                           typeof zone.centerLat === 'number' &&
                           typeof zone.centerLng === 'number' &&

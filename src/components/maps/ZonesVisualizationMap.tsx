@@ -372,7 +372,7 @@ export function ZonesVisualizationMap({
               <p className="text-sm">
                 La visualización de zonas en el mapa estará disponible próximamente.
                 <br />
-                Por ahora puedes gestionar las zonas desde la pestaña "Vista General".
+                Por ahora puedes gestionar las zonas desde la pestaña &quot;Vista General&quot;.
               </p>
             </div>
           </CardContent>

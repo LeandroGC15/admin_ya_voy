@@ -79,6 +79,31 @@ body {
 @tailwind components;
 @tailwind utilities;
 
+/* Estilos para marcadores de mapas */
+.vertex-marker {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.vertex-marker:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  cursor: grab;
+}
+
+.vertex-marker:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+.drawing-point-marker {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.drawing-point-marker:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
