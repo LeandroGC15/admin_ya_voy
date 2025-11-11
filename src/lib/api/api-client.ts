@@ -52,8 +52,30 @@ class ApiClient {
   private failedQueue: { resolve: (value?: unknown) => void; reject: (error?: unknown) => void }[] = [];
 
   private constructor() {
+    // Priorizar la URL externa del backend (VPS)
+    const baseURL = 
+      process.env.NEXT_PUBLIC_EXTERNAL_API_URL || 
+      process.env.NEXT_PUBLIC_BACKEND_URL || 
+      process.env.NEXT_PUBLIC_API_URL;
+
+    // Agregar versión v1 al baseURL para todas las llamadas
+    // Formato: baseURL/v1
+    const baseUrlWithVersion = baseURL 
+      ? `${baseURL.replace(/\/$/, '')}/v1` 
+      : undefined;
+
+    console.log('[ApiClient] Base URL configurada con versión v1:', {
+      originalBaseURL: baseURL,
+      baseUrlWithVersion,
+      envVars: {
+        NEXT_PUBLIC_EXTERNAL_API_URL: process.env.NEXT_PUBLIC_EXTERNAL_API_URL || 'not set',
+        NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'not set',
+        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'not set',
+      }
+    });
+
     this.instance = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL,
+      baseURL: baseUrlWithVersion,
       headers: { 'Content-Type': 'application/json' },
       withCredentials: true,
     });

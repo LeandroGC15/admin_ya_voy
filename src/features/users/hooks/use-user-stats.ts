@@ -1,5 +1,5 @@
 import { useApiQuery } from '@/lib/api/react-query-client';
-import { ENDPOINTS } from '@/lib/endpoints';
+import { ENDPOINTS, getFullEndpoint } from '@/lib/endpoints';
 
 // Query Keys
 export const userStatsKeys = {
@@ -13,7 +13,8 @@ export function useUserStats() {
     userStatsKeys.total(),
     async (): Promise<{ total: number }> => {
       // Obtener solo el primer usuario para saber el total
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${ENDPOINTS.legacy.users}?limit=1`);
+      // Nota: legacy.users usa formato 'api/user', necesitamos construir la URL completa con versión
+      const response = await fetch(`${getFullEndpoint(ENDPOINTS.legacy.users, 'v1')}?limit=1`);
       const data = await response.json();
 
       // La respuesta tiene estructura {data: {pagination: {total: number}}}

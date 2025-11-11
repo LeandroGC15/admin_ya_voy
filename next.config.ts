@@ -32,7 +32,9 @@ const nextConfig: NextConfig = {
     if (process.env.NEXT_PUBLIC_EXTERNAL_API_URL) {
       return [
         {
-          source: '/api/:path*',
+          // Excluir rutas de NextAuth - deben manejarse localmente
+          // Solo reescribir rutas que NO empiecen con /api/auth
+          source: '/api/:path((?!auth).*)',
           destination: `${process.env.NEXT_PUBLIC_EXTERNAL_API_URL}/:path*`,
         },
       ];

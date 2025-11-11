@@ -43,6 +43,33 @@ export const ENDPOINTS = {
     bulkStatus: 'admin/drivers/bulk/status',
   },
 
+  // Driver Verifications
+  driversVerifications: {
+    onboarding: 'admin/drivers-verifications/onboarding',
+    onboardingById: (id: string | number) => `admin/drivers-verifications/onboarding/${id}`,
+    stats: 'admin/drivers-verifications/stats',
+    statsByStage: 'admin/drivers-verifications/stats/by-stage',
+    statsByVehicleType: 'admin/drivers-verifications/stats/by-vehicle-type',
+    documents: {
+      pending: 'admin/drivers-verifications/documents/pending',
+      byId: (id: string | number) => `admin/drivers-verifications/documents/${id}`,
+      verify: (id: string | number) => `admin/drivers-verifications/documents/${id}/verify`,
+      reject: (id: string | number) => `admin/drivers-verifications/documents/${id}/reject`,
+      bulkVerify: 'admin/drivers-verifications/documents/bulk/verify',
+    },
+    vehicles: {
+      pending: 'admin/drivers-verifications/vehicles/pending',
+      byId: (id: string | number) => `admin/drivers-verifications/vehicles/${id}`,
+      verify: (id: string | number) => `admin/drivers-verifications/vehicles/${id}/verify`,
+      reject: (id: string | number) => `admin/drivers-verifications/vehicles/${id}/reject`,
+      verifyDocument: (vehicleId: string | number, docId: string | number) =>
+        `admin/drivers-verifications/vehicles/${vehicleId}/documents/${docId}/verify`,
+      bulkVerify: 'admin/drivers-verifications/vehicles/bulk/verify',
+    },
+    approve: (id: string | number) => `admin/drivers-verifications/drivers/${id}/approve`,
+    history: (id: string | number) => `admin/drivers-verifications/drivers/${id}/history`,
+  },
+
   // Ride Management
   rides: {
     base: 'admin/rides',
@@ -215,10 +242,52 @@ export const ENDPOINTS = {
 export type EndpointKeys = typeof ENDPOINTS;
 
 /**
- * Helper function to get full endpoint URL with base URL
+ * API version type - type-safe versioning for endpoints
  */
-export function getFullEndpoint(endpoint: string): string {
-  return `${process.env.NEXT_PUBLIC_API_URL || ''}${endpoint}`;
+export type ApiVersion = 'v1' | 'v2';
+
+/**
+ * Helper function to get full endpoint URL with base URL and versioning
+ * Prioriza NEXT_PUBLIC_EXTERNAL_API_URL para usar la URL del VPS externo
+ * en lugar del host local (localhost)
+ * 
+ * @param endpoint - The endpoint path (e.g., 'admin/auth/login')
+ * @param version - Optional API version ('v1' | 'v2'). Defaults to 'v1'
+ * @returns Full URL with version (e.g., 'https://api.example.com/v1/admin/auth/login')
+ */
+export function getFullEndpoint(endpoint: string, version: ApiVersion = 'v1'): string {
+  // Priorizar la URL externa del backend (VPS)
+  const baseUrl = 
+    process.env.NEXT_PUBLIC_EXTERNAL_API_URL || 
+    process.env.NEXT_PUBLIC_BACKEND_URL || 
+    process.env.NEXT_PUBLIC_API_URL || 
+    '';
+  
+  // Limpiar la URL base (remover barra final si existe)
+  const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+  
+  // Limpiar el endpoint (agregar barra inicial si no existe)
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
+  // Construir la URL con la versión: baseUrl/v1/endpoint
+  const fullUrl = `${cleanBaseUrl}/${version}${cleanEndpoint}`;
+  
+  // Log para debugging
+  console.log('[getFullEndpoint]', {
+    endpoint,
+    version,
+    baseUrl,
+    cleanBaseUrl,
+    cleanEndpoint,
+    fullUrl,
+    envVars: {
+      NEXT_PUBLIC_EXTERNAL_API_URL: process.env.NEXT_PUBLIC_EXTERNAL_API_URL || 'not set',
+      NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'not set',
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'not set',
+    }
+  });
+  
+  return fullUrl;
 }
 
 /**

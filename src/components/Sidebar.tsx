@@ -6,6 +6,7 @@ import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isDriversOpen, setIsDriversOpen] = useState(false);
 
   return (
     <aside className="hidden w-64 flex-shrink-0 bg-[#3F5B7F] md:block">
@@ -26,9 +27,32 @@ const Sidebar = () => {
           <Link href="/dashboard/users" className="block rounded-md px-4 py-2.5 text-gray-200 hover:bg-[#5C7E9F] hover:text-white">
             Usuarios
           </Link>
-          <Link href="/dashboard/drivers" className="block rounded-md px-4 py-2.5 text-gray-200 hover:bg-[#5C7E9F] hover:text-white">
-            Conductores
-          </Link>
+          
+          {/* Conductores - Expandible */}
+          <div>
+            <button
+              onClick={() => setIsDriversOpen(!isDriversOpen)}
+              className="flex w-full items-center justify-between rounded-md px-4 py-2.5 text-left text-gray-200 hover:bg-[#5C7E9F] hover:text-white"
+            >
+              <span>Conductores</span>
+              {isDriversOpen ? (
+                <ChevronDownIcon className="h-4 w-4" />
+              ) : (
+                <ChevronRightIcon className="h-4 w-4" />
+              )}
+            </button>
+
+            {isDriversOpen && (
+              <div className="ml-4 mt-1 space-y-1">
+                <Link href="/dashboard/drivers" className="block rounded-md px-4 py-2 text-sm text-gray-200 hover:bg-[#5C7E9F] hover:text-white font-medium">
+                  Gestión de Conductores
+                </Link>
+                <Link href="/dashboard/drivers/verifications" className="block rounded-md px-4 py-2 text-sm text-gray-300 hover:bg-[#5C7E9F] hover:text-white">
+                  Verificación de Conductores
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Configuración - Expandible */}

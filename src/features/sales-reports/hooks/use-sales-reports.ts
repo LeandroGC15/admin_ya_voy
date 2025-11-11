@@ -1,6 +1,6 @@
 import { useApiQuery } from '@/lib/api/react-query-client';
 import { api } from '@/lib/api/api-client';
-import { ENDPOINTS } from '@/lib/endpoints';
+import { ENDPOINTS, getFullEndpoint } from '@/lib/endpoints';
 import { salesReportDataSchema, type SalesReportData, type SalesReportFilters } from '../schemas/sales-reports.schemas';
 
 // Hook for fetching sales report data
@@ -217,7 +217,7 @@ export async function exportReport({ format, filters }: ExportReportOptions): Pr
 
     // Make direct axios request to avoid response interceptors
     const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}${ENDPOINTS.reports.export}`,
+      getFullEndpoint(ENDPOINTS.reports.export, 'v1'),
       {
         format,
         ...backendFilters,
