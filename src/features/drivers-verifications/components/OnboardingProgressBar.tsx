@@ -94,3 +94,4 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
 export default OnboardingProgressBar;
 
 
+
