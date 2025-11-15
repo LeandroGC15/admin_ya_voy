@@ -51,6 +51,7 @@ export const ENDPOINTS = {
     statsByStage: 'admin/drivers-verifications/stats/by-stage',
     statsByVehicleType: 'admin/drivers-verifications/stats/by-vehicle-type',
     documents: {
+      all: 'admin/drivers-verifications/documents',
       pending: 'admin/drivers-verifications/documents/pending',
       byId: (id: string | number) => `admin/drivers-verifications/documents/${id}`,
       verify: (id: string | number) => `admin/drivers-verifications/documents/${id}/verify`,
@@ -224,6 +225,13 @@ export const ENDPOINTS = {
     update: 'exchange-rates/update',
     reset: 'exchange-rates/reset',
     health: 'exchange-rates/health',
+  },
+
+  // Programa Yavoy Training Modules
+  programaYavoy: {
+    modules: 'admin/programa-yavoy/modules',
+    moduleById: (id: string | number) => `admin/programa-yavoy/modules/${id}`,
+    toggleStatus: (id: string | number) => `admin/programa-yavoy/modules/${id}/toggle-status`,
   },
 
   // Legacy API endpoints (used in older components)

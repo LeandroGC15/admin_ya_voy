@@ -50,6 +50,9 @@ const Sidebar = () => {
                 <Link href="/dashboard/drivers/verifications" className="block rounded-md px-4 py-2 text-sm text-gray-300 hover:bg-[#5C7E9F] hover:text-white">
                   Verificación de Conductores
                 </Link>
+                <Link href="/dashboard/drivers/programa-yavoy" className="block rounded-md px-4 py-2 text-sm text-gray-300 hover:bg-[#5C7E9F] hover:text-white">
+                  Programa Yavoy - Módulos
+                </Link>
               </div>
             )}
           </div>

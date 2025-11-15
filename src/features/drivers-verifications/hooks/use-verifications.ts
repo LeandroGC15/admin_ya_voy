@@ -7,6 +7,7 @@ import {
   getStatsByStage,
   getStatsByVehicleType,
   getPendingDocuments,
+  getAllDocuments,
   getDocumentDetails,
   verifyDocument,
   rejectDocument,
@@ -26,8 +27,10 @@ import type {
   OnboardingDriverResponse,
   OnboardingStatsResponse,
   GetPendingDocumentsQuery,
+  GetAllDocumentsQuery,
   DocumentVerificationResponse,
   PendingDocumentsListResponse,
+  DocumentsListResponse,
   VerifyDocumentRequest,
   BulkVerifyDocumentsRequest,
   GetPendingVehiclesQuery,
@@ -103,6 +106,17 @@ export function usePendingDocuments(query: GetPendingDocumentsQuery = {}) {
   return useApiQuery(
     ['drivers-verifications', 'documents', 'pending', query],
     () => getPendingDocuments(query),
+    {
+      enabled: true,
+      staleTime: 2 * 60 * 1000,
+    }
+  );
+}
+
+export function useAllDocuments(query: GetAllDocumentsQuery = {}) {
+  return useApiQuery(
+    ['drivers-verifications', 'documents', 'all', query],
+    () => getAllDocuments(query),
     {
       enabled: true,
       staleTime: 2 * 60 * 1000,
