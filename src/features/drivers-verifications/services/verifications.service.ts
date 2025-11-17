@@ -6,8 +6,10 @@ import type {
   OnboardingDriverResponse,
   OnboardingStatsResponse,
   GetPendingDocumentsQuery,
+  GetAllDocumentsQuery,
   DocumentVerificationResponse,
   PendingDocumentsListResponse,
+  DocumentsListResponse,
   VerifyDocumentRequest,
   BulkVerifyDocumentsRequest,
   GetPendingVehiclesQuery,
@@ -151,6 +153,30 @@ export const getPendingDocuments = async (
     return response.data;
   } catch (error) {
     console.error('Error getting pending documents:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all documents with filters (including verification status)
+ */
+export const getAllDocuments = async (
+  query: GetAllDocumentsQuery = {}
+): Promise<DocumentsListResponse> => {
+  try {
+    const params = new URLSearchParams();
+    if (query.documentType) params.append('documentType', query.documentType);
+    if (query.driverId) params.append('driverId', query.driverId.toString());
+    if (query.search) params.append('search', query.search);
+    if (query.verificationStatus) params.append('verificationStatus', query.verificationStatus);
+    if (query.page) params.append('page', query.page.toString());
+    if (query.limit) params.append('limit', query.limit.toString());
+
+    const endpoint = `${ENDPOINTS.driversVerifications.documents.all}?${params.toString()}`;
+    const response = await api.get<DocumentsListResponse>(endpoint);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting all documents:', error);
     throw error;
   }
 };

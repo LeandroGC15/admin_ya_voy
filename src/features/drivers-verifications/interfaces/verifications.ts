@@ -41,6 +41,10 @@ export interface GetPendingDocumentsQuery {
   limit?: number;
 }
 
+export interface GetAllDocumentsQuery extends GetPendingDocumentsQuery {
+  verificationStatus?: VerificationStatus;
+}
+
 export interface GetPendingVehiclesQuery {
   vehicleType?: VehicleType;
   driverId?: number;
@@ -173,6 +177,14 @@ export interface DocumentVerificationResponse {
 }
 
 export interface PendingDocumentsListResponse {
+  documents: DocumentVerificationResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface DocumentsListResponse {
   documents: DocumentVerificationResponse[];
   total: number;
   page: number;

@@ -10,6 +10,8 @@ import {
   useRejectDocument,
   useVerifyVehicle,
   useRejectVehicle,
+  useAllDocuments,
+  usePendingDocuments,
 } from '@/features/drivers-verifications/hooks/use-verifications';
 import OnboardingProgressBar from '@/features/drivers-verifications/components/OnboardingProgressBar';
 import DocumentCard from '@/features/drivers-verifications/components/DocumentCard';
@@ -18,6 +20,7 @@ import VerificationModal from '@/features/drivers-verifications/components/Verif
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { VerificationStatus, DocumentVerificationResponse, VehicleVerificationResponse } from '@/features/drivers-verifications/interfaces/verifications';
 
@@ -25,6 +28,7 @@ export default function DriverVerificationDetailPage() {
   const params = useParams();
   const router = useRouter();
   const driverId = params?.id as string;
+  const [activeTab, setActiveTab] = useState<'all' | 'pending'>('pending');
 
   const { data: driverData, isLoading, refetch } = useDriverOnboardingDetails(driverId);
   const approveDriverMutation = useApproveDriver();
@@ -36,6 +40,19 @@ export default function DriverVerificationDetailPage() {
   const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
   const [isVerifyingDocument, setIsVerifyingDocument] = useState(false);
+
+  // Queries for documents
+  const { data: allDocumentsData, isLoading: isLoadingAllDocuments } = useAllDocuments({
+    driverId: parseInt(driverId),
+    page: 1,
+    limit: 100,
+  });
+
+  const { data: pendingDocumentsData, isLoading: isLoadingPendingDocuments } = usePendingDocuments({
+    driverId: parseInt(driverId),
+    page: 1,
+    limit: 100,
+  });
 
   const handleApproveDriver = async () => {
     if (!driverId) return;
@@ -138,6 +155,8 @@ export default function DriverVerificationDetailPage() {
       setSelectedVehicleId(null);
       setIsVerifyingDocument(false);
       refetch();
+      // Invalidate document queries to refresh the tabs
+      // The hooks will automatically refetch when queries are invalidated
     } catch (error: any) {
       toast.error(`Error: ${error.message || 'Error desconocido'}`);
     }
@@ -254,35 +273,74 @@ export default function DriverVerificationDetailPage() {
       {/* Documentos Personales */}
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">Documentos Personales</h2>
-        {pendingDocuments.length > 0 ? (
-          <div className="space-y-3">
-            {pendingDocuments.map((doc) => {
-              const documentWithDriver: DocumentVerificationResponse = {
-                ...doc,
-                driver: {
-                  id: driver.id,
-                  firstName: driver.firstName,
-                  lastName: driver.lastName,
-                  email: driver.email,
-                  phone: driver.phone,
-                },
-                verifiedAt: undefined,
-                rejectionReason: undefined,
-              };
-              return (
-                <DocumentCard
-                  key={doc.id}
-                  document={documentWithDriver}
-                  onView={() => handleViewDocument(doc.id)}
-                  onApprove={() => handleApproveDocument(doc.id)}
-                  onReject={() => handleRejectDocument(doc.id)}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-gray-500">No hay documentos pendientes</p>
-        )}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'all' | 'pending')}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="pending">Documentos Pendientes</TabsTrigger>
+            <TabsTrigger value="all">Todos los Documentos</TabsTrigger>
+          </TabsList>
+          <TabsContent value="pending">
+            {isLoadingPendingDocuments ? (
+              <div className="text-center py-8">Cargando documentos pendientes...</div>
+            ) : pendingDocumentsData && pendingDocumentsData.documents.length > 0 ? (
+              <div className="space-y-3">
+                {pendingDocumentsData.documents.map((doc) => {
+                  const documentWithDriver: DocumentVerificationResponse = {
+                    ...doc,
+                    driver: {
+                      id: driver.id,
+                      firstName: driver.firstName,
+                      lastName: driver.lastName,
+                      email: driver.email,
+                      phone: driver.phone,
+                    },
+                  };
+                  return (
+                    <DocumentCard
+                      key={doc.id}
+                      document={documentWithDriver}
+                      onView={() => handleViewDocument(doc.id)}
+                      onApprove={() => handleApproveDocument(doc.id)}
+                      onReject={() => handleRejectDocument(doc.id)}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-500">No hay documentos pendientes</p>
+            )}
+          </TabsContent>
+          <TabsContent value="all">
+            {isLoadingAllDocuments ? (
+              <div className="text-center py-8">Cargando todos los documentos...</div>
+            ) : allDocumentsData && allDocumentsData.documents.length > 0 ? (
+              <div className="space-y-3">
+                {allDocumentsData.documents.map((doc) => {
+                  const documentWithDriver: DocumentVerificationResponse = {
+                    ...doc,
+                    driver: {
+                      id: driver.id,
+                      firstName: driver.firstName,
+                      lastName: driver.lastName,
+                      email: driver.email,
+                      phone: driver.phone,
+                    },
+                  };
+                  return (
+                    <DocumentCard
+                      key={doc.id}
+                      document={documentWithDriver}
+                      onView={() => handleViewDocument(doc.id)}
+                      onApprove={() => handleApproveDocument(doc.id)}
+                      onReject={() => handleRejectDocument(doc.id)}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-500">No hay documentos registrados</p>
+            )}
+          </TabsContent>
+        </Tabs>
       </Card>
 
       {/* Vehículos */}
