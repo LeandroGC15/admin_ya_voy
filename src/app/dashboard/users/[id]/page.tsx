@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useUser } from '@/features/users/hooks';
+import { useUser, useUserIdentityVerification } from '@/features/users/hooks';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Loader from '@/components/ui/loader';
@@ -16,6 +16,7 @@ export default function UserDetailPage() {
   const userId = params.id as string;
 
   const { data: userData, isLoading, error } = useUser(userId);
+  const { data: identityVerification, isLoading: isLoadingVerification } = useUserIdentityVerification(userId);
 
   const handleBack = () => {
     router.push('/dashboard/users');
@@ -123,9 +124,28 @@ export default function UserDetailPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Identidad Verificada</label>
-              <Badge variant={userData.identityVerified ? 'default' : 'secondary'}>
-                {userData.identityVerified ? 'Sí' : 'No'}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant={userData.identityVerified ? 'default' : 'secondary'}>
+                  {userData.identityVerified ? 'Sí' : 'No'}
+                </Badge>
+                {identityVerification && (
+                  <Badge
+                    className={
+                      identityVerification.status === 'PENDING'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : identityVerification.status === 'VERIFIED'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }
+                  >
+                    {identityVerification.status === 'PENDING'
+                      ? 'Pendiente'
+                      : identityVerification.status === 'VERIFIED'
+                      ? 'Verificado'
+                      : 'Rechazado'}
+                  </Badge>
+                )}
+              </div>
             </div>
             {/* Note: Properties like dateOfBirth, gender, lastLogin are not in current user schema */}
             <div>
@@ -211,6 +231,93 @@ export default function UserDetailPage() {
               <div className="text-2xl font-bold text-blue-600">{userData.wallet.totalTransactions || 0}</div>
               <div className="text-sm text-muted-foreground">Transacciones Totales</div>
             </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Identity Verification Section */}
+      {identityVerification && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Verificación de Identidad</CardTitle>
+              {identityVerification.status === 'PENDING' && (
+                <Button
+                  onClick={() => router.push(`/dashboard/users/${userId}/identity-verification`)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Revisar Documentos
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Estado</label>
+                <div className="mt-1">
+                  <Badge
+                    className={
+                      identityVerification.status === 'PENDING'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : identityVerification.status === 'VERIFIED'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }
+                  >
+                    {identityVerification.status === 'PENDING'
+                      ? 'Pendiente'
+                      : identityVerification.status === 'VERIFIED'
+                      ? 'Verificado'
+                      : 'Rechazado'}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">DNI</label>
+                <p className="text-sm font-medium">{identityVerification.dniNumber}</p>
+              </div>
+              {identityVerification.verifiedAt && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Fecha de Verificación
+                  </label>
+                  <p className="text-sm font-medium">
+                    {new Date(identityVerification.verifiedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+              {identityVerification.verifiedByName && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Verificado por
+                  </label>
+                  <p className="text-sm font-medium">{identityVerification.verifiedByName}</p>
+                </div>
+              )}
+              {identityVerification.rejectionReason && (
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Razón de Rechazo
+                  </label>
+                  <p className="text-sm font-medium text-red-600">
+                    {identityVerification.rejectionReason}
+                  </p>
+                </div>
+              )}
+              <div className="md:col-span-2">
+                <Button
+                  onClick={() => router.push(`/dashboard/users/${userId}/identity-verification`)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Ver Detalles de Verificación
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -30,17 +30,41 @@ export const ENDPOINTS = {
     wallet: (id: string | number) => `admin/users/${id}/wallet`,
     adjust: (id: string | number) => `admin/users/${id}/wallet/adjust`,
     emergencyContacts: (id: string | number) => `admin/users/${id}/emergency-contacts`,
+    identityVerifications: {
+      pending: 'admin/users/identity-verifications/pending',
+      stats: 'admin/users/identity-verifications/stats',
+      byUserId: (id: string | number) => `admin/users/${id}/identity-verification`,
+      approve: (id: string | number) => `admin/users/${id}/identity-verification/approve`,
+      reject: (id: string | number) => `admin/users/${id}/identity-verification/reject`,
+    },
   },
 
   // Driver Management
   drivers: {
     base: 'admin/drivers',
     register: 'admin/drivers/register',
+    export: 'admin/drivers/export',
     byId: (id: string | number) => `admin/drivers/${id}`,
     status: (id: string | number) => `admin/drivers/${id}/status`,
     verification: (id: string | number) => `admin/drivers/${id}/verification`,
     workZones: (id: string | number) => `admin/drivers/${id}/work-zones`,
     bulkStatus: 'admin/drivers/bulk/status',
+    notifications: (id: string | number) => `admin/drivers/${id}/notifications`,
+    reassignRides: (id: string | number) => `admin/drivers/${id}/reassign-rides`,
+    auditHistory: (id: string | number) => `admin/drivers/${id}/audit-history`,
+    documents: {
+      base: (id: string | number) => `admin/drivers/${id}/documents`,
+      byId: (id: string | number, docId: string | number) => `admin/drivers/${id}/documents/${docId}`,
+    },
+    vehicles: {
+      base: (id: string | number) => `admin/drivers/${id}/vehicles`,
+      byId: (id: string | number, vehicleId: string | number) => `admin/drivers/${id}/vehicles/${vehicleId}`,
+      setDefault: (id: string | number, vehicleId: string | number) => `admin/drivers/${id}/vehicles/${vehicleId}/set-default`,
+      documents: {
+        base: (id: string | number, vehicleId: string | number) => `admin/drivers/${id}/vehicles/${vehicleId}/documents`,
+        byId: (id: string | number, vehicleId: string | number, docId: string | number) => `admin/drivers/${id}/vehicles/${vehicleId}/documents/${docId}`,
+      },
+    },
   },
 
   // Driver Verifications
@@ -224,6 +248,11 @@ export const ENDPOINTS = {
     update: 'exchange-rates/update',
     reset: 'exchange-rates/reset',
     health: 'exchange-rates/health',
+  },
+
+  // Transcription
+  transcription: {
+    base: '/api/transcription',
   },
 
   // Legacy API endpoints (used in older components)
