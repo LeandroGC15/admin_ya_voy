@@ -110,5 +110,5 @@ export interface SalesReportFilters {
   dateFrom?: string;
   dateTo?: string;
   period?: 'today' | 'yesterday' | 'week' | 'month' | 'quarter' | 'year' | 'custom';
-  groupBy?: 'day' | 'week' | 'month' | 'hour';
+  groupBy?: 'day' | 'week' | 'month';
 }

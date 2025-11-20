@@ -62,13 +62,14 @@ export const createRideTierSchema = z.object({
     .min(3, 'El nombre debe tener al menos 3 caracteres')
     .max(50, 'El nombre no puede tener más de 50 caracteres'),
   baseFare: z.number()
-    .min(50, 'La tarifa base debe ser al menos 50 centavos')
+  
+    .min(0, 'La tarifa base no puede ser negativa')
     .max(10000, 'La tarifa base no puede ser mayor a 10000 centavos'),
   minimunFare: z.number()
     .min(0, 'La tarifa mínima no puede ser negativa')
     .max(10000, 'La tarifa mínima no puede ser mayor a 10000 centavos'),
   perMinuteRate: z.number()
-    .min(5, 'La tarifa por minuto debe ser al menos 5 centavos')
+    .min(0, 'La tarifa por minuto no puede ser negativa')
     .max(200, 'La tarifa por minuto no puede ser mayor a 200 centavos'),
   perKmRate: z.number()
     .min(20, 'La tarifa por kilómetro debe ser al menos 20 centavos')
@@ -113,9 +114,22 @@ export const createRideTierSchema = z.object({
     .default(5),
   vehicleTypeIds: z.array(z.number().positive())
     .optional(),
-}).refine((data) => data.minimunFare <= data.baseFare, {
-  message: "La tarifa mínima no puede ser mayor que la tarifa base",
-  path: ["minimumFare"]
+}).refine((data) => {
+  // Si baseFare es 0, permitir cualquier minimunFare >= 0
+  if (data.baseFare === 0) {
+    return data.minimunFare >= 0;
+  }
+  // Si baseFare > 0, minimunFare debe ser <= baseFare
+  return data.minimunFare <= data.baseFare;
+}, {
+  message: "La tarifa mínima no puede ser mayor que la tarifa base (cuando la tarifa base es mayor a 0)",
+  path: ["minimunFare"]
+}).refine((data) => {
+  // Al menos uno de los componentes de precio debe ser mayor a 0
+  return data.baseFare > 0 || data.perMinuteRate > 0 || data.perKmRate > 0;
+}, {
+  message: "Al menos uno de los componentes de precio (tarifa base, por minuto o por kilómetro) debe ser mayor a 0",
+  path: ["baseFare"]
 });
 
 // Update ride tier schema (all fields optional except the refine validation)
@@ -125,15 +139,15 @@ export const updateRideTierSchema = z.object({
     .max(50, 'El nombre no puede tener más de 50 caracteres')
     .optional(),
   baseFare: z.number()
-    .min(50, 'La tarifa base debe ser al menos 50 centavos')
+    .min(0, 'La tarifa base no puede ser negativa')
     .max(10000, 'La tarifa base no puede ser mayor a 10000 centavos')
     .optional(),
-  minimumFare: z.number()
+  minimunFare: z.number()
     .min(0, 'La tarifa mínima no puede ser negativa')
     .max(10000, 'La tarifa mínima no puede ser mayor a 10000 centavos')
     .optional(),
   perMinuteRate: z.number()
-    .min(5, 'La tarifa por minuto debe ser al menos 5 centavos')
+    .min(0, 'La tarifa por minuto no puede ser negativa')
     .max(200, 'La tarifa por minuto no puede ser mayor a 200 centavos')
     .optional(),
   perKmRate: z.number()
@@ -180,6 +194,41 @@ export const updateRideTierSchema = z.object({
     .optional(),
   vehicleTypeIds: z.array(z.number().positive())
     .optional(),
+}).refine((data) => {
+  // Skip validation if fields are not provided (partial update)
+  if (data.baseFare === undefined || data.minimunFare === undefined) {
+    return true;
+  }
+  // Si baseFare es 0, permitir cualquier minimunFare >= 0
+  if (data.baseFare === 0) {
+    return data.minimunFare >= 0;
+  }
+  // Si baseFare > 0, minimunFare debe ser <= baseFare
+  return data.minimunFare <= data.baseFare;
+}, {
+  message: "La tarifa mínima no puede ser mayor que la tarifa base (cuando la tarifa base es mayor a 0)",
+  path: ["minimunFare"]
+}).refine((data) => {
+  // Skip validation if updating other fields without pricing fields
+  const hasBaseFare = data.baseFare !== undefined;
+  const hasPerMinuteRate = data.perMinuteRate !== undefined;
+  const hasPerKmRate = data.perKmRate !== undefined;
+  
+  // If no pricing fields are being updated, skip this validation
+  if (!hasBaseFare && !hasPerMinuteRate && !hasPerKmRate) {
+    return true;
+  }
+  
+  // Get current values or use 0 as default for validation
+  const baseFare = data.baseFare ?? 0;
+  const perMinuteRate = data.perMinuteRate ?? 0;
+  const perKmRate = data.perKmRate ?? 0;
+  
+  // Al menos uno de los componentes de precio debe ser mayor a 0
+  return baseFare > 0 || perMinuteRate > 0 || perKmRate > 0;
+}, {
+  message: "Al menos uno de los componentes de precio (tarifa base, por minuto o por kilómetro) debe ser mayor a 0",
+  path: ["baseFare"]
 });
 
 // ========== QUERY SCHEMAS ==========

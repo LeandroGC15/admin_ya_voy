@@ -9,6 +9,7 @@ import { useDrivers, useCreateDriver, useDeleteDriver } from '@/features/drivers
 import { DriverDeleteModal } from '@/features/drivers/components';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { createDriverSchema, type Driver, type CreateDriverInput, type SearchDriversInput } from '@/features/drivers/schemas/driver-schemas';
+import Loader from '@/components/ui/loader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -364,6 +365,9 @@ const DriversPage: React.FC = () => {
           setSelectedDriver(null);
         }}
       />
+
+      {/* Loader para estados de carga */}
+      <Loader isVisible={isLoading} showBackground={true} />
     </div>
   );
 };

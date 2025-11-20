@@ -24,12 +24,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useSalesReport, exportReport, type SalesReportFilters, type ExportFormat } from '@/features/sales-reports';
+import { useSalesReport, exportReport, type SalesReportFilters, type ExportFormat, type SalesReportData } from '@/features/sales-reports';
 import { RevenueChart } from './components/RevenueChart';
 import { PaymentMethodChart } from './components/PaymentMethodChart';
 import { CategoryBreakdownChart } from './components/CategoryBreakdownChart';
 import { PeriodComparisonTable } from './components/PeriodComparisonTable';
 import { KPICards } from './components/KPICards';
+import Loader from '@/components/ui/loader';
 
 const SalesReportsPage: React.FC = () => {
   const [filters, setFilters] = useState<SalesReportFilters>({
@@ -59,7 +60,7 @@ const SalesReportsPage: React.FC = () => {
 
   // Handle export with format selection
   const handleExport = async (format: ExportFormat) => {
-    if (!salesData) return;
+    if (!displayData) return;
 
     setIsExporting(true);
     try {
@@ -78,125 +79,63 @@ const SalesReportsPage: React.FC = () => {
     }
   };
 
-  // Handle loading state
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <BarChart3 className="h-8 w-8" />
-              Reporte de Ventas
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Análisis detallado de ingresos y métricas financieras
-            </p>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center space-y-4">
-            <RefreshCw className="mx-auto h-12 w-12 animate-spin text-gray-400" />
-            <div className="space-y-2">
-              <h3 className="text-lg font-medium text-gray-900">Cargando reporte...</h3>
-              <p className="text-gray-500">Obteniendo datos de ventas</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  // Handle error state
-  if (error) {
-    return (
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <BarChart3 className="h-8 w-8" />
-              Reporte de Ventas
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Análisis detallado de ingresos y métricas financieras
-            </p>
-          </div>
-        </div>
+  // Default data when no data is available
+  const defaultSalesData: SalesReportData = {
+    summary: {
+      totalRevenue: 0,
+      revenueSources: {
+        rides: 0,
+        deliveries: 0,
+        errands: 0,
+        parcels: 0,
+      },
+      revenueByPaymentMethod: {},
+      revenueByTier: [],
+      revenueByZone: [],
+      revenueByTimePeriod: {
+        rides: [],
+        deliveries: [],
+      },
+      trendsAnalysis: {
+        currentPeriodRevenue: 0,
+        previousPeriodRevenue: 0,
+        growthRate: 0,
+        trend: 'stable',
+      },
+      categoryBreakdown: {
+        services: [],
+        discounts: { total: 0, count: 0 },
+        taxesAndFees: {
+          estimatedTaxes: 0,
+          platformFees: 0,
+        },
+      },
+      periodComparison: {
+        yearlyComparison: {
+          current: 0,
+          previous: 0,
+          growth: 0,
+        },
+        monthlyComparison: {
+          current: 0,
+          previous: 0,
+          growth: 0,
+        },
+      },
+    },
+    chartData: [],
+    details: [],
+    metadata: {
+      generatedAt: new Date().toISOString(),
+      filters: {},
+      totalRecords: 0,
+      executionTime: 0,
+    },
+  };
 
-        <div className="flex items-center justify-center py-12">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium text-gray-900">Error al cargar el reporte</h3>
-                  <p className="text-sm text-gray-500">
-                    {error.message || 'Error desconocido al obtener los datos'}
-                  </p>
-                </div>
-                <Button
-                  onClick={handleRefresh}
-                  disabled={isRefetching}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {isRefetching ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Recargando...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Reintentar
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle no data state
-  if (!salesData) {
-    return (
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <BarChart3 className="h-8 w-8" />
-              Reporte de Ventas
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Análisis detallado de ingresos y métricas financieras
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center py-12">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <BarChart3 className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium text-gray-900">No hay datos disponibles</h3>
-                  <p className="text-sm text-gray-500">
-                    No se pudieron obtener los datos del reporte de ventas
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const displayData = salesData || defaultSalesData;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -237,7 +176,7 @@ const SalesReportsPage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={!salesData || isExporting}
+                disabled={!displayData || isExporting}
               >
                 {isExporting ? (
                   <>
@@ -320,7 +259,6 @@ const SalesReportsPage: React.FC = () => {
                 onChange={(e) => handleFilterChange({ groupBy: e.target.value as any })}
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm"
               >
-                <option value="hour">Hora</option>
                 <option value="day">Día</option>
                 <option value="week">Semana</option>
                 <option value="month">Mes</option>
@@ -331,7 +269,7 @@ const SalesReportsPage: React.FC = () => {
       </Card>
 
       {/* KPI Cards */}
-      <KPICards summary={salesData.summary} />
+      <KPICards summary={displayData.summary} />
 
       {/* Charts and Tables */}
       <Tabs defaultValue="overview" className="space-y-6">
@@ -345,11 +283,11 @@ const SalesReportsPage: React.FC = () => {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <RevenueChart
-              data={salesData.chartData.find(c => c.type === 'line')}
+              data={displayData.chartData.find(c => c.type === 'line')}
               title="Revenue por Tiempo"
             />
             <PaymentMethodChart
-              data={salesData.chartData.find(c => c.type === 'pie')}
+              data={displayData.chartData.find(c => c.type === 'pie')}
               title="Revenue por Método de Pago"
             />
           </div>
@@ -358,18 +296,18 @@ const SalesReportsPage: React.FC = () => {
         <TabsContent value="charts" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <RevenueChart
-              data={salesData.chartData.find(c => c.type === 'line')}
+              data={displayData.chartData.find(c => c.type === 'line')}
               title="Revenue por Tiempo"
             />
             <PaymentMethodChart
-              data={salesData.chartData.find(c => c.type === 'pie')}
+              data={displayData.chartData.find(c => c.type === 'pie')}
               title="Revenue por Método de Pago"
             />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <CategoryBreakdownChart
-              data={salesData.chartData.find(c => c.type === 'doughnut')}
+              data={displayData.chartData.find(c => c.type === 'doughnut')}
               title="Revenue por Tipo de Servicio"
             />
             <Card>
@@ -378,7 +316,7 @@ const SalesReportsPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {salesData.summary.revenueByTier.map((tier, index) => (
+                  {displayData.summary.revenueByTier.map((tier, index) => (
                     <div key={index} className="flex justify-between items-center">
                       <span className="text-sm font-medium">{tier.tier_name}</span>
                       <div className="text-right">
@@ -395,7 +333,7 @@ const SalesReportsPage: React.FC = () => {
 
         <TabsContent value="breakdown" className="space-y-6">
           <CategoryBreakdownChart
-            data={salesData.chartData.find(c => c.type === 'doughnut')}
+            data={displayData.chartData.find(c => c.type === 'doughnut')}
             title="Revenue por Tipo de Servicio"
           />
 
@@ -406,7 +344,7 @@ const SalesReportsPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {salesData.summary.revenueByZone.map((zone, index) => (
+                  {displayData.summary.revenueByZone.map((zone, index) => (
                     <div key={index} className="flex justify-between items-center">
                       <span className="text-sm font-medium">{zone.zone}</span>
                       <div className="text-right">
@@ -428,25 +366,25 @@ const SalesReportsPage: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Servicios</span>
                     <span className="text-sm font-bold">
-                      ${(salesData.summary.categoryBreakdown.services.reduce((sum, s) => sum + s.revenue, 0)).toFixed(2)}
+                      ${(displayData.summary.categoryBreakdown.services.reduce((sum, s) => sum + s.revenue, 0)).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Descuentos</span>
                     <span className="text-sm font-bold text-red-600">
-                      -${salesData.summary.categoryBreakdown.discounts.total.toFixed(2)}
+                      -${displayData.summary.categoryBreakdown.discounts.total.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Impuestos Estimados</span>
                     <span className="text-sm font-bold">
-                      ${salesData.summary.categoryBreakdown.taxesAndFees.estimatedTaxes.toFixed(2)}
+                      ${displayData.summary.categoryBreakdown.taxesAndFees.estimatedTaxes.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center border-t pt-2">
                     <span className="text-sm font-bold">Total Neto</span>
                     <span className="text-sm font-bold text-green-600">
-                      ${salesData.summary.totalRevenue.toFixed(2)}
+                      ${displayData.summary.totalRevenue.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -456,7 +394,7 @@ const SalesReportsPage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="comparison" className="space-y-6">
-          <PeriodComparisonTable comparison={salesData.summary.periodComparison} />
+          <PeriodComparisonTable comparison={displayData.summary.periodComparison} />
 
           <Card>
             <CardHeader>
@@ -466,31 +404,31 @@ const SalesReportsPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Revenue Período Actual</span>
-                  <span className="text-sm font-bold">${salesData.summary.trendsAnalysis.currentPeriodRevenue.toFixed(2)}</span>
+                  <span className="text-sm font-bold">${displayData.summary.trendsAnalysis.currentPeriodRevenue.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Revenue Período Anterior</span>
-                  <span className="text-sm font-bold">${salesData.summary.trendsAnalysis.previousPeriodRevenue.toFixed(2)}</span>
+                  <span className="text-sm font-bold">${displayData.summary.trendsAnalysis.previousPeriodRevenue.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Tasa de Crecimiento</span>
-                  <Badge variant={salesData.summary.trendsAnalysis.growthRate >= 0 ? "default" : "destructive"}>
-                    {salesData.summary.trendsAnalysis.growthRate >= 0 ? (
+                  <Badge variant={displayData.summary.trendsAnalysis.growthRate >= 0 ? "default" : "destructive"}>
+                    {displayData.summary.trendsAnalysis.growthRate >= 0 ? (
                       <TrendingUp className="h-3 w-3 mr-1" />
                     ) : (
                       <TrendingDown className="h-3 w-3 mr-1" />
                     )}
-                    {salesData.summary.trendsAnalysis.growthRate.toFixed(2)}%
+                    {displayData.summary.trendsAnalysis.growthRate.toFixed(2)}%
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Tendencia</span>
                   <Badge variant={
-                    salesData.summary.trendsAnalysis.trend === 'increasing' ? 'default' :
-                    salesData.summary.trendsAnalysis.trend === 'decreasing' ? 'destructive' : 'secondary'
+                    displayData.summary.trendsAnalysis.trend === 'increasing' ? 'default' :
+                    displayData.summary.trendsAnalysis.trend === 'decreasing' ? 'destructive' : 'secondary'
                   }>
-                    {salesData.summary.trendsAnalysis.trend === 'increasing' ? 'Creciente' :
-                     salesData.summary.trendsAnalysis.trend === 'decreasing' ? 'Decreciente' : 'Estable'}
+                    {displayData.summary.trendsAnalysis.trend === 'increasing' ? 'Creciente' :
+                     displayData.summary.trendsAnalysis.trend === 'decreasing' ? 'Decreciente' : 'Estable'}
                   </Badge>
                 </div>
               </div>
@@ -498,6 +436,9 @@ const SalesReportsPage: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Loader para estados de carga */}
+      <Loader isVisible={isLoading} showBackground={true} />
     </div>
   );
 };

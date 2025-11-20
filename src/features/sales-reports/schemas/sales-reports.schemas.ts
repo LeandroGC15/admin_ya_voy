@@ -131,7 +131,7 @@ export const salesReportFiltersSchema = z.object({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   period: z.enum(['today', 'yesterday', 'week', 'month', 'quarter', 'year', 'custom']).optional(),
-  groupBy: z.enum(['day', 'week', 'month', 'hour']).optional(),
+  groupBy: z.enum(['day', 'week', 'month']).optional(),
 });
 
 // Type exports

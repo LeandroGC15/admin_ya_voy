@@ -30,6 +30,7 @@ export const ENDPOINTS = {
     wallet: (id: string | number) => `admin/users/${id}/wallet`,
     adjust: (id: string | number) => `admin/users/${id}/wallet/adjust`,
     emergencyContacts: (id: string | number) => `admin/users/${id}/emergency-contacts`,
+<<<<<<< Updated upstream
     identityVerifications: {
       pending: 'admin/users/identity-verifications/pending',
       stats: 'admin/users/identity-verifications/stats',
@@ -37,6 +38,9 @@ export const ENDPOINTS = {
       approve: (id: string | number) => `admin/users/${id}/identity-verification/approve`,
       reject: (id: string | number) => `admin/users/${id}/identity-verification/reject`,
     },
+=======
+    bulkStatus: 'admin/users/bulk/status', // Operaciones masivas de estado
+>>>>>>> Stashed changes
   },
 
   // Driver Management

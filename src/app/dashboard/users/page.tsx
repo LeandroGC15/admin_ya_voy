@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { DataTable, Modal, CreateButton } from '@/features/core/components';
+import { SelectableDataTable, Modal, CreateButton } from '@/features/core/components';
 import UserDeleteForm from '@/features/users/components/UserDeleteForm';
 import { UserRestoreModal } from '@/features/users/components/UserRestoreModal';
+import { BulkActionsBar } from '@/features/users/components/BulkActionsBar';
 import UserUpdateForm from '@/features/users/components/UserUpdateForm';
 import Loader from '@/components/ui/loader';
 import { useUsers, useCreateUser, useDeleteUser, useRestoreUser } from '@/features/users/hooks';
@@ -27,6 +28,7 @@ const UsersPage: React.FC = () => {
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [showActivateModal, setShowActivateModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchParams, setSearchParams] = useState<SearchUsersInput>({});
 
@@ -186,6 +188,20 @@ const UsersPage: React.FC = () => {
     setCurrentPage(page);
   };
 
+  // Funciones para selección múltiple
+  const handleSelectionChange = (users: User[]) => {
+    setSelectedUsers(users);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedUsers([]);
+  };
+
+  const handleBulkActionComplete = () => {
+    setSelectedUsers([]);
+    invalidateQueries(['users', 'list']);
+  };
+
   const columns = [
     {
       key: 'name' as keyof User,
@@ -329,8 +345,15 @@ const UsersPage: React.FC = () => {
         </Button>
       </div>
 
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedUsers={selectedUsers}
+        onClearSelection={handleClearSelection}
+        onBulkActionComplete={handleBulkActionComplete}
+      />
+
       {/* Table */}
-      <DataTable
+      <SelectableDataTable
         data={users}
         columns={columns}
         loading={isLoading}
@@ -344,6 +367,11 @@ const UsersPage: React.FC = () => {
         }
         actions={renderActions}
         emptyMessage="No se encontraron usuarios"
+        selectable={true}
+        selectedItems={selectedUsers}
+        onSelectionChange={handleSelectionChange}
+        getItemId={(user) => user.id}
+        selectAllLabel="Seleccionar todos los usuarios"
       />
 
       {/* Create Modal */}

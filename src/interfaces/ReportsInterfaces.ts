@@ -8,7 +8,7 @@ export interface GenerateReportRequest {
   dateTo: string;
   period: 'day' | 'week' | 'month' | 'quarter' | 'year';
   entityType: 'rides' | 'financial' | 'users' | 'drivers' | 'system';
-  groupBy: 'day' | 'week' | 'month' | 'hour';
+  groupBy: 'day' | 'week' | 'month';
   metrics: string[];
   filters?: Record<string, any>;
 }

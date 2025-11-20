@@ -1,4 +1,5 @@
 export { DataTable } from './data-table';
+export { SelectableDataTable } from './selectable-data-table';
 export { Modal } from './modal';
 export {
   CreateButton,

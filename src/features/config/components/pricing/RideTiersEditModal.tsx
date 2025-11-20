@@ -28,10 +28,10 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
     resolver: zodResolver(updateRideTierSchema),
     defaultValues: {
       name: '',
-      baseFare: 200, // 2.00 USD in cents (within limits)
-      minimumFare: 150, // 1.50 USD in cents (within limits)
-      perMinuteRate: 10, // 0.10 USD in cents (within limits)
-      perKmRate: 50, // 0.50 USD in cents (within limits)
+      baseFare: 0, // USD (se convierte a centavos) - puede ser 0
+      minimunFare: 0, // USD (se convierte a centavos) - nota: typo del backend
+      perMinuteRate: 0, // USD (se convierte a centavos) - puede ser 0
+      perKmRate: 50, // USD (se convierte a centavos) - ejemplo
       imageUrl: '', // Empty string instead of undefined for URL validation
       tierMultiplier: 1.0,
       surgeMultiplier: 1.0,
@@ -60,7 +60,7 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
       form.reset({
         name: tierData.name,
         baseFare: tierData.baseFare,
-        minimumFare: tierData.minimumFare,
+        minimunFare: (tierData as any).minimunFare || tierData.minimumFare, // Backend usa minimunFare (typo)
         perMinuteRate: tierData.perMinuteRate,
         perKmRate: tierData.perKmRate,
         imageUrl: (tierData as any).imageUrl || '',
@@ -211,7 +211,7 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
                 {...form.register('baseFare', {
                   setValueAs: (value) => value ? parseCurrencyInput(value) : 0
                 })}
-                placeholder="2.50"
+                placeholder="0.00 o 2.50"
               />
               {form.formState.errors.baseFare && (
                 <p className="text-sm text-red-600">{form.formState.errors.baseFare.message}</p>
@@ -228,7 +228,7 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
                 {...form.register('perMinuteRate', {
                   setValueAs: (value) => value ? parseCurrencyInput(value) : 0
                 })}
-                placeholder="0.15"
+                placeholder="0.00 o 0.15"
               />
               {form.formState.errors.perMinuteRate && (
                 <p className="text-sm text-red-600">{form.formState.errors.perMinuteRate.message}</p>
@@ -255,22 +255,22 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="minimumFare">Tarifa Mínima (USD) *</Label>
+              <Label htmlFor="minimunFare">Tarifa Mínima (USD) *</Label>
               <Input
-                id="minimumFare"
+                id="minimunFare"
                 type="number"
                 step="0.01"
                 min="0"
-                {...form.register('minimumFare', {
+                {...form.register('minimunFare', {
                   setValueAs: (value) => value ? parseCurrencyInput(value) : 0
                 })}
-                placeholder="2.00"
+                placeholder="0.00 o 2.00"
               />
-              {form.formState.errors.minimumFare && (
-                <p className="text-sm text-red-600">{form.formState.errors.minimumFare.message}</p>
+              {form.formState.errors.minimunFare && (
+                <p className="text-sm text-red-600">{form.formState.errors.minimunFare.message}</p>
               )}
               <p className="text-sm text-gray-500">
-                La tarifa mínima garantizada (debe ser ≤ tarifa base)
+                La tarifa mínima garantizada. Si la tarifa base es 0, puede ser cualquier valor ≥ 0. Si la tarifa base es mayor a 0, debe ser ≤ tarifa base.
               </p>
             </div>
 
@@ -286,7 +286,7 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
           tierMultiplier={form.watch('tierMultiplier') || 1.0}
           surgeMultiplier={form.watch('surgeMultiplier') || 1.0}
           demandMultiplier={form.watch('demandMultiplier') || 1.0}
-          minimumFare={form.watch('minimumFare') || 0}
+          minimumFare={form.watch('minimunFare') || 0}
         />
 
         {/* Multipliers */}

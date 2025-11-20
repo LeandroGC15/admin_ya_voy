@@ -25,10 +25,10 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
     resolver: zodResolver(createRideTierSchema),
     defaultValues: {
       name: '',
-      baseFare: 2.00, // 2.00 USD in cents (within limits)
-      minimunFare: 1.50, // 1.50 USD in cents (within limits)
-      perMinuteRate: 1.00, // 0.10 USD in cents (within limits)
-      perKmRate: 0.50, // 0.50 USD in cents (within limits)
+      baseFare: 0, // USD (se convierte a centavos) - puede ser 0
+      minimunFare: 0, // USD (se convierte a centavos)
+      perMinuteRate: 0, // USD (se convierte a centavos) - puede ser 0
+      perKmRate: 0.50, // USD (se convierte a centavos) - ejemplo
       imageUrl: '', // Empty string instead of undefined for URL validation
       tierMultiplier: 1.0,
       surgeMultiplier: 1.0,
@@ -169,7 +169,7 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
                 {...form.register('baseFare', {
                   setValueAs: (value) => value ? parseCurrencyInput(value) : 0
                 })}
-                placeholder="2.50"
+                placeholder="0.00 o 2.50"
               />
               {form.formState.errors.baseFare && (
                 <p className="text-sm text-red-600">{form.formState.errors.baseFare.message}</p>
@@ -186,7 +186,7 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
                 {...form.register('perMinuteRate', {
                   setValueAs: (value) => value ? parseCurrencyInput(value) : 0
                 })}
-                placeholder="0.15"
+                placeholder="0.00 o 0.15"
               />
               {form.formState.errors.perMinuteRate && (
                 <p className="text-sm text-red-600">{form.formState.errors.perMinuteRate.message}</p>
@@ -222,13 +222,13 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
                 {...form.register('minimunFare', {
                   setValueAs: (value) => value ? parseCurrencyInput(value) : 0
                 })}
-                placeholder="2.00"
+                placeholder="0.00 o 2.00"
               />
               {form.formState.errors.minimunFare && (
                 <p className="text-sm text-red-600">{form.formState.errors.minimunFare.message}</p>
               )}
               <p className="text-sm text-gray-500">
-                La tarifa mínima garantizada (debe ser ≤ tarifa base)
+                La tarifa mínima garantizada. Si la tarifa base es 0, puede ser cualquier valor ≥ 0. Si la tarifa base es mayor a 0, debe ser ≤ tarifa base.
               </p>
             </div>
 
