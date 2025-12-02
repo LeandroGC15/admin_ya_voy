@@ -4,6 +4,7 @@ export { RideTiersCreateModal } from './RideTiersCreateModal';
 export { RideTiersEditModal } from './RideTiersEditModal';
 export { RideTiersDeleteModal } from './RideTiersDeleteModal';
 export { RideTiersToggleModal } from './RideTiersToggleModal';
+export { TierImageUpload } from './TierImageUpload';
 
 // Temporal Rules Components
 export { TemporalRulesTable } from './TemporalRulesTable';

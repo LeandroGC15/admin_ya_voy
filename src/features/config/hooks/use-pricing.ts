@@ -173,6 +173,36 @@ export function useDeleteRideTier() {
   );
 }
 
+// Upload tier image
+export function useUploadTierImage() {
+  return useApiMutation(
+    async ({ tierId, file }: { tierId: number; file: File }): Promise<PricingRideTier> => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await api.post<PricingRideTier>(
+        ENDPOINTS.pricing.rideTierUploadImage(tierId),
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      
+      if (!response || !response.data) {
+        throw new Error('Invalid API response: no data received');
+      }
+      return response.data;
+    },
+    {
+      onSuccess: () => {
+        invalidateQueries(['pricing']);
+      },
+    }
+  );
+}
+
 // Toggle ride tier status
 export function useToggleRideTierStatus() {
   return useApiMutation(

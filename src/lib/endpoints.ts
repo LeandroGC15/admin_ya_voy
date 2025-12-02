@@ -153,6 +153,7 @@ export const ENDPOINTS = {
   pricing: {
     rideTiers: 'admin/pricing/ride-tiers',
     rideTierById: (id: string | number) => `admin/pricing/ride-tiers/${id}`,
+    rideTierUploadImage: (id: string | number) => `admin/pricing/ride-tiers/${id}/image`,
     rideTierToggleStatus: (id: string | number) => `admin/pricing/ride-tiers/${id}/toggle-status`,
     calculatePricing: 'admin/pricing/ride-tiers/calculate-pricing',
     validatePricing: 'admin/pricing/ride-tiers/validate-pricing',

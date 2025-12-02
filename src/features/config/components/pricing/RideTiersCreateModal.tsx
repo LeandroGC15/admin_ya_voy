@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { PriceExamples } from './PriceExamples';
+import { TierImageUpload } from './TierImageUpload';
 
 interface RideTiersCreateModalProps {
   isOpen: boolean;
@@ -122,28 +123,6 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
           </div>
         </div>
 
-        {/* Image URL */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Imagen y Multimedia</h3>
-
-          <div className="space-y-2">
-            <Label htmlFor="imageUrl">URL de Imagen</Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              {...form.register('imageUrl')}
-              placeholder="https://example.com/tier-image.png"
-            />
-            {form.formState.errors.imageUrl && (
-              <p className="text-sm text-red-600">{form.formState.errors.imageUrl.message}</p>
-            )}
-            <p className="text-sm text-gray-500">
-              URL opcional para mostrar una imagen representativa del nivel de tarifa
-            </p>
-          </div>
-        </div>
-
-
           <div className="flex items-center space-x-2">
             <Checkbox
               id="isActive"
@@ -152,6 +131,23 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
             />
             <Label htmlFor="isActive">Activo</Label>
           </div>
+        </div>
+
+        {/* Tier Image Upload Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Imagen del Tier</h3>
+          <TierImageUpload
+            currentImageUrl={form.watch('imageUrl')}
+            onImageUploaded={(imageUrl) => {
+              form.setValue('imageUrl', imageUrl);
+            }}
+            onImageRemoved={() => {
+              form.setValue('imageUrl', '');
+            }}
+          />
+          <p className="text-sm text-gray-500">
+            Nota: Debes guardar el tier primero antes de poder subir una imagen.
+          </p>
         </div>
 
         {/* Pricing Configuration */}

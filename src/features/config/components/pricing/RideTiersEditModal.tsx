@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { invalidateQueries } from '@/lib/api/react-query-client';
 import { PriceExamples } from './PriceExamples';
+import { TierImageUpload } from './TierImageUpload';
 
 interface RideTiersEditModalProps {
   tierId: number | null;
@@ -171,22 +172,6 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
           </div>
 
 
-          <div className="space-y-2">
-            <Label htmlFor="imageUrl">URL de Imagen</Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              {...form.register('imageUrl')}
-              placeholder="https://example.com/tier-image.png"
-            />
-            {form.formState.errors.imageUrl && (
-              <p className="text-sm text-red-600">{form.formState.errors.imageUrl.message}</p>
-            )}
-            <p className="text-sm text-gray-500">
-              URL opcional para mostrar una imagen representativa del nivel de tarifa
-            </p>
-          </div>
-
           <div className="flex items-center space-x-2">
             <Checkbox
               id="isActive"
@@ -194,6 +179,21 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
             />
             <Label htmlFor="isActive">Activo</Label>
           </div>
+        </div>
+
+        {/* Tier Image Upload Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Imagen del Tier</h3>
+          <TierImageUpload
+            tierId={tierId || undefined}
+            currentImageUrl={form.watch('imageUrl')}
+            onImageUploaded={(imageUrl) => {
+              form.setValue('imageUrl', imageUrl);
+            }}
+            onImageRemoved={() => {
+              form.setValue('imageUrl', '');
+            }}
+          />
         </div>
 
         {/* Pricing Configuration */}
