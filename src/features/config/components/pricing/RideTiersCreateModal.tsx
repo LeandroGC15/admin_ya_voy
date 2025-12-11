@@ -123,6 +123,24 @@ export function RideTiersCreateModal({ isOpen, onClose, onSuccess }: RideTiersCr
           </div>
         </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="description">Descripción</Label>
+            <textarea
+              id="description"
+              {...form.register('description')}
+              placeholder="Descripción del tier que se mostrará en la app (opcional)"
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              rows={3}
+              maxLength={500}
+            />
+            {form.formState.errors.description && (
+              <p className="text-sm text-red-600">{form.formState.errors.description.message}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {form.watch('description')?.length || 0}/500 caracteres
+            </p>
+          </div>
+
           <div className="flex items-center space-x-2">
             <Checkbox
               id="isActive"

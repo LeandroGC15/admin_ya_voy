@@ -60,6 +60,7 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
     if (tierData && isOpen) {
       form.reset({
         name: tierData.name,
+        description: (tierData as any).description || '',
         baseFare: tierData.baseFare,
         minimunFare: (tierData as any).minimunFare || tierData.minimumFare, // Backend usa minimunFare (typo)
         perMinuteRate: tierData.perMinuteRate,
@@ -171,6 +172,22 @@ export function RideTiersEditModal({ tierId, isOpen, onClose, onSuccess }: RideT
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="description">Descripción</Label>
+            <Textarea
+              id="description"
+              {...form.register('description')}
+              placeholder="Descripción del tier que se mostrará en la app (opcional)"
+              rows={3}
+              maxLength={500}
+            />
+            {form.formState.errors.description && (
+              <p className="text-sm text-red-600">{form.formState.errors.description.message}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {form.watch('description')?.length || 0}/500 caracteres
+            </p>
+          </div>
 
           <div className="flex items-center space-x-2">
             <Checkbox
