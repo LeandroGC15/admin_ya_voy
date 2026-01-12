@@ -1,10 +1,8 @@
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { NextRequest, NextResponse } from "next/server";
 
-// Inicializar el cliente de ElevenLabs
-const elevenlabs = new ElevenLabsClient({
-  apiKey: process.env.ELEVENLABS_API_KEY,
-});
+// Inicializar el cliente de ElevenLabs dentro del handler para evitar errores en build si falta la API key
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +13,10 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const elevenlabs = new ElevenLabsClient({
+      apiKey: process.env.ELEVENLABS_API_KEY,
+    });
 
     // Obtener el archivo de audio del FormData
     const formData = await request.formData();
@@ -31,8 +33,8 @@ export async function POST(request: NextRequest) {
     const modelId = (formData.get("modelId") as string) || "scribe_v1";
     const tagAudioEvents = formData.get("tagAudioEvents") === "true";
     const languageCodeParam = formData.get("languageCode") as string | null;
-    const languageCode = languageCodeParam && languageCodeParam.trim() !== "" 
-      ? languageCodeParam 
+    const languageCode = languageCodeParam && languageCodeParam.trim() !== ""
+      ? languageCodeParam
       : undefined; // undefined para detección automática
     const diarize = formData.get("diarize") === "true";
 

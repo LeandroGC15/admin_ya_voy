@@ -31,7 +31,7 @@ interface SelectableDataTableProps<T> {
   };
   actions?: (row: T) => React.ReactNode;
   emptyMessage?: string;
-  
+
   // Selección múltiple
   selectable?: boolean;
   selectedItems?: T[];
@@ -53,14 +53,14 @@ export function SelectableDataTable<T extends Record<string, any>>({
   getItemId = (item: T) => item.id,
   selectAllLabel = 'Seleccionar todo',
 }: SelectableDataTableProps<T>) {
-  
+
   // Manejar selección individual
   const handleItemSelect = (item: T, checked: boolean) => {
     if (!onSelectionChange) return;
-    
+
     const itemId = getItemId(item);
     const isSelected = selectedItems.some(selected => getItemId(selected) === itemId);
-    
+
     if (checked && !isSelected) {
       onSelectionChange([...selectedItems, item]);
     } else if (!checked && isSelected) {
@@ -71,7 +71,7 @@ export function SelectableDataTable<T extends Record<string, any>>({
   // Manejar selección de todos
   const handleSelectAll = (checked: boolean) => {
     if (!onSelectionChange) return;
-    
+
     if (checked) {
       onSelectionChange([...data]);
     } else {
@@ -87,7 +87,7 @@ export function SelectableDataTable<T extends Record<string, any>>({
 
   // Verificar si todos los items están seleccionados
   const isAllSelected = data.length > 0 && data.every(item => isItemSelected(item));
-  
+
   // Verificar si algunos items están seleccionados (estado indeterminado)
   const isIndeterminate = selectedItems.length > 0 && !isAllSelected;
 
@@ -119,13 +119,8 @@ export function SelectableDataTable<T extends Record<string, any>>({
               {selectable && (
                 <TableHead className="w-[50px]">
                   <Checkbox
-                    checked={isAllSelected}
-                    onCheckedChange={handleSelectAll}
-                    ref={(el) => {
-                      if (el) {
-                        el.indeterminate = isIndeterminate;
-                      }
-                    }}
+                    checked={isIndeterminate ? 'indeterminate' : isAllSelected}
+                    onCheckedChange={(checked) => handleSelectAll(checked === true)}
                     aria-label={selectAllLabel}
                   />
                 </TableHead>
@@ -140,10 +135,10 @@ export function SelectableDataTable<T extends Record<string, any>>({
             {data.map((row, index) => {
               const itemId = getItemId(row);
               const isSelected = isItemSelected(row);
-              
+
               return (
-                <TableRow 
-                  key={itemId} 
+                <TableRow
+                  key={itemId}
                   className={isSelected ? 'bg-blue-50' : ''}
                 >
                   {selectable && (

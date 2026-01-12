@@ -11,7 +11,7 @@ import type {
 } from '../schemas/module-schemas';
 
 // Fetch modules hook
-export function useModules(params: SearchModulesInput = {}) {
+export function useModules(params: Partial<SearchModulesInput> = {}) {
   return useApiQuery(
     ['programa-yavoy', 'modules', { ...params }],
     async (): Promise<ModuleListResponse> => {
